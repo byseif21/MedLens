@@ -1,0 +1,251 @@
+/* Glassmorphism Base Styles */
+
+/* Glass Card Effect */
+.glass-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+}
+
+.glass-card-dark {
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+}
+
+/* Glass Input Fields */
+.glass-input {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.glass-input:focus {
+  outline: none;
+  border-color: rgba(255, 0, 110, 0.6);
+  box-shadow: 0 0 20px rgba(255, 0, 110, 0.3);
+}
+
+.glass-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Neon Gradient Backgrounds */
+.neon-gradient-bg {
+  background: linear-gradient(135deg, #ff006e 0%, #00d9ff 100%);
+}
+
+.neon-gradient-text {
+  background: linear-gradient(135deg, #ff006e 0%, #00d9ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glowing Border Effects */
+.glow-border-pink {
+  border: 2px solid rgba(255, 0, 110, 0.5);
+  box-shadow: 0 0 20px rgba(255, 0, 110, 0.5),
+              inset 0 0 20px rgba(255, 0, 110, 0.1);
+  transition: all 0.3s ease;
+}
+
+.glow-border-pink:hover {
+  border-color: rgba(255, 0, 110, 0.8);
+  box-shadow: 0 0 30px rgba(255, 0, 110, 0.7),
+              inset 0 0 30px rgba(255, 0, 110, 0.2);
+}
+
+.glow-border-blue {
+  border: 2px solid rgba(0, 217, 255, 0.5);
+  box-shadow: 0 0 20px rgba(0, 217, 255, 0.5),
+              inset 0 0 20px rgba(0, 217, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.glow-border-blue:hover {
+  border-color: rgba(0, 217, 255, 0.8);
+  box-shadow: 0 0 30px rgba(0, 217, 255, 0.7),
+              inset 0 0 30px rgba(0, 217, 255, 0.2);
+}
+
+/* Neon Button Styles */
+.neon-button {
+  background: linear-gradient(135deg, #ff006e 0%, #00d9ff 100%);
+  border: none;
+  border-radius: 8px;
+  padding: 12px 32px;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 20px rgba(255, 0, 110, 0.4);
+}
+
+.neon-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 30px rgba(255, 0, 110, 0.6),
+              0 0 40px rgba(0, 217, 255, 0.4);
+}
+
+.neon-button:active {
+  transform: translateY(0);
+}
+
+.neon-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Glass Button (Alternative Style) */
+.glass-button {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 12px 32px;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.glass-button:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 0, 110, 0.5);
+  box-shadow: 0 0 20px rgba(255, 0, 110, 0.3);
+}
+
+/* Dark Background with Gradient */
+.dark-gradient-bg {
+  background: linear-gradient(135deg, 
+    #0a0a0a 0%, 
+    #1a0a1a 25%, 
+    #0a1a2a 50%, 
+    #1a0a1a 75%, 
+    #0a0a0a 100%);
+  min-height: 100vh;
+}
+
+/* Animated Gradient Background */
+.animated-gradient-bg {
+  background: linear-gradient(
+    -45deg,
+    #0a0a0a,
+    #1a0a1a,
+    #0a1a2a,
+    #1a0a1a
+  );
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Pulsing Glow Animation */
+.pulse-glow {
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(255, 0, 110, 0.4),
+                0 0 40px rgba(0, 217, 255, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(255, 0, 110, 0.6),
+                0 0 60px rgba(0, 217, 255, 0.4);
+  }
+}
+
+/* Loading Spinner with Neon Effect */
+.neon-spinner {
+  border: 4px solid rgba(255, 255, 255, 0.1);
+  border-top: 4px solid #ff006e;
+  border-right: 4px solid #00d9ff;
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  animation: spin 1s linear infinite;
+  box-shadow: 0 0 20px rgba(255, 0, 110, 0.5);
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Glass Container */
+.glass-container {
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 32px;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+}
+
+/* Neon Text Glow */
+.text-glow-pink {
+  color: #ff006e;
+  text-shadow: 0 0 10px rgba(255, 0, 110, 0.8),
+               0 0 20px rgba(255, 0, 110, 0.6),
+               0 0 30px rgba(255, 0, 110, 0.4);
+}
+
+.text-glow-blue {
+  color: #00d9ff;
+  text-shadow: 0 0 10px rgba(0, 217, 255, 0.8),
+               0 0 20px rgba(0, 217, 255, 0.6),
+               0 0 30px rgba(0, 217, 255, 0.4);
+}
+
+/* Hover Effects */
+.hover-lift {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.5);
+}
+
+/* Responsive Utilities */
+@media (max-width: 768px) {
+  .glass-container {
+    padding: 20px;
+  }
+  
+  .neon-button,
+  .glass-button {
+    padding: 10px 24px;
+  }
+}
