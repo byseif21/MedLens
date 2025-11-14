@@ -1,74 +1,41 @@
-import axios from 'axios';
-
-// Create axios instance with base configuration
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
-  timeout: 30000, // 30 seconds timeout for image processing
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Request interceptor for logging and error handling
-api.interceptors.request.use(
-  (config) => {
-    // eslint-disable-next-line no-console
-    console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
-    return config;
-  },
-  (error) => {
-    console.error('API Request Error:', error);
-    return Promise.reject(error);
-  }
-);
-
-// Response interceptor for error handling
-api.interceptors.response.use(
-  (response) => {
-    // eslint-disable-next-line no-console
-    console.log(`API Response: ${response.status} ${response.config.url}`);
-    return response;
-  },
-  (error) => {
-    if (error.response) {
-      // Server responded with error status
-      console.error('API Error Response:', error.response.status, error.response.data);
-    } else if (error.request) {
-      // Request made but no response received
-      console.error('API No Response:', error.request);
-    } else {
-      // Error in request setup
-      console.error('API Request Setup Error:', error.message);
-    }
-    return Promise.reject(error);
-  }
-);
+import apiClient from './axios';
 
 /**
- * Register a new user with face image and personal information
- * @param {Object} userData - User registration data
- * @param {string} userData.name - User's full name
- * @param {string} userData.email - User's email address
- * @param {string} userData.phone - User's phone number (optional)
- * @param {File} userData.image - Face image file
- * @returns {Promise<Object>} Registration response with user_id
+ * Face Login - Validate face and authenticate
+ * @param {FormData} formData - Form data containing face image
+ * @returns {Promise} API response with user data
  */
-export const registerUser = async (userData) => {
+export const loginWithFace = async (formData) => {
   try {
-    const formData = new FormData();
-    formData.append('name', userData.name);
-    formData.append('email', userData.email);
-    if (userData.phone) {
-      formData.append('phone', userData.phone);
-    }
-    formData.append('image', userData.image);
-
-    const response = await api.post('/api/register', formData, {
+    const response = await apiClient.post('/api/login/face', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     });
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.error || error.message || 'Login failed',
+    };
+  }
+};
 
+/**
+ * Register a new person with face image
+ * @param {FormData} formData - Form data containing name, age, nationality, etc.
+ * @returns {Promise} API response
+ */
+export const registerPerson = async (formData) => {
+  try {
+    const response = await apiClient.post('/api/register', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return {
       success: true,
       data: response.data,
@@ -82,21 +49,100 @@ export const registerUser = async (userData) => {
 };
 
 /**
- * Recognize a face from an uploaded image
- * @param {File} imageFile - Face image file to recognize
- * @returns {Promise<Object>} Recognition response with user data if match found
+ * Get user profile by ID
+ * @param {string} userId - User ID
+ * @returns {Promise} API response with profile data
  */
-export const recognizeFace = async (imageFile) => {
+export const getProfile = async (userId) => {
   try {
-    const formData = new FormData();
-    formData.append('image', imageFile);
+    const response = await apiClient.get(`/api/profile/${userId}`);
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.error || error.message || 'Failed to fetch profile',
+    };
+  }
+};
 
-    const response = await api.post('/api/recognize', formData, {
+/**
+ * Update main info
+ * @param {string} userId - User ID
+ * @param {Object} data - Main info data
+ * @returns {Promise} API response
+ */
+export const updateMainInfo = async (userId, data) => {
+  try {
+    const response = await apiClient.put(`/api/profile/main-info/${userId}`, data);
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.error || error.message || 'Failed to update main info',
+    };
+  }
+};
+
+/**
+ * Update medical info
+ * @param {string} userId - User ID
+ * @param {Object} data - Medical info data
+ * @returns {Promise} API response
+ */
+export const updateMedicalInfo = async (userId, data) => {
+  try {
+    const response = await apiClient.put(`/api/profile/medical-info/${userId}`, data);
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.error || error.message || 'Failed to update medical info',
+    };
+  }
+};
+
+/**
+ * Update relatives/connections
+ * @param {string} userId - User ID
+ * @param {Array} relatives - Array of relative objects
+ * @returns {Promise} API response
+ */
+export const updateRelatives = async (userId, relatives) => {
+  try {
+    const response = await apiClient.put(`/api/profile/relatives/${userId}`, { relatives });
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.error || error.message || 'Failed to update relatives',
+    };
+  }
+};
+
+/**
+ * Recognize a person from face image
+ * @param {FormData} formData - Form data containing image
+ * @returns {Promise} API response
+ */
+export const recognizeFace = async (formData) => {
+  try {
+    const response = await apiClient.post('/api/recognize', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     });
-
     return {
       success: true,
       data: response.data,
@@ -110,12 +156,12 @@ export const recognizeFace = async (imageFile) => {
 };
 
 /**
- * Check API health status
- * @returns {Promise<Object>} Health status response
+ * Health check endpoint
+ * @returns {Promise} API response
  */
 export const checkHealth = async () => {
   try {
-    const response = await api.get('/api/health');
+    const response = await apiClient.get('/api/health');
     return {
       success: true,
       data: response.data,
@@ -128,4 +174,4 @@ export const checkHealth = async () => {
   }
 };
 
-export default api;
+export default apiClient;
