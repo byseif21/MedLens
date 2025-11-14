@@ -58,7 +58,10 @@ const MedicalInfo = ({ profile, onUpdate }) => {
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-semibold">Medical Information</h2>
         {!isEditing ? (
-          <button onClick={() => setIsEditing(true)} className="btn-medical-secondary text-sm px-4 py-2">
+          <button
+            onClick={() => setIsEditing(true)}
+            className="btn-medical-secondary text-sm px-4 py-2"
+          >
             Edit
           </button>
         ) : (

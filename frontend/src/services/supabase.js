@@ -15,17 +15,13 @@ if (!supabaseUrl || !supabaseAnonKey) {
 const defaultUrl = 'https://placeholder.supabase.co';
 const defaultKey = 'placeholder-key';
 
-export const supabase = createClient(
-  supabaseUrl || defaultUrl,
-  supabaseAnonKey || defaultKey,
-  {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: true,
-    },
-  }
-);
+export const supabase = createClient(supabaseUrl || defaultUrl, supabaseAnonKey || defaultKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+  },
+});
 
 /**
  * Sign in with email and password

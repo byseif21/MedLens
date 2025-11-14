@@ -52,9 +52,7 @@ const FaceUploader = ({ onUpload }) => {
   return (
     <div className="space-y-4">
       <h3 className="text-xl font-semibold text-center">Upload Your Face Photo</h3>
-      <p className="text-medical-gray-600 text-center text-sm">
-        Select a clear photo of your face
-      </p>
+      <p className="text-medical-gray-600 text-center text-sm">Select a clear photo of your face</p>
 
       {!preview ? (
         <div

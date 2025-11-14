@@ -93,9 +93,7 @@ const RecognitionPage = () => {
 
         {/* Upload Section */}
         <div className="glass-card p-8 mb-8">
-          <h2 className="text-2xl font-semibold text-white mb-6 text-center">
-            Upload Test Photo
-          </h2>
+          <h2 className="text-2xl font-semibold text-white mb-6 text-center">Upload Test Photo</h2>
 
           {/* Image Preview */}
           {imagePreview && (
@@ -113,10 +111,7 @@ const RecognitionPage = () => {
 
           {/* File Input */}
           <div className="mb-6">
-            <label
-              htmlFor="image-upload"
-              className="block w-full cursor-pointer"
-            >
+            <label htmlFor="image-upload" className="block w-full cursor-pointer">
               <div className="glass-card-dark hover:glow-border-pink transition-all duration-300 p-8 text-center rounded-lg border-2 border-dashed border-white/20">
                 <div className="flex flex-col items-center space-y-3">
                   <svg
@@ -208,10 +203,7 @@ const RecognitionPage = () => {
         {recognitionResult && !isRecognizing && (
           <div className="space-y-6">
             {recognitionResult.recognized ? (
-              <PersonCard
-                user={recognitionResult.user}
-                confidence={recognitionResult.confidence}
-              />
+              <PersonCard user={recognitionResult.user} confidence={recognitionResult.confidence} />
             ) : (
               <div className="glass-card p-8 text-center">
                 <div className="flex flex-col items-center space-y-4">

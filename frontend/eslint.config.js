@@ -39,6 +39,8 @@ export default [
         Promise: 'readonly',
         FormData: 'readonly',
         FileReader: 'readonly',
+        File: 'readonly',
+        localStorage: 'readonly',
         alert: 'readonly',
         prompt: 'readonly',
         confirm: 'readonly',
