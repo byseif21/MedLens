@@ -33,14 +33,80 @@ async def root():
 
 @app.get("/api/health")
 async def health_check():
-    """Health check endpoint"""
-    return {
+    """
+    Health check endpoint that verifies the status of all system services.
+    
+    Returns:
+        Dictionary with overall status and individual service statuses
+    """
+    from services.face_service import get_face_service
+    from services.storage_service import get_supabase_service
+    
+    health_status = {
         "status": "healthy",
+        "timestamp": None,
         "services": {
-            "face_recognition": "operational",
-            "supabase": "connected"
+            "face_recognition": {
+                "status": "unknown",
+                "details": {}
+            },
+            "supabase": {
+                "status": "unknown",
+                "details": {}
+            }
         }
     }
+    
+    # Check face recognition service
+    try:
+        face_service = get_face_service()
+        encoding_count = face_service.get_encoding_count()
+        health_status["services"]["face_recognition"] = {
+            "status": "operational",
+            "details": {
+                "encodings_stored": encoding_count,
+                "tolerance": face_service.tolerance
+            }
+        }
+    except Exception as e:
+        health_status["services"]["face_recognition"] = {
+            "status": "error",
+            "details": {
+                "error": str(e)
+            }
+        }
+        health_status["status"] = "degraded"
+    
+    # Check Supabase connection
+    try:
+        supabase_service = get_supabase_service()
+        supabase_health = supabase_service.get_health_status()
+        health_status["services"]["supabase"] = {
+            "status": supabase_health["status"],
+            "details": {
+                "connected": supabase_health["connected"],
+                "url": supabase_health["url"]
+            }
+        }
+        
+        if not supabase_health["connected"]:
+            health_status["status"] = "degraded"
+            if "error" in supabase_health:
+                health_status["services"]["supabase"]["details"]["error"] = supabase_health["error"]
+    except Exception as e:
+        health_status["services"]["supabase"] = {
+            "status": "error",
+            "details": {
+                "error": str(e)
+            }
+        }
+        health_status["status"] = "degraded"
+    
+    # Add timestamp
+    from datetime import datetime
+    health_status["timestamp"] = datetime.utcnow().isoformat()
+    
+    return health_status
 
 if __name__ == "__main__":
     import uvicorn
