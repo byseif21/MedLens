@@ -1,15 +1,54 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import FaceCapture from '../components/FaceCapture';
 import FaceUploader from '../components/FaceUploader';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { loginWithFace } from '../services/api';
 
 const LoginPage = () => {
-  const [mode, setMode] = useState(null); // 'capture' or 'upload'
+  const [loginMethod, setLoginMethod] = useState('traditional'); // 'traditional' or 'face'
+  const [faceMode, setFaceMode] = useState(null); // 'capture' or 'upload'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+
+  // Traditional login form
+  const [credentials, setCredentials] = useState({
+    email: '',
+    password: '',
+  });
+
+  const handleCredentialChange = (e) => {
+    setCredentials({ ...credentials, [e.target.name]: e.target.value });
+  };
+
+  const handleTraditionalLogin = async (e) => {
+    e.preventDefault();
+
+    if (!credentials.email || !credentials.password) {
+      setError('Please enter both email and password');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      // TODO: Call traditional login API
+      // For now, simulate login
+      setTimeout(() => {
+        localStorage.setItem('user_id', 'temp-user-id');
+        localStorage.setItem('user_name', credentials.email);
+        localStorage.setItem('auth_token', 'temp-token');
+        navigate('/dashboard');
+      }, 1000);
+    } catch (err) {
+      setError('Invalid email or password. Please try again.');
+      console.error('Login error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleFaceSubmit = async (imageFile) => {
     setLoading(true);
@@ -22,25 +61,23 @@ const LoginPage = () => {
       const result = await loginWithFace(formData);
 
       if (result.success) {
-        // Store user data
         localStorage.setItem('user_id', result.data.user_id);
+        localStorage.setItem('user_name', result.data.name);
         localStorage.setItem('auth_token', result.data.token || 'temp-token');
-
-        // Redirect to dashboard
         navigate('/dashboard');
       } else {
-        setError(result.error || 'Face authentication failed. Please try again.');
+        setError(result.error || 'Face not recognized. Please try again or use email login.');
       }
     } catch (err) {
-      setError('An error occurred during authentication. Please try again.');
-      console.error('Login error:', err);
+      setError('An error occurred during face login. Please try again.');
+      console.error('Face login error:', err);
     } finally {
       setLoading(false);
     }
   };
 
   const handleBack = () => {
-    setMode(null);
+    setFaceMode(null);
     setError('');
   };
 
@@ -68,6 +105,39 @@ const LoginPage = () => {
           <p className="text-medical-gray-600">Medical Edition</p>
         </div>
 
+        {/* Login Method Tabs */}
+        <div className="medical-card mb-4">
+          <div className="flex gap-2 p-1 bg-medical-gray-100 rounded-lg">
+            <button
+              onClick={() => {
+                setLoginMethod('traditional');
+                setFaceMode(null);
+                setError('');
+              }}
+              className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${
+                loginMethod === 'traditional'
+                  ? 'bg-white text-medical-primary shadow-medical'
+                  : 'text-medical-gray-600 hover:text-medical-dark'
+              }`}
+            >
+              Email Login
+            </button>
+            <button
+              onClick={() => {
+                setLoginMethod('face');
+                setError('');
+              }}
+              className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${
+                loginMethod === 'face'
+                  ? 'bg-white text-medical-primary shadow-medical'
+                  : 'text-medical-gray-600 hover:text-medical-dark'
+              }`}
+            >
+              Face ID
+            </button>
+          </div>
+        </div>
+
         {/* Main Card */}
         <div className="medical-card animate-slide-up">
           {loading ? (
@@ -75,16 +145,64 @@ const LoginPage = () => {
               <LoadingSpinner />
               <p className="text-center text-medical-gray-600 mt-4">Authenticating...</p>
             </div>
-          ) : mode === null ? (
+          ) : loginMethod === 'traditional' ? (
             <>
-              <h2 className="text-2xl font-semibold text-center mb-2">Face Authentication</h2>
+              <h2 className="text-2xl font-semibold text-center mb-6">Login to Your Account</h2>
+
+              <form onSubmit={handleTraditionalLogin} className="space-y-4">
+                <div>
+                  <label className="label-medical">Email or ID Number</label>
+                  <input
+                    type="text"
+                    name="email"
+                    value={credentials.email}
+                    onChange={handleCredentialChange}
+                    className="input-medical"
+                    placeholder="Enter your email or ID"
+                    autoComplete="email"
+                  />
+                </div>
+
+                <div>
+                  <label className="label-medical">Password</label>
+                  <input
+                    type="password"
+                    name="password"
+                    value={credentials.password}
+                    onChange={handleCredentialChange}
+                    className="input-medical"
+                    placeholder="Enter your password"
+                    autoComplete="current-password"
+                  />
+                </div>
+
+                {error && (
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-red-600 text-sm text-center">{error}</p>
+                  </div>
+                )}
+
+                <button type="submit" className="w-full btn-medical-primary">
+                  Login
+                </button>
+              </form>
+
+              <div className="mt-4 text-center">
+                <a href="#" className="text-medical-primary hover:text-cyan-700 text-sm">
+                  Forgot password?
+                </a>
+              </div>
+            </>
+          ) : faceMode === null ? (
+            <>
+              <h2 className="text-2xl font-semibold text-center mb-2">Login with Face ID</h2>
               <p className="text-medical-gray-600 text-center mb-8">
-                Choose how you want to authenticate
+                Authenticate using your registered face
               </p>
 
               <div className="space-y-4">
                 <button
-                  onClick={() => setMode('capture')}
+                  onClick={() => setFaceMode('capture')}
                   className="w-full btn-medical-primary flex items-center justify-center gap-3"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -105,7 +223,7 @@ const LoginPage = () => {
                 </button>
 
                 <button
-                  onClick={() => setMode('upload')}
+                  onClick={() => setFaceMode('upload')}
                   className="w-full btn-medical-secondary flex items-center justify-center gap-3"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -126,7 +244,7 @@ const LoginPage = () => {
                 </div>
               )}
             </>
-          ) : mode === 'capture' ? (
+          ) : faceMode === 'capture' ? (
             <div>
               <button
                 onClick={handleBack}
@@ -173,6 +291,14 @@ const LoginPage = () => {
               )}
             </div>
           )}
+
+          {/* Register Link */}
+          <div className="mt-6 pt-6 border-t border-medical-gray-200 text-center">
+            <p className="text-medical-gray-600 text-sm mb-3">Don&apos;t have an account?</p>
+            <Link to="/register" className="text-medical-primary hover:text-cyan-700 font-medium">
+              Register New User →
+            </Link>
+          </div>
         </div>
 
         {/* Footer */}

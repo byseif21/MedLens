@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import MainInfo from '../components/MainInfo';
 import MedicalInfo from '../components/MedicalInfo';
 import Connections from '../components/Connections';
@@ -84,9 +84,14 @@ const ProfileDashboard = () => {
                 <p className="text-sm text-medical-gray-600">Medical Profile Dashboard</p>
               </div>
             </div>
-            <button onClick={handleLogout} className="btn-medical-secondary text-sm px-4 py-2">
-              Logout
-            </button>
+            <div className="flex gap-3">
+              <Link to="/recognize" className="btn-medical-primary text-sm px-4 py-2">
+                Recognize Face
+              </Link>
+              <button onClick={handleLogout} className="btn-medical-secondary text-sm px-4 py-2">
+                Logout
+              </button>
+            </div>
           </div>
         </div>
       </header>
