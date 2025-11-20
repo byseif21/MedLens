@@ -23,8 +23,12 @@ app.add_middleware(
 )
 
 # Include routers
+from routers import auth, profile
+
 app.include_router(registration.router)
 app.include_router(recognition.router)
+app.include_router(auth.router)
+app.include_router(profile.router)
 
 @app.get("/")
 async def root():
