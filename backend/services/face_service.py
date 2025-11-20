@@ -12,14 +12,14 @@ import os
 from pathlib import Path
 import threading
 
-from ..models.face_encoding import (
+from models.face_encoding import (
     FaceExtractionResult,
     FaceMatch,
     FaceEncodingWithMetadata,
     FaceEncodingStorage
 )
-from ..utils.image_processor import ImageProcessor, ImageProcessingError
-from ..utils.config import config
+from utils.image_processor import ImageProcessor, ImageProcessingError
+from utils.config import config
 
 
 class FaceRecognitionError(Exception):

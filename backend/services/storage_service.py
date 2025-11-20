@@ -8,9 +8,9 @@ from datetime import datetime
 from supabase import create_client, Client
 import uuid
 
-from ..utils.config import config
-from ..models.user import UserCreate, UserResponse
-from ..models.face_encoding import FaceEncoding
+from utils.config import config
+from models.user import UserCreate, UserResponse
+from models.face_encoding import FaceEncoding
 
 
 class SupabaseError(Exception):
