@@ -34,16 +34,32 @@ const LoginPage = () => {
     setError('');
 
     try {
-      // TODO: Call traditional login API
-      // For now, simulate login
-      setTimeout(() => {
-        localStorage.setItem('user_id', 'temp-user-id');
-        localStorage.setItem('user_name', credentials.email);
-        localStorage.setItem('auth_token', 'temp-token');
-        navigate('/dashboard');
-      }, 1000);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: credentials.email,
+          password: credentials.password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || 'Login failed');
+      }
+
+      // Store user data
+      localStorage.setItem('user_id', data.user_id);
+      localStorage.setItem('user_name', data.name);
+      localStorage.setItem('auth_token', data.token);
+
+      // Redirect to dashboard
+      navigate('/dashboard');
     } catch (err) {
-      setError('Invalid email or password. Please try again.');
+      setError(err.message || 'Invalid email or password. Please try again.');
       console.error('Login error:', err);
     } finally {
       setLoading(false);

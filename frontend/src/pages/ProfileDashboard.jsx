@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useParams } from 'react-router-dom';
 import MainInfo from '../components/MainInfo';
 import MedicalInfo from '../components/MedicalInfo';
 import Connections from '../components/Connections';
@@ -10,17 +10,23 @@ const ProfileDashboard = () => {
   const [activeTab, setActiveTab] = useState('main');
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isViewingOther, setIsViewingOther] = useState(false);
   const navigate = useNavigate();
+  const { userId: urlUserId } = useParams();
 
   const loadProfile = async () => {
-    const userId = localStorage.getItem('user_id');
-    if (!userId) {
+    // Check if viewing another user's profile or own profile
+    const currentUserId = localStorage.getItem('user_id');
+    const viewingUserId = urlUserId || currentUserId;
+
+    if (!currentUserId) {
       navigate('/login');
       return;
     }
 
+    setIsViewingOther(urlUserId && urlUserId !== currentUserId);
     setLoading(true);
-    const result = await getProfile(userId);
+    const result = await getProfile(viewingUserId);
 
     if (result.success) {
       setProfile(result.data);
@@ -81,16 +87,25 @@ const ProfileDashboard = () => {
                 <h1 className="text-xl font-bold text-medical-dark">
                   {profile?.name || 'User Profile'}
                 </h1>
-                <p className="text-sm text-medical-gray-600">Medical Profile Dashboard</p>
+                <p className="text-sm text-medical-gray-600">
+                  {isViewingOther ? 'Recognized Person Profile' : 'Medical Profile Dashboard'}
+                </p>
               </div>
             </div>
             <div className="flex gap-3">
+              {isViewingOther && (
+                <Link to="/dashboard" className="btn-medical-secondary text-sm px-4 py-2">
+                  ← My Profile
+                </Link>
+              )}
               <Link to="/recognize" className="btn-medical-primary text-sm px-4 py-2">
                 Recognize Face
               </Link>
-              <button onClick={handleLogout} className="btn-medical-secondary text-sm px-4 py-2">
-                Logout
-              </button>
+              {!isViewingOther && (
+                <button onClick={handleLogout} className="btn-medical-secondary text-sm px-4 py-2">
+                  Logout
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -120,9 +135,15 @@ const ProfileDashboard = () => {
       {/* Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="animate-fade-in">
-          {activeTab === 'main' && <MainInfo profile={profile} onUpdate={loadProfile} />}
-          {activeTab === 'medical' && <MedicalInfo profile={profile} onUpdate={loadProfile} />}
-          {activeTab === 'connections' && <Connections profile={profile} onUpdate={loadProfile} />}
+          {activeTab === 'main' && (
+            <MainInfo profile={profile} onUpdate={loadProfile} readOnly={isViewingOther} />
+          )}
+          {activeTab === 'medical' && (
+            <MedicalInfo profile={profile} onUpdate={loadProfile} readOnly={isViewingOther} />
+          )}
+          {activeTab === 'connections' && (
+            <Connections profile={profile} onUpdate={loadProfile} readOnly={isViewingOther} />
+          )}
         </div>
       </main>
     </div>

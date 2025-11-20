@@ -44,6 +44,7 @@ export default [
         alert: 'readonly',
         prompt: 'readonly',
         confirm: 'readonly',
+        fetch: 'readonly',
       },
     },
     plugins: {

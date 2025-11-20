@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import FaceCapture from '../components/FaceCapture';
 import FaceUploader from '../components/FaceUploader';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -10,11 +10,14 @@ const RecognitionPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [recognizedPerson, setRecognizedPerson] = useState(null);
+  const [showViewProfile, setShowViewProfile] = useState(false);
+  const navigate = useNavigate();
 
   const handleFaceSubmit = async (imageFile) => {
     setLoading(true);
     setError('');
     setRecognizedPerson(null);
+    setShowViewProfile(false);
 
     try {
       const formData = new FormData();
@@ -24,6 +27,12 @@ const RecognitionPage = () => {
 
       if (result.success && result.data.match) {
         setRecognizedPerson(result.data);
+        setShowViewProfile(true);
+
+        // Auto-navigate after 3 seconds (or user can click button immediately)
+        setTimeout(() => {
+          handleViewProfile(result.data);
+        }, 3000);
       } else {
         setError('Face not recognized. Person may not be registered in the system.');
       }
@@ -33,6 +42,14 @@ const RecognitionPage = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleViewProfile = (person) => {
+    // Store recognized person's ID and navigate to their dashboard
+    const currentUserId = localStorage.getItem('user_id');
+    localStorage.setItem('viewing_user_id', person.user_id || currentUserId);
+    localStorage.setItem('viewing_user_name', person.name);
+    navigate(`/profile/${person.user_id || currentUserId}`);
   };
 
   const handleReset = () => {
@@ -82,10 +99,29 @@ const RecognitionPage = () => {
             <div className="medical-card mb-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-semibold text-green-600">✓ Person Recognized</h2>
-                <button onClick={handleReset} className="btn-medical-secondary text-sm px-4 py-2">
-                  Recognize Another
-                </button>
+                <div className="flex gap-2">
+                  {showViewProfile && (
+                    <button
+                      onClick={() => handleViewProfile(recognizedPerson)}
+                      className="btn-medical-primary text-sm px-4 py-2"
+                    >
+                      View Full Profile →
+                    </button>
+                  )}
+                  <button onClick={handleReset} className="btn-medical-secondary text-sm px-4 py-2">
+                    Recognize Another
+                  </button>
+                </div>
               </div>
+
+              {showViewProfile && (
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-center">
+                  <p className="text-blue-700 text-sm">
+                    Redirecting to profile in 3 seconds... or click &quot;View Full Profile&quot;
+                    now
+                  </p>
+                </div>
+              )}
 
               <div className="bg-medical-light p-6 rounded-lg">
                 <div className="flex items-center gap-4 mb-6">

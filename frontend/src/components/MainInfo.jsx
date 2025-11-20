@@ -3,8 +3,9 @@ import PropTypes from 'prop-types';
 import { updateMainInfo } from '../services/api';
 import LoadingSpinner from './LoadingSpinner';
 
-const MainInfo = ({ profile, onUpdate }) => {
+const MainInfo = ({ profile, onUpdate, readOnly = false }) => {
   const [isEditing, setIsEditing] = useState(false);
+  const canEdit = !readOnly;
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: profile?.name || '',
@@ -55,23 +56,24 @@ const MainInfo = ({ profile, onUpdate }) => {
     <div className="medical-card">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-semibold">Main Information</h2>
-        {!isEditing ? (
-          <button
-            onClick={() => setIsEditing(true)}
-            className="btn-medical-secondary text-sm px-4 py-2"
-          >
-            Edit
-          </button>
-        ) : (
-          <div className="flex gap-2">
-            <button onClick={handleCancel} className="btn-medical-secondary text-sm px-4 py-2">
-              Cancel
+        {canEdit &&
+          (!isEditing ? (
+            <button
+              onClick={() => setIsEditing(true)}
+              className="btn-medical-secondary text-sm px-4 py-2"
+            >
+              Edit
             </button>
-            <button onClick={handleSave} className="btn-medical-primary text-sm px-4 py-2">
-              Save
-            </button>
-          </div>
-        )}
+          ) : (
+            <div className="flex gap-2">
+              <button onClick={handleCancel} className="btn-medical-secondary text-sm px-4 py-2">
+                Cancel
+              </button>
+              <button onClick={handleSave} className="btn-medical-primary text-sm px-4 py-2">
+                Save
+              </button>
+            </div>
+          ))}
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">

@@ -11,6 +11,7 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/dashboard" element={<ProfileDashboard />} />
+        <Route path="/profile/:userId" element={<ProfileDashboard />} />
         <Route path="/recognize" element={<RecognitionPage />} />
         <Route path="/" element={<Navigate to="/login" replace />} />
       </Routes>
