@@ -67,9 +67,9 @@ async def register_user(
         # Extract face encodings from all images
         encodings = []
         for angle, image_data in face_images.items():
-            encoding = face_service.extract_face_encoding(image_data)
-            if encoding is not None:
-                encodings.append(encoding)
+            result = face_service.extract_encoding(image_data)
+            if result.success and result.encoding is not None:
+                encodings.append(result.encoding)
         
         if not encodings:
             raise HTTPException(status_code=400, detail="No face detected in any of the images")
@@ -97,6 +97,16 @@ async def register_user(
             raise HTTPException(status_code=500, detail="Failed to create user")
         
         user_id = response.data[0]['id']
+        
+        # Save encoding to local face service storage for fast matching
+        try:
+            face_service.save_encoding(
+                user_id=user_id,
+                encoding=avg_encoding.tolist(),
+                user_data={"name": name, "email": email}
+            )
+        except Exception as e:
+            print(f"Warning: Failed to save encoding to local storage: {str(e)}")
         
         # Upload face images to storage
         for angle, image_data in face_images.items():

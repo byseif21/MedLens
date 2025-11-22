@@ -23,15 +23,23 @@ class SupabaseService:
     
     def __init__(self):
         """Initialize Supabase client with environment variables."""
-        if not config.SUPABASE_URL or not config.SUPABASE_KEY:
+        if not config.SUPABASE_URL:
             raise SupabaseError(
-                "Supabase configuration missing. Please set SUPABASE_URL and SUPABASE_KEY"
+                "Supabase configuration missing. Please set SUPABASE_URL"
+            )
+        
+        # Use service key if available (for bypassing RLS), otherwise use anon key
+        supabase_key = config.SUPABASE_SERVICE_KEY or config.SUPABASE_KEY
+        
+        if not supabase_key:
+            raise SupabaseError(
+                "Supabase key missing. Please set SUPABASE_SERVICE_KEY or SUPABASE_KEY"
             )
         
         try:
             self.client: Client = create_client(
                 config.SUPABASE_URL,
-                config.SUPABASE_KEY
+                supabase_key
             )
             self.storage_bucket = "face-images"
         except Exception as e:

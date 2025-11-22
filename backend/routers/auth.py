@@ -85,44 +85,38 @@ async def login_with_face(image: UploadFile = File(...)):
         image_data = await image.read()
         
         # Extract face encoding from uploaded image
-        encoding = face_service.extract_face_encoding(image_data)
+        result = face_service.extract_encoding(image_data)
         
-        if encoding is None:
-            raise HTTPException(status_code=400, detail="No face detected in the image")
+        if not result.success or result.encoding is None:
+            error_msg = result.error or "No face detected in the image"
+            raise HTTPException(status_code=400, detail=error_msg)
         
-        # Get all users with face encodings
-        response = supabase.client.table('users').select('id, name, email, face_encoding').not_.is_('face_encoding', 'null').execute()
+        # Use face service to find match
+        match_result = face_service.find_match(result.encoding)
         
-        if not response.data:
-            raise HTTPException(status_code=404, detail="No registered users found")
+        if not match_result.matched or match_result.user_id is None:
+            raise HTTPException(
+                status_code=404, 
+                detail="Face not recognized. Please try again or use email login."
+            )
         
-        # Find matching face
-        best_match = None
-        best_distance = float('inf')
+        # Get user details from database
+        response = supabase.client.table('users').select('id, name, email').eq('id', match_result.user_id).execute()
         
-        for user in response.data:
-            if user['face_encoding']:
-                import json
-                import numpy as np
-                stored_encoding = np.array(json.loads(user['face_encoding']))
-                distance = face_service.compare_faces(encoding, stored_encoding)
-                
-                if distance < best_distance and distance < settings.FACE_RECOGNITION_TOLERANCE:
-                    best_distance = distance
-                    best_match = user
+        if not response.data or len(response.data) == 0:
+            raise HTTPException(status_code=404, detail="User not found")
         
-        if best_match is None:
-            raise HTTPException(status_code=404, detail="Face not recognized. Please try again or use email login.")
+        user = response.data[0]
         
         # Create access token
-        token = create_access_token({"sub": best_match['id'], "email": best_match['email']})
+        token = create_access_token({"sub": user['id'], "email": user['email']})
         
         return {
-            "user_id": best_match['id'],
-            "name": best_match['name'],
-            "email": best_match['email'],
+            "user_id": user['id'],
+            "name": user['name'],
+            "email": user['email'],
             "token": token,
-            "confidence": 1 - best_distance,
+            "confidence": match_result.confidence,
             "message": "Face authentication successful"
         }
     
