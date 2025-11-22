@@ -90,6 +90,11 @@ const ProfileDashboard = () => {
                 <p className="text-sm text-medical-gray-600">
                   {isViewingOther ? 'Recognized Person Profile' : 'Medical Profile Dashboard'}
                 </p>
+                {profile?.id && (
+                  <p className="text-xs text-medical-gray-500 font-mono">
+                    ID: {profile.id.substring(0, 8).toUpperCase()}
+                  </p>
+                )}
               </div>
             </div>
             <div className="flex gap-3">

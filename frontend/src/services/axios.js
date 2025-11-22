@@ -20,6 +20,13 @@ apiClient.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // Add user ID header for connection endpoints
+    const userId = localStorage.getItem('user_id');
+    if (userId) {
+      config.headers['X-User-ID'] = userId;
+    }
+
     return config;
   },
   (error) => {

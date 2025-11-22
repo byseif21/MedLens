@@ -1,218 +1,216 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { updateRelatives } from '../services/api';
-import RelativeCard from './RelativeCard';
+import {
+  getConnections,
+  createLinkedConnection,
+  createExternalContact,
+  updateConnection,
+  deleteConnection,
+} from '../services/api';
+import ConnectionCard from './ConnectionCard';
+import AddConnectionModal from './AddConnectionModal';
 import LoadingSpinner from './LoadingSpinner';
 
-const Connections = ({ profile, onUpdate }) => {
-  const [isEditing, setIsEditing] = useState(false);
+const Connections = ({ onUpdate }) => {
   const [loading, setLoading] = useState(false);
-  const [relatives, setRelatives] = useState(profile?.relatives || []);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [editingRelative, setEditingRelative] = useState(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    relation: '',
-    phone: '',
-    address: '',
-  });
+  const [linkedConnections, setLinkedConnections] = useState([]);
+  const [externalContacts, setExternalContacts] = useState([]);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingContact, setEditingContact] = useState(null);
+  const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  const userId = localStorage.getItem('user_id');
 
-  const handleAddRelative = () => {
-    if (!formData.name || !formData.relation || !formData.phone) {
-      alert('Please fill in all required fields');
-      return;
-    }
+  // Fetch connections on mount
+  useEffect(() => {
+    fetchConnections();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-    const newRelative = {
-      id: Date.now(),
-      ...formData,
-    };
-
-    setRelatives([...relatives, newRelative]);
-    setFormData({ name: '', relation: '', phone: '', address: '' });
-    setShowAddForm(false);
-  };
-
-  const handleEditRelative = (relative) => {
-    setEditingRelative(relative);
-    setFormData(relative);
-    setShowAddForm(true);
-  };
-
-  const handleUpdateRelative = () => {
-    if (!formData.name || !formData.relation || !formData.phone) {
-      alert('Please fill in all required fields');
-      return;
-    }
-
-    setRelatives(
-      relatives.map((r) => (r.id === editingRelative.id ? { ...editingRelative, ...formData } : r))
-    );
-    setFormData({ name: '', relation: '', phone: '', address: '' });
-    setEditingRelative(null);
-    setShowAddForm(false);
-  };
-
-  const handleDeleteRelative = (id) => {
-    if (confirm('Are you sure you want to delete this connection?')) {
-      setRelatives(relatives.filter((r) => r.id !== id));
-    }
-  };
-
-  const handleSave = async () => {
+  const fetchConnections = async () => {
     setLoading(true);
-    const userId = localStorage.getItem('user_id');
-    const result = await updateRelatives(userId, relatives);
+    setError(null);
 
-    if (result.success) {
-      setIsEditing(false);
-      onUpdate();
-    } else {
-      alert('Failed to update: ' + result.error);
+    try {
+      const result = await getConnections(userId);
+
+      if (result.success) {
+        setLinkedConnections(result.data.linked_connections || []);
+        setExternalContacts(result.data.external_contacts || []);
+      } else {
+        setError(result.error || 'Failed to load connections. Please try again.');
+      }
+    } catch (err) {
+      console.error('Error fetching connections:', err);
+      setError('An unexpected error occurred while loading connections. Please refresh the page.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  const handleCancel = () => {
-    setRelatives(profile?.relatives || []);
-    setIsEditing(false);
-    setShowAddForm(false);
-    setEditingRelative(null);
-    setFormData({ name: '', relation: '', phone: '', address: '' });
+  const handleAddConnection = async (connectionData) => {
+    setError(null);
+
+    try {
+      let result;
+
+      if (connectionData.type === 'linked') {
+        result = await createLinkedConnection({
+          connected_user_id: connectionData.connected_user_id,
+          relationship: connectionData.relationship,
+        });
+      } else {
+        result = await createExternalContact({
+          name: connectionData.name,
+          phone: connectionData.phone,
+          address: connectionData.address,
+          relationship: connectionData.relationship,
+        });
+      }
+
+      if (result.success) {
+        setSuccessMessage('Connection added successfully!');
+        setShowAddModal(false);
+        setEditingContact(null);
+        await fetchConnections();
+        if (onUpdate) onUpdate();
+
+        // Clear success message after 3 seconds
+        setTimeout(() => setSuccessMessage(null), 3000);
+      } else {
+        setError(result.error || 'Failed to add connection. Please try again.');
+        throw new Error(result.error);
+      }
+    } catch (err) {
+      console.error('Error adding connection:', err);
+      if (!error) {
+        setError('An unexpected error occurred. Please check your connection and try again.');
+      }
+    }
   };
 
-  if (loading) {
+  const handleEditContact = (contact) => {
+    setEditingContact(contact);
+    setShowAddModal(true);
+  };
+
+  const handleUpdateContact = async (contactId, updatedData) => {
+    setError(null);
+
+    try {
+      const result = await updateConnection(contactId, updatedData);
+
+      if (result.success) {
+        setSuccessMessage('Connection updated successfully!');
+        setEditingContact(null);
+        setShowAddModal(false);
+        await fetchConnections();
+        if (onUpdate) onUpdate();
+
+        setTimeout(() => setSuccessMessage(null), 3000);
+      } else {
+        setError(result.error || 'Failed to update connection. Please try again.');
+        throw new Error(result.error);
+      }
+    } catch (err) {
+      console.error('Error updating connection:', err);
+      if (!error) {
+        setError('An unexpected error occurred. Please check your connection and try again.');
+      }
+    }
+  };
+
+  const handleRemoveConnection = async (connection) => {
+    // Custom confirmation dialog
+    const confirmDelete = window.confirm(
+      `Are you sure you want to remove ${connection.name || connection.connected_user?.name}?\n\nThis action cannot be undone.`
+    );
+
+    if (!confirmDelete) {
+      return;
+    }
+
+    setError(null);
+
+    try {
+      const result = await deleteConnection(connection.id);
+
+      if (result.success) {
+        setSuccessMessage('Connection removed successfully!');
+        await fetchConnections();
+        if (onUpdate) onUpdate();
+
+        setTimeout(() => setSuccessMessage(null), 3000);
+      } else {
+        setError(result.error || 'Failed to remove connection. Please try again.');
+        throw new Error(result.error);
+      }
+    } catch (err) {
+      console.error('Error removing connection:', err);
+      if (!error) {
+        setError('An unexpected error occurred. Please check your connection and try again.');
+      }
+    }
+  };
+
+  const allConnectionsCount = linkedConnections.length + externalContacts.length;
+
+  if (loading && allConnectionsCount === 0) {
     return (
       <div className="medical-card">
-        <LoadingSpinner text="Saving..." />
+        <LoadingSpinner text="Loading connections..." />
       </div>
     );
   }
 
   return (
     <div className="medical-card">
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-semibold">Family Connections</h2>
-        {!isEditing ? (
-          <button
-            onClick={() => setIsEditing(true)}
-            className="btn-medical-secondary text-sm px-4 py-2"
-          >
-            Edit
-          </button>
-        ) : (
-          <div className="flex gap-2">
-            <button onClick={handleCancel} className="btn-medical-secondary text-sm px-4 py-2">
-              Cancel
-            </button>
-            <button onClick={handleSave} className="btn-medical-primary text-sm px-4 py-2">
-              Save
-            </button>
-          </div>
-        )}
-      </div>
-
-      {isEditing && !showAddForm && (
         <button
-          onClick={() => setShowAddForm(true)}
-          className="w-full mb-6 py-3 border-2 border-dashed border-medical-primary text-medical-primary rounded-lg hover:bg-medical-light transition-colors flex items-center justify-center gap-2"
+          onClick={() => setShowAddModal(true)}
+          className="btn-medical-primary text-sm px-4 py-2 flex items-center gap-2"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          Add New Connection
+          Add Connection
         </button>
-      )}
+      </div>
 
-      {showAddForm && (
-        <div className="mb-6 p-6 bg-medical-light border border-medical-primary/20 rounded-lg">
-          <h3 className="font-semibold text-medical-dark mb-4">
-            {editingRelative ? 'Edit Connection' : 'Add New Connection'}
-          </h3>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <label className="label-medical">Name *</label>
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                className="input-medical"
-                placeholder="Full name"
-              />
-            </div>
-            <div>
-              <label className="label-medical">Relation *</label>
-              <select
-                name="relation"
-                value={formData.relation}
-                onChange={handleChange}
-                className="input-medical"
-              >
-                <option value="">Select relation</option>
-                <option value="Father">Father</option>
-                <option value="Mother">Mother</option>
-                <option value="Brother">Brother</option>
-                <option value="Sister">Sister</option>
-                <option value="Spouse">Spouse</option>
-                <option value="Son">Son</option>
-                <option value="Daughter">Daughter</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-            <div>
-              <label className="label-medical">Phone *</label>
-              <input
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                className="input-medical"
-                placeholder="Phone number"
-              />
-            </div>
-            <div>
-              <label className="label-medical">Address (Optional)</label>
-              <input
-                type="text"
-                name="address"
-                value={formData.address}
-                onChange={handleChange}
-                className="input-medical"
-                placeholder="Address"
-              />
-            </div>
-          </div>
-          <div className="flex gap-2 mt-4">
-            <button
-              onClick={() => {
-                setShowAddForm(false);
-                setEditingRelative(null);
-                setFormData({ name: '', relation: '', phone: '', address: '' });
-              }}
-              className="btn-medical-secondary text-sm px-4 py-2"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={editingRelative ? handleUpdateRelative : handleAddRelative}
-              className="btn-medical-primary text-sm px-4 py-2"
-            >
-              {editingRelative ? 'Update' : 'Add'}
-            </button>
-          </div>
+      {/* Success Message */}
+      {successMessage && (
+        <div className="mb-4 p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg flex items-center gap-2">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+          {successMessage}
         </div>
       )}
 
-      <div className="grid md:grid-cols-2 gap-4">
-        {relatives.length === 0 ? (
-          <div className="md:col-span-2 text-center py-12 text-medical-gray-500">
+      {/* Error Message */}
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-800 rounded-lg flex items-center gap-2">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          {error}
+        </div>
+      )}
+
+      {/* Linked Connections Section */}
+      {linkedConnections.length > 0 && (
+        <div className="mb-8">
+          <h3 className="text-lg font-semibold text-medical-dark mb-4 flex items-center gap-2">
             <svg
-              className="w-16 h-16 mx-auto mb-4 text-medical-gray-300"
+              className="w-5 h-5 text-medical-primary"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -221,29 +219,99 @@ const Connections = ({ profile, onUpdate }) => {
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={2}
-                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
               />
             </svg>
-            <p>No connections added yet</p>
+            Linked Connections ({linkedConnections.length})
+          </h3>
+          <div className="grid md:grid-cols-2 gap-4">
+            {linkedConnections.map((connection) => (
+              <ConnectionCard
+                key={connection.id}
+                connection={connection}
+                type="linked"
+                onRemove={handleRemoveConnection}
+                showActions={true}
+              />
+            ))}
           </div>
-        ) : (
-          relatives.map((relative) => (
-            <RelativeCard
-              key={relative.id}
-              relative={relative}
-              onEdit={handleEditRelative}
-              onDelete={handleDeleteRelative}
-              isEditing={isEditing}
+        </div>
+      )}
+
+      {/* External Contacts Section */}
+      {externalContacts.length > 0 && (
+        <div className="mb-8">
+          <h3 className="text-lg font-semibold text-medical-dark mb-4 flex items-center gap-2">
+            <svg
+              className="w-5 h-5 text-medical-gray-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+              />
+            </svg>
+            External Contacts ({externalContacts.length})
+          </h3>
+          <div className="grid md:grid-cols-2 gap-4">
+            {externalContacts.map((contact) => (
+              <ConnectionCard
+                key={contact.id}
+                connection={contact}
+                type="external"
+                onEdit={handleEditContact}
+                onRemove={handleRemoveConnection}
+                showActions={true}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {allConnectionsCount === 0 && !loading && (
+        <div className="text-center py-12 text-medical-gray-500">
+          <svg
+            className="w-16 h-16 mx-auto mb-4 text-medical-gray-300"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
             />
-          ))
-        )}
-      </div>
+          </svg>
+          <p className="mb-4">No connections added yet</p>
+          <button onClick={() => setShowAddModal(true)} className="btn-medical-primary px-6 py-2">
+            Add Your First Connection
+          </button>
+        </div>
+      )}
+
+      {/* Add/Edit Connection Modal */}
+      <AddConnectionModal
+        isOpen={showAddModal}
+        onClose={() => {
+          setShowAddModal(false);
+          setEditingContact(null);
+        }}
+        onAddConnection={handleAddConnection}
+        onUpdateConnection={handleUpdateContact}
+        editingContact={editingContact}
+        existingConnections={linkedConnections.map((c) => c.connected_user?.id).filter(Boolean)}
+      />
     </div>
   );
 };
 
 Connections.propTypes = {
-  profile: PropTypes.object,
   onUpdate: PropTypes.func.isRequired,
 };
 

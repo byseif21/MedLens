@@ -25,11 +25,11 @@ export const loginWithFace = async (formData) => {
 };
 
 /**
- * Register a new person with face image
+ * Register a new user with face image
  * @param {FormData} formData - Form data containing name, age, nationality, etc.
  * @returns {Promise} API response
  */
-export const registerPerson = async (formData) => {
+export const registerUser = async (formData) => {
   try {
     const response = await apiClient.post('/api/register', formData, {
       headers: {
@@ -170,6 +170,127 @@ export const checkHealth = async () => {
     return {
       success: false,
       error: error.response?.data?.error || error.message || 'Health check failed',
+    };
+  }
+};
+
+/**
+ * Search for users by name or ID
+ * @param {string} query - Search query
+ * @returns {Promise} API response with matching users
+ */
+export const searchUsers = async (query) => {
+  try {
+    const response = await apiClient.get(`/api/users/search?q=${encodeURIComponent(query)}`);
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.error || error.message || 'Search failed',
+    };
+  }
+};
+
+/**
+ * Get all connections for a user (linked and external)
+ * @param {string} userId - User ID
+ * @returns {Promise} API response with connections
+ */
+export const getConnections = async (userId) => {
+  try {
+    const response = await apiClient.get(`/api/connections/${userId}`);
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.error || error.message || 'Failed to fetch connections',
+    };
+  }
+};
+
+/**
+ * Create a linked connection to another user
+ * @param {Object} data - Connection data {connected_user_id, relationship}
+ * @returns {Promise} API response
+ */
+export const createLinkedConnection = async (data) => {
+  try {
+    const response = await apiClient.post('/api/connections/linked', data);
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.error || error.message || 'Failed to create connection',
+    };
+  }
+};
+
+/**
+ * Create an external contact
+ * @param {Object} data - Contact data {name, phone, address, relationship}
+ * @returns {Promise} API response
+ */
+export const createExternalContact = async (data) => {
+  try {
+    const response = await apiClient.post('/api/connections/external', data);
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.error || error.message || 'Failed to create contact',
+    };
+  }
+};
+
+/**
+ * Update a connection
+ * @param {string} connectionId - Connection ID
+ * @param {Object} data - Updated data
+ * @returns {Promise} API response
+ */
+export const updateConnection = async (connectionId, data) => {
+  try {
+    const response = await apiClient.put(`/api/connections/${connectionId}`, data);
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.error || error.message || 'Failed to update connection',
+    };
+  }
+};
+
+/**
+ * Delete a connection
+ * @param {string} connectionId - Connection ID
+ * @returns {Promise} API response
+ */
+export const deleteConnection = async (connectionId) => {
+  try {
+    const response = await apiClient.delete(`/api/connections/${connectionId}`);
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.error || error.message || 'Failed to delete connection',
     };
   }
 };

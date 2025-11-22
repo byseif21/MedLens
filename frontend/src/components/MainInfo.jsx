@@ -130,13 +130,14 @@ const MainInfo = ({ profile, onUpdate, readOnly = false }) => {
         </div>
 
         <div className="md:col-span-2">
-          <label className="label-medical">ID Number</label>
+          <label className="label-medical">Government ID</label>
           <input
             type="text"
             name="id_number"
             value={formData.id_number}
             onChange={handleChange}
             disabled={!isEditing}
+            placeholder="National ID, Passport, or Driver's License"
             className="input-medical disabled:bg-medical-gray-50 disabled:cursor-not-allowed"
           />
         </div>
