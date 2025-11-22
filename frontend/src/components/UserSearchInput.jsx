@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { searchUsers } from '../services/api';
 
-const UserSearchInput = ({ onUserSelect, selectedUser, existingConnections }) => {
+const UserSearchInput = ({ onUserSelect, selectedUser, currentUserId, existingConnections }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -10,34 +10,41 @@ const UserSearchInput = ({ onUserSelect, selectedUser, existingConnections }) =>
   const [hasSearched, setHasSearched] = useState(false);
 
   // Debounced search function
-  const performSearch = useCallback(async (query) => {
-    if (query.length < 2) {
-      setSearchResults([]);
-      setHasSearched(false);
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-    setHasSearched(true);
-
-    try {
-      const result = await searchUsers(query);
-
-      if (result.success) {
-        setSearchResults(result.data.users || []);
-      } else {
-        setError(result.error || 'Search failed. Please try again.');
+  const performSearch = useCallback(
+    async (query) => {
+      if (query.length < 2) {
         setSearchResults([]);
+        setHasSearched(false);
+        return;
       }
-    } catch (err) {
-      console.error('Search error:', err);
-      setError('Network error. Please check your connection and try again.');
-      setSearchResults([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+
+      setLoading(true);
+      setError('');
+      setHasSearched(true);
+
+      try {
+        const result = await searchUsers(query);
+
+        if (result.success) {
+          // Filter out current user from results
+          const filteredUsers = (result.data.users || []).filter(
+            (user) => user.id !== currentUserId
+          );
+          setSearchResults(filteredUsers);
+        } else {
+          setError(result.error || 'Search failed. Please try again.');
+          setSearchResults([]);
+        }
+      } catch (err) {
+        console.error('Search error:', err);
+        setError('Network error. Please check your connection and try again.');
+        setSearchResults([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [currentUserId]
+  );
 
   // Debounce effect
   useEffect(() => {
@@ -53,9 +60,8 @@ const UserSearchInput = ({ onUserSelect, selectedUser, existingConnections }) =>
   };
 
   const isUserConnected = (userId) => {
-    return existingConnections.some(
-      (conn) => conn.connected_user?.id === userId || conn.connected_user_id === userId
-    );
+    // existingConnections is an array of user IDs (strings)
+    return existingConnections.includes(userId);
   };
 
   const handleSelectUser = (user) => {
@@ -213,11 +219,13 @@ const UserSearchInput = ({ onUserSelect, selectedUser, existingConnections }) =>
 UserSearchInput.propTypes = {
   onUserSelect: PropTypes.func.isRequired,
   selectedUser: PropTypes.object,
+  currentUserId: PropTypes.string,
   existingConnections: PropTypes.array,
 };
 
 UserSearchInput.defaultProps = {
   selectedUser: null,
+  currentUserId: null,
   existingConnections: [],
 };
 

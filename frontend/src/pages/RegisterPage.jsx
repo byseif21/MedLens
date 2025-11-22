@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import MultiFaceCapture from '../components/MultiFaceCapture';
 import FaceUploader from '../components/FaceUploader';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { registerPerson } from '../services/api';
+import { registerUser } from '../services/api';
 
 const RegisterPage = () => {
   const [step, setStep] = useState(1); // 1: info, 2: face
@@ -81,7 +81,7 @@ const RegisterPage = () => {
         });
       }
 
-      const result = await registerPerson(formDataToSend);
+      const result = await registerUser(formDataToSend);
 
       if (result.success) {
         alert('Registration successful! You can now login.');

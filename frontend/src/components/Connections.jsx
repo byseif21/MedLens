@@ -305,6 +305,7 @@ const Connections = ({ onUpdate }) => {
         onAddConnection={handleAddConnection}
         onUpdateConnection={handleUpdateContact}
         editingContact={editingContact}
+        currentUserId={userId}
         existingConnections={linkedConnections.map((c) => c.connected_user?.id).filter(Boolean)}
       />
     </div>

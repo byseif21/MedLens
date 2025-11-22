@@ -10,6 +10,7 @@ const AddConnectionModal = ({
   onAddConnection,
   onUpdateConnection,
   editingContact,
+  currentUserId,
   existingConnections,
 }) => {
   const [activeTab, setActiveTab] = useState('search'); // 'search' or 'external'
@@ -184,6 +185,7 @@ const AddConnectionModal = ({
               <UserSearchInput
                 onUserSelect={handleUserSelect}
                 selectedUser={selectedUser}
+                currentUserId={currentUserId}
                 existingConnections={existingConnections}
               />
 
@@ -248,6 +250,7 @@ AddConnectionModal.propTypes = {
   onAddConnection: PropTypes.func.isRequired,
   onUpdateConnection: PropTypes.func,
   editingContact: PropTypes.object,
+  currentUserId: PropTypes.string,
   existingConnections: PropTypes.array,
 };
 
