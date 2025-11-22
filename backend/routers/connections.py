@@ -1,9 +1,10 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Header
 from pydantic import BaseModel
 from typing import List, Optional
 import re
 from services.storage_service import get_supabase_service
-from routers.auth import get_current_user
+
+# TODO: Replace X-User-ID header auth with proper JWT (Depends(get_current_user))
 
 router = APIRouter(prefix="/api/connections", tags=["connections"])
 
@@ -68,7 +69,7 @@ class CreateLinkedConnectionResponse(BaseModel):
 @router.post("/linked", response_model=CreateLinkedConnectionResponse)
 async def create_linked_connection(
     request: CreateLinkedConnectionRequest,
-    current_user_id: str = Depends(get_current_user)
+    x_user_id: str = Header(None, alias="X-User-ID")
 ):
     """
     Create a bidirectional linked connection between two registered users.
@@ -83,6 +84,14 @@ async def create_linked_connection(
     - No self-connections
     """
     supabase = get_supabase_service()
+    
+    if not x_user_id:
+        raise HTTPException(
+            status_code=401,
+            detail="User ID is required. Please log in again."
+        )
+    
+    current_user_id = x_user_id
     
     try:
         # Validate relationship type
@@ -108,12 +117,17 @@ async def create_linked_connection(
             )
         
         # Check for duplicate connection (either direction)
-        existing_connection = supabase.client.table('user_connections').select('id').or_(
-            f"and(user_id.eq.{current_user_id},connected_user_id.eq.{request.connected_user_id}),"
-            f"and(user_id.eq.{request.connected_user_id},connected_user_id.eq.{current_user_id})"
-        ).execute()
+        # Check if current user already has a connection to the target user
+        existing_forward = supabase.client.table('user_connections').select('id').eq(
+            'user_id', current_user_id
+        ).eq('connected_user_id', request.connected_user_id).execute()
         
-        if existing_connection.data:
+        # Check if target user already has a connection to current user
+        existing_reverse = supabase.client.table('user_connections').select('id').eq(
+            'user_id', request.connected_user_id
+        ).eq('connected_user_id', current_user_id).execute()
+        
+        if existing_forward.data or existing_reverse.data:
             raise HTTPException(
                 status_code=409,
                 detail="Connection already exists between these users"
@@ -162,7 +176,7 @@ async def create_linked_connection(
 @router.post("/external", response_model=CreateExternalContactResponse)
 async def create_external_contact(
     request: CreateExternalContactRequest,
-    current_user_id: str = Depends(get_current_user)
+    x_user_id: str = Header(None, alias="X-User-ID")
 ):
     """
     Create an external contact (person not registered in the system).
@@ -175,6 +189,14 @@ async def create_external_contact(
     Saves to relatives table with is_external = TRUE
     """
     supabase = get_supabase_service()
+    
+    if not x_user_id:
+        raise HTTPException(
+            status_code=401,
+            detail="User ID is required. Please log in again."
+        )
+    
+    current_user_id = x_user_id
     
     try:
         # Validate required fields
@@ -255,7 +277,7 @@ class LinkedConnection(BaseModel):
     created_at: str
 
 class ExternalContact(BaseModel):
-    id: int
+    id: str
     name: str
     phone: str
     address: Optional[str]
@@ -335,16 +357,21 @@ async def get_all_connections(user_id: str):
         
         if external_response.data:
             for contact in external_response.data:
-                external_contacts.append(
-                    ExternalContact(
-                        id=contact['id'],
-                        name=contact['name'],
-                        phone=contact['phone'],
-                        address=contact.get('address'),
-                        relationship=contact['relation'],
-                        created_at=contact.get('created_at')
+                try:
+                    external_contacts.append(
+                        ExternalContact(
+                            id=contact['id'],
+                            name=contact['name'],
+                            phone=contact['phone'],
+                            address=contact.get('address'),
+                            relationship=contact['relation'],
+                            created_at=contact.get('created_at')
+                        )
                     )
-                )
+                except Exception as e:
+                    print(f"Error processing external contact {contact.get('id')}: {e}")
+                    print(f"Contact data: {contact}")
+                    continue
         
         return GetConnectionsResponse(
             linked_connections=linked_connections,
@@ -364,7 +391,7 @@ async def get_all_connections(user_id: str):
 async def update_linked_connection(
     connection_id: str,
     request: UpdateLinkedConnectionRequest,
-    current_user_id: str = Depends(get_current_user)
+    x_user_id: str = Header(None, alias="X-User-ID")
 ):
     """
     Update a linked connection's relationship type.
@@ -376,6 +403,14 @@ async def update_linked_connection(
     Updates both bidirectional connection records.
     """
     supabase = get_supabase_service()
+    
+    if not x_user_id:
+        raise HTTPException(
+            status_code=401,
+            detail="User ID is required. Please log in again."
+        )
+    
+    current_user_id = x_user_id
     
     try:
         # Find the linked connection
@@ -434,9 +469,9 @@ async def update_linked_connection(
 
 @router.put("/external/{contact_id}", response_model=UpdateConnectionResponse)
 async def update_external_contact(
-    contact_id: int,
+    contact_id: str,
     request: UpdateExternalContactRequest,
-    current_user_id: str = Depends(get_current_user)
+    x_user_id: str = Header(None, alias="X-User-ID")
 ):
     """
     Update an external contact's information.
@@ -451,6 +486,14 @@ async def update_external_contact(
     All fields are optional - only provided fields will be updated.
     """
     supabase = get_supabase_service()
+    
+    if not x_user_id:
+        raise HTTPException(
+            status_code=401,
+            detail="User ID is required. Please log in again."
+        )
+    
+    current_user_id = x_user_id
     
     try:
         # Find the external contact
@@ -530,7 +573,7 @@ async def update_external_contact(
 @router.delete("/{connection_id}", response_model=DeleteConnectionResponse)
 async def delete_connection(
     connection_id: str,
-    current_user_id: str = Depends(get_current_user)
+    x_user_id: str = Header(None, alias="X-User-ID")
 ):
     """
     Delete a connection (either linked or external).
@@ -544,6 +587,14 @@ async def delete_connection(
     Validates ownership before allowing deletion.
     """
     supabase = get_supabase_service()
+    
+    if not x_user_id:
+        raise HTTPException(
+            status_code=401,
+            detail="User ID is required. Please log in again."
+        )
+    
+    current_user_id = x_user_id
     
     try:
         # First, try to find as a linked connection (UUID format)
@@ -578,12 +629,11 @@ async def delete_connection(
             # Not a linked connection, continue to check external
             pass
         
-        # Try to find as an external contact (integer ID)
+        # Try to find as an external contact (UUID string)
         try:
-            contact_id = int(connection_id)
             external_check = supabase.client.table('relatives').select(
                 'id, user_id'
-            ).eq('id', contact_id).eq('is_external', True).execute()
+            ).eq('id', connection_id).eq('is_external', True).execute()
             
             if external_check.data:
                 contact = external_check.data[0]
@@ -596,14 +646,14 @@ async def delete_connection(
                     )
                 
                 # Delete the external contact
-                supabase.client.table('relatives').delete().eq('id', contact_id).execute()
+                supabase.client.table('relatives').delete().eq('id', connection_id).execute()
                 
                 return DeleteConnectionResponse(
                     success=True,
                     message="Connection deleted successfully"
                 )
-        except ValueError:
-            # Not a valid integer, skip external contact check
+        except Exception:
+            # Not an external contact, continue
             pass
         
         # Connection not found in either table

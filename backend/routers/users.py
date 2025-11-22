@@ -28,63 +28,64 @@ async def search_users(
     """
     supabase = get_supabase_service()
     
+    # Validate query length
+    if len(q.strip()) < 2:
+        raise HTTPException(
+            status_code=400, 
+            detail="Search query must be at least 2 characters long"
+        )
+    
+    query = q.strip().lower()
+    
+    all_users = {}
+    
+    # Search by name (case-insensitive)
     try:
-        # Validate query length
-        if len(q.strip()) < 2:
-            raise HTTPException(
-                status_code=400, 
-                detail="Search query must be at least 2 characters long"
-            )
-        
-        query = q.strip()
-        
-        # Build the query - search by name (case-insensitive) or ID
-        # Using ilike for case-insensitive search on name
-        # We'll do two separate queries and merge results to handle OR logic
-        
-        # Search by name (case-insensitive)
-        name_results = supabase.client.table('users').select('id, name, email').ilike('name', f'%{query}%').limit(20).execute()
-        
-        # Search by ID (partial match)
-        id_results = supabase.client.table('users').select('id, name, email').ilike('id', f'%{query}%').limit(20).execute()
-        
-        # Merge results and remove duplicates using a dictionary
-        all_users = {}
-        
+        name_results = supabase.client.table('users').select('id, name, email').ilike('name', f'%{query}%').limit(50).execute()
         if name_results.data:
             for user in name_results.data:
                 all_users[user['id']] = user
-        
-        if id_results.data:
-            for user in id_results.data:
-                all_users[user['id']] = user
-        
-        # Convert to list
-        users_list = list(all_users.values())
-        
-        # Exclude current user if provided
-        if current_user_id:
-            users_list = [user for user in users_list if user['id'] != current_user_id]
-        
-        # Limit to 20 results
-        users_list = users_list[:20]
-        
-        # Convert to response model
-        search_results = [
-            UserSearchResult(
-                id=user['id'],
-                name=user['name'],
-                email=user['email']
-            )
-            for user in users_list
-        ]
-        
-        return UserSearchResponse(users=search_results)
-    
-    except HTTPException:
-        raise
     except Exception as e:
-        raise HTTPException(
-            status_code=500, 
-            detail=f"User search failed: {str(e)}"
+        print(f"Name search error: {e}")
+    
+    # Search by email (case-insensitive)
+    try:
+        email_results = supabase.client.table('users').select('id, name, email').ilike('email', f'%{query}%').limit(50).execute()
+        if email_results.data:
+            for user in email_results.data:
+                all_users[user['id']] = user
+    except Exception as e:
+        print(f"Email search error: {e}")
+    
+    # Search by ID - fetch all users and filter by first 8 chars of UUID
+    try:
+        all_users_result = supabase.client.table('users').select('id, name, email').limit(1000).execute()
+        if all_users_result.data:
+            for user in all_users_result.data:
+                # Check if query matches the first 8 characters of the UUID
+                if user['id'].lower().startswith(query):
+                    all_users[user['id']] = user
+    except Exception as e:
+        print(f"ID search error: {e}")
+    
+    # Convert to list
+    users_list = list(all_users.values())
+    
+    # Exclude current user if provided
+    if current_user_id:
+        users_list = [user for user in users_list if user['id'] != current_user_id]
+    
+    # Limit to 20 results
+    users_list = users_list[:20]
+    
+    # Convert to response model
+    search_results = [
+        UserSearchResult(
+            id=user['id'],
+            name=user['name'],
+            email=user['email']
         )
+        for user in users_list
+    ]
+    
+    return UserSearchResponse(users=search_results)
