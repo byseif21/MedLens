@@ -1,17 +1,34 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { supabase } from '../services/supabase';
+import { getProfile } from '../services/api';
+import ProfileAvatar from './ProfileAvatar';
 import '../styles/glassmorphism.css';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [user, setUser] = useState(null);
+  const [profileData, setProfileData] = useState(null);
   const location = useLocation();
+
+  const fetchProfileData = async (userId) => {
+    try {
+      const result = await getProfile(userId);
+      if (result.success) {
+        setProfileData(result.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch profile data:', error);
+    }
+  };
 
   useEffect(() => {
     // Check current auth status
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchProfileData(session.user.id);
+      }
     });
 
     // Listen for auth changes
@@ -19,6 +36,11 @@ const Navbar = () => {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchProfileData(session.user.id);
+      } else {
+        setProfileData(null);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -97,6 +119,12 @@ const Navbar = () => {
               <div className="ml-4 flex items-center space-x-2">
                 {user ? (
                   <>
+                    <ProfileAvatar
+                      imageUrl={profileData?.profile_picture_url}
+                      userName={user.email}
+                      size="sm"
+                      className="mr-2"
+                    />
                     <span className="text-sm text-gray-400 px-3">{user.email}</span>
                     <button onClick={handleSignOut} className="glass-button text-sm">
                       Sign Out
@@ -182,7 +210,14 @@ const Navbar = () => {
             <div className="pt-4 border-t border-white/10 mt-4">
               {user ? (
                 <>
-                  <div className="px-3 py-2 text-sm text-gray-400">{user.email}</div>
+                  <div className="px-3 py-2 flex items-center space-x-3">
+                    <ProfileAvatar
+                      imageUrl={profileData?.profile_picture_url}
+                      userName={user.email}
+                      size="sm"
+                    />
+                    <span className="text-sm text-gray-400">{user.email}</span>
+                  </div>
                   <button
                     onClick={() => {
                       handleSignOut();

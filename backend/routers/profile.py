@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 from services.storage_service import get_supabase_service
+from services.profile_picture_service import get_profile_picture_url, ProfilePictureError
 from routers.auth import get_current_user
 
 router = APIRouter(prefix="/api/profile", tags=["profile"])
@@ -34,7 +35,7 @@ class RelativesUpdate(BaseModel):
 @router.get("/{user_id}")
 async def get_profile(user_id: str):
     """
-    Get complete user profile including medical info and relatives
+    Get complete user profile including medical info, relatives, and profile picture URL
     """
     supabase = get_supabase_service()
     
@@ -55,10 +56,20 @@ async def get_profile(user_id: str):
         relatives_response = supabase.client.table('relatives').select('*').eq('user_id', user_id).execute()
         relatives = relatives_response.data if relatives_response.data else []
         
+        # Get profile picture URL
+        # If retrieval fails, set to None to maintain backward compatibility
+        profile_picture_url = None
+        try:
+            profile_picture_url = get_profile_picture_url(user_id, supabase.client)
+        except ProfilePictureError as e:
+            # Log error but don't fail the entire request
+            print(f"Warning: Failed to retrieve profile picture for user {user_id}: {str(e)}")
+        
         return {
             **user,
             "medical_info": medical_info,
-            "relatives": relatives
+            "relatives": relatives,
+            "profile_picture_url": profile_picture_url
         }
     
     except HTTPException:
