@@ -3,14 +3,20 @@ import { useNavigate, Link } from 'react-router-dom';
 import FaceCapture from '../components/FaceCapture';
 import FaceUploader from '../components/FaceUploader';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { loginWithFace } from '../services/api';
+import ProfileAvatar from '../components/ProfileAvatar';
+import { useNotifications } from '../components/Notifications.jsx';
+import { confirmFaceLogin, loginWithFace } from '../services/api';
+import { getTraditionalLoginErrorMessage, getSafeLoginErrorMessage } from '../utils/errorHelpers';
 
 const LoginPage = () => {
   const [loginMethod, setLoginMethod] = useState('traditional'); // 'traditional' or 'face'
   const [faceMode, setFaceMode] = useState(null); // 'capture' or 'upload'
+  const [faceIdentifiedUser, setFaceIdentifiedUser] = useState(null);
+  const [facePassword, setFacePassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { notify } = useNotifications();
 
   // Traditional login form
   const [credentials, setCredentials] = useState({
@@ -27,6 +33,11 @@ const LoginPage = () => {
 
     if (!credentials.email || !credentials.password) {
       setError('Please enter both email and password');
+      notify({
+        type: 'warning',
+        title: 'Missing information',
+        message: 'Enter both email and password to continue.',
+      });
       return;
     }
 
@@ -45,10 +56,24 @@ const LoginPage = () => {
         }),
       });
 
-      const data = await response.json();
+      let data = null;
+      try {
+        data = await response.json();
+      } catch {
+        data = null;
+      }
 
       if (!response.ok) {
-        throw new Error(data.detail || 'Login failed');
+        const detail = data?.detail || data?.error || data?.message;
+        const message = getTraditionalLoginErrorMessage({
+          err: null,
+          status: response.status,
+          detail,
+        });
+        notify({ type: 'error', title: 'Login failed', message });
+        setError(message);
+        console.error('Login error:', { status: response.status, detail, data });
+        return;
       }
 
       // Store user data
@@ -57,9 +82,12 @@ const LoginPage = () => {
       localStorage.setItem('auth_token', data.token);
 
       // Redirect to dashboard
+      notify({ type: 'success', title: 'Welcome back', message: 'Signed in successfully.' });
       navigate('/dashboard');
     } catch (err) {
-      setError(err.message || 'Invalid email or password. Please try again.');
+      const message = getTraditionalLoginErrorMessage({ err });
+      notify({ type: 'error', title: 'Login failed', message });
+      setError(message);
       console.error('Login error:', err);
     } finally {
       setLoading(false);
@@ -77,16 +105,78 @@ const LoginPage = () => {
       const result = await loginWithFace(formData);
 
       if (result.success) {
-        localStorage.setItem('user_id', result.data.user_id);
-        localStorage.setItem('user_name', result.data.name);
-        localStorage.setItem('auth_token', result.data.token || 'temp-token');
-        navigate('/dashboard');
+        setFaceIdentifiedUser(result.data);
+        setFacePassword('');
+        notify({
+          type: 'success',
+          title: `Welcome ${result.data?.name || ''}`.trim(),
+          message: 'Please enter your password to finish signing in.',
+        });
       } else {
-        setError(result.error || 'Face not recognized. Please try again or use email login.');
+        const message = getSafeLoginErrorMessage(
+          result.error,
+          'Face not recognized. Please try again or use email login.'
+        );
+        notify({ type: 'error', title: 'Face login failed', message });
+        setError(message);
       }
     } catch (err) {
-      setError('An error occurred during face login. Please try again.');
+      const message = 'An error occurred during face login. Please try again.';
+      notify({ type: 'error', title: 'Face login failed', message });
+      setError(message);
       console.error('Face login error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFaceConfirm = async (e) => {
+    e.preventDefault();
+
+    if (!faceIdentifiedUser?.user_id) {
+      const message = 'Face session expired. Please try again.';
+      notify({ type: 'error', title: 'Face login failed', message });
+      setError(message);
+      setFaceIdentifiedUser(null);
+      setFaceMode(null);
+      return;
+    }
+
+    if (!facePassword) {
+      const message = 'Please enter your password to continue.';
+      notify({ type: 'warning', title: 'Password required', message });
+      setError(message);
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const result = await confirmFaceLogin({
+        userId: faceIdentifiedUser.user_id,
+        password: facePassword,
+      });
+      if (!result.success) {
+        const message = getSafeLoginErrorMessage(
+          result.error,
+          'Invalid password. Please try again.'
+        );
+        notify({ type: 'error', title: 'Login failed', message });
+        setError(message);
+        return;
+      }
+
+      localStorage.setItem('user_id', result.data.user_id);
+      localStorage.setItem('user_name', result.data.name);
+      localStorage.setItem('auth_token', result.data.token);
+      notify({ type: 'success', title: 'Welcome back', message: 'Signed in successfully.' });
+      navigate('/dashboard');
+    } catch (err) {
+      const message = 'Login failed. Please try again.';
+      notify({ type: 'error', title: 'Login failed', message });
+      setError(message);
+      console.error('Face confirm error:', err);
     } finally {
       setLoading(false);
     }
@@ -94,6 +184,8 @@ const LoginPage = () => {
 
   const handleBack = () => {
     setFaceMode(null);
+    setFaceIdentifiedUser(null);
+    setFacePassword('');
     setError('');
   };
 
@@ -128,6 +220,8 @@ const LoginPage = () => {
               onClick={() => {
                 setLoginMethod('traditional');
                 setFaceMode(null);
+                setFaceIdentifiedUser(null);
+                setFacePassword('');
                 setError('');
               }}
               className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${
@@ -141,6 +235,8 @@ const LoginPage = () => {
             <button
               onClick={() => {
                 setLoginMethod('face');
+                setFaceIdentifiedUser(null);
+                setFacePassword('');
                 setError('');
               }}
               className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${
@@ -209,6 +305,62 @@ const LoginPage = () => {
                 </a>
               </div>
             </>
+          ) : faceIdentifiedUser ? (
+            <div>
+              <button
+                onClick={handleBack}
+                className="mb-4 text-medical-primary hover:text-cyan-700 flex items-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
+                  />
+                </svg>
+                Not you? Try again
+              </button>
+
+              <div className="flex flex-col items-center text-center">
+                <ProfileAvatar
+                  imageUrl={faceIdentifiedUser.profile_picture_url}
+                  userName={faceIdentifiedUser.name}
+                  size="lg"
+                  clickable={false}
+                  className="shadow-medical-lg"
+                />
+                <h2 className="text-2xl font-semibold mt-5">{`Welcome ${faceIdentifiedUser.name}`}</h2>
+                <p className="text-medical-gray-600 mt-2">
+                  Face verified. Enter your password to finish signing in.
+                </p>
+              </div>
+
+              <form onSubmit={handleFaceConfirm} className="space-y-4 mt-6">
+                <div>
+                  <label className="label-medical">Password</label>
+                  <input
+                    type="password"
+                    name="facePassword"
+                    value={facePassword}
+                    onChange={(e) => setFacePassword(e.target.value)}
+                    className="input-medical"
+                    placeholder="Enter your password"
+                    autoComplete="current-password"
+                  />
+                </div>
+
+                {error && (
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-red-600 text-sm text-center">{error}</p>
+                  </div>
+                )}
+
+                <button type="submit" className="w-full btn-medical-primary">
+                  Confirm Login
+                </button>
+              </form>
+            </div>
           ) : faceMode === null ? (
             <>
               <h2 className="text-2xl font-semibold text-center mb-2">Login with Face ID</h2>

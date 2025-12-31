@@ -7,6 +7,7 @@ import jwt
 from datetime import datetime, timedelta
 from services.storage_service import get_supabase_service
 from services.face_service import get_face_service
+from services.profile_picture_service import get_profile_picture_url
 from utils.config import get_config
 
 router = APIRouter(prefix="/api", tags=["authentication"])
@@ -23,6 +24,10 @@ class LoginResponse(BaseModel):
     email: str
     token: str
     message: str
+
+class FaceLoginConfirmRequest(BaseModel):
+    user_id: str
+    password: str
 
 def create_access_token(data: dict):
     """Create JWT access token"""
@@ -75,7 +80,7 @@ async def login(credentials: LoginRequest):
 @router.post("/login/face")
 async def login_with_face(image: UploadFile = File(...)):
     """
-    Face ID login - authenticate user by face recognition
+    Face ID identify - identify user by face recognition (no token)
     """
     supabase = get_supabase_service()
     face_service = get_face_service()
@@ -108,22 +113,58 @@ async def login_with_face(image: UploadFile = File(...)):
         
         user = response.data[0]
         
-        # Create access token
-        token = create_access_token({"sub": user['id'], "email": user['email']})
+        profile_picture_url = None
+        try:
+            profile_picture_url = get_profile_picture_url(user['id'], supabase.client)
+        except Exception:
+            profile_picture_url = None
         
         return {
             "user_id": user['id'],
             "name": user['name'],
             "email": user['email'],
-            "token": token,
+            "profile_picture_url": profile_picture_url,
             "confidence": match_result.confidence,
-            "message": "Face authentication successful"
+            "message": "Face identified successfully"
         }
     
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Face login failed: {str(e)}")
+
+@router.post("/login/face/confirm", response_model=LoginResponse)
+async def confirm_face_login(payload: FaceLoginConfirmRequest):
+    """
+    Confirm Face ID login by verifying password and issuing token
+    """
+    supabase = get_supabase_service()
+
+    try:
+        response = supabase.client.table('users').select('*').eq('id', payload.user_id).execute()
+
+        if not response.data or len(response.data) == 0:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        user = response.data[0]
+
+        if not verify_password(payload.password, user['password_hash']):
+            raise HTTPException(status_code=401, detail="Invalid password")
+
+        token = create_access_token({"sub": user['id'], "email": user['email']})
+
+        return LoginResponse(
+            user_id=user['id'],
+            name=user['name'],
+            email=user['email'],
+            token=token,
+            message="Login successful"
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Login failed: {str(e)}")
 
 def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """

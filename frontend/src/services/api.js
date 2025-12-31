@@ -19,7 +19,39 @@ export const loginWithFace = async (formData) => {
   } catch (error) {
     return {
       success: false,
-      error: error.response?.data?.error || error.message || 'Login failed',
+      error:
+        error.response?.data?.detail ||
+        error.response?.data?.error ||
+        error.message ||
+        'Login failed',
+    };
+  }
+};
+
+export const confirmFaceLogin = async ({ userId, password }) => {
+  try {
+    const response = await apiClient.post(
+      '/api/login/face/confirm',
+      {
+        user_id: userId,
+        password,
+      },
+      {
+        skipAuthRedirect: true,
+      }
+    );
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error:
+        error.response?.data?.detail ||
+        error.response?.data?.error ||
+        error.message ||
+        'Login failed',
     };
   }
 };
@@ -260,9 +292,15 @@ export const createExternalContact = async (data) => {
  * @param {Object} data - Updated data
  * @returns {Promise} API response
  */
-export const updateConnection = async (connectionId, data) => {
+export const updateConnection = async (connectionId, data, connectionType) => {
   try {
-    const response = await apiClient.put(`/api/connections/${connectionId}`, data);
+    const type = connectionType || 'external';
+    const endpoint =
+      type === 'linked'
+        ? `/api/connections/linked/${connectionId}`
+        : `/api/connections/external/${connectionId}`;
+
+    const response = await apiClient.put(endpoint, data);
     return {
       success: true,
       data: response.data,
@@ -270,7 +308,11 @@ export const updateConnection = async (connectionId, data) => {
   } catch (error) {
     return {
       success: false,
-      error: error.response?.data?.error || error.message || 'Failed to update connection',
+      error:
+        error.response?.data?.detail ||
+        error.response?.data?.error ||
+        error.message ||
+        'Failed to update connection',
     };
   }
 };
