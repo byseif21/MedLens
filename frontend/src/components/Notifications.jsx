@@ -1,6 +1,5 @@
-import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
-
-const NotificationsContext = createContext(null);
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { NotificationsContext } from '../hooks/useNotifications';
 
 const baseToastClasses =
   'w-full max-w-sm rounded-xl border px-4 py-3 shadow-medical-lg animate-slide-down pointer-events-auto';
@@ -119,12 +118,4 @@ export const NotificationsProvider = ({ children }) => {
       </div>
     </NotificationsContext.Provider>
   );
-};
-
-export const useNotifications = () => {
-  const ctx = useContext(NotificationsContext);
-  if (!ctx) {
-    throw new Error('useNotifications must be used within NotificationsProvider');
-  }
-  return ctx;
 };

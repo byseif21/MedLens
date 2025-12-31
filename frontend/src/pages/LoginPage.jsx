@@ -4,7 +4,7 @@ import FaceCapture from '../components/FaceCapture';
 import FaceUploader from '../components/FaceUploader';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ProfileAvatar from '../components/ProfileAvatar';
-import { useNotifications } from '../components/Notifications.jsx';
+import { useNotifications } from '../hooks/useNotifications';
 import { confirmFaceLogin, loginWithFace } from '../services/api';
 import { getTraditionalLoginErrorMessage, getSafeLoginErrorMessage } from '../utils/errorHelpers';
 
