@@ -21,7 +21,7 @@ const ProfileDashboard = () => {
     const viewingUserId = urlUserId || currentUserId;
 
     if (!currentUserId) {
-      navigate('/login');
+      navigate('/login', { replace: true });
       return;
     }
 
@@ -40,7 +40,8 @@ const ProfileDashboard = () => {
   const handleLogout = () => {
     localStorage.removeItem('user_id');
     localStorage.removeItem('auth_token');
-    navigate('/login');
+    localStorage.removeItem('user_name');
+    navigate('/login', { replace: true });
   };
 
   useEffect(() => {

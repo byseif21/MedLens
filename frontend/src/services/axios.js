@@ -42,7 +42,8 @@ apiClient.interceptors.response.use(
       // Handle unauthorized
       localStorage.removeItem('auth_token');
       localStorage.removeItem('user_id');
-      window.location.href = '/login';
+      localStorage.removeItem('user_name');
+      window.location.replace('/login');
     }
     return Promise.reject(error);
   }

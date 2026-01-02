@@ -83,7 +83,7 @@ const LoginPage = () => {
 
       // Redirect to dashboard
       notify({ type: 'success', title: 'Welcome back', message: 'Signed in successfully.' });
-      navigate('/dashboard');
+      navigate('/dashboard', { replace: true });
     } catch (err) {
       const message = getTraditionalLoginErrorMessage({ err });
       notify({ type: 'error', title: 'Login failed', message });
@@ -171,7 +171,7 @@ const LoginPage = () => {
       localStorage.setItem('user_name', result.data.name);
       localStorage.setItem('auth_token', result.data.token);
       notify({ type: 'success', title: 'Welcome back', message: 'Signed in successfully.' });
-      navigate('/dashboard');
+      navigate('/dashboard', { replace: true });
     } catch (err) {
       const message = 'Login failed. Please try again.';
       notify({ type: 'error', title: 'Login failed', message });
