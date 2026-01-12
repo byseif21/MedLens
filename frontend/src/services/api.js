@@ -377,6 +377,7 @@ export const updateConnection = async (connectionId, data, connectionType) => {
         error.response?.data?.error ||
         error.message ||
         'Failed to update connection',
+      status: error.response?.status,
     };
   }
 };

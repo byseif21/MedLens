@@ -164,8 +164,16 @@ const Connections = () => {
 
         setTimeout(() => setSuccessMessage(null), 3000);
       } else {
-        setError(result.error || 'Failed to update connection. Please try again.');
-        throw new Error(result.error);
+        if (result.status === 404) {
+          setSuccessMessage('This connection no longer exists. It may have been removed.');
+          setEditingContact(null);
+          setShowAddModal(false);
+          await fetchConnections();
+          setTimeout(() => setSuccessMessage(null), 4000);
+        } else {
+          setError(result.error || 'Failed to update connection. Please try again.');
+          throw new Error(result.error);
+        }
       }
     } catch (err) {
       console.error('Error updating connection:', err);
