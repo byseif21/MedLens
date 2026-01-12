@@ -22,6 +22,9 @@ const Connections = () => {
   const [editingContact, setEditingContact] = useState(null);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmTarget, setConfirmTarget] = useState(null);
+  const [confirmBusy, setConfirmBusy] = useState(false);
 
   const userId = localStorage.getItem('user_id');
 
@@ -172,27 +175,26 @@ const Connections = () => {
     }
   };
 
-  const handleRemoveConnection = async (connection) => {
-    // Custom confirmation dialog
-    const confirmDelete = window.confirm(
-      `Are you sure you want to remove ${connection.name || connection.connected_user?.name}?\n\nThis action cannot be undone.`
-    );
+  const handleRemoveConnection = (connection) => {
+    setConfirmTarget(connection);
+    setConfirmOpen(true);
+  };
 
-    if (!confirmDelete) {
-      return;
-    }
-
+  const confirmRemoveConnection = async () => {
+    if (!confirmTarget || confirmBusy) return;
+    setConfirmBusy(true);
     setError(null);
 
     try {
-      const result = await deleteConnection(connection.id);
+      const result = await deleteConnection(confirmTarget.id);
 
       if (result.success) {
         setSuccessMessage(
           'Connection removed successfully! Any pending requests have also been cleared.'
         );
         await fetchConnections();
-
+        setConfirmOpen(false);
+        setConfirmTarget(null);
         setTimeout(() => setSuccessMessage(null), 5000);
       } else {
         setError(result.error || 'Failed to remove connection. Please try again.');
@@ -203,6 +205,8 @@ const Connections = () => {
       if (!error) {
         setError('An unexpected error occurred. Please check your connection and try again.');
       }
+    } finally {
+      setConfirmBusy(false);
     }
   };
 
@@ -413,6 +417,51 @@ const Connections = () => {
         currentUserId={userId}
         existingConnections={linkedConnections.map((c) => c.connected_user?.id).filter(Boolean)}
       />
+      {confirmOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !confirmBusy) {
+              setConfirmOpen(false);
+              setConfirmTarget(null);
+            }
+          }}
+        >
+          <div className="bg-white rounded-lg shadow-medical-lg w-full max-w-md overflow-hidden animate-slide-down">
+            <div className="p-6 border-b border-medical-gray-200">
+              <h3 className="text-xl font-semibold text-medical-dark">Remove Connection</h3>
+              <p className="text-sm text-medical-gray-600 mt-2">
+                Are you sure you want to remove{' '}
+                <span className="font-medium text-medical-dark">
+                  {confirmTarget?.name || confirmTarget?.connected_user?.name}
+                </span>
+                ? This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex justify-end gap-3 p-4">
+              <button
+                onClick={() => {
+                  if (!confirmBusy) {
+                    setConfirmOpen(false);
+                    setConfirmTarget(null);
+                  }
+                }}
+                disabled={confirmBusy}
+                className="btn-medical-secondary px-6 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmRemoveConnection}
+                disabled={confirmBusy}
+                className="btn-medical-primary px-6 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {confirmBusy ? 'Removing...' : 'Remove'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
