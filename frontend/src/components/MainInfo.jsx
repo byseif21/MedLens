@@ -9,6 +9,7 @@ const MainInfo = ({ profile, onUpdate, readOnly = false }) => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: profile?.name || '',
+    phone: profile?.phone || '',
     age: profile?.age || '',
     nationality: profile?.nationality || '',
     gender: profile?.gender || '',
@@ -36,6 +37,7 @@ const MainInfo = ({ profile, onUpdate, readOnly = false }) => {
   const handleCancel = () => {
     setFormData({
       name: profile?.name || '',
+      phone: profile?.phone || '',
       age: profile?.age || '',
       nationality: profile?.nationality || '',
       gender: profile?.gender || '',
@@ -83,6 +85,18 @@ const MainInfo = ({ profile, onUpdate, readOnly = false }) => {
             type="text"
             name="name"
             value={formData.name}
+            onChange={handleChange}
+            disabled={!isEditing}
+            className="input-medical disabled:bg-medical-gray-50 disabled:cursor-not-allowed"
+          />
+        </div>
+
+        <div>
+          <label className="label-medical">Phone Number</label>
+          <input
+            type="tel"
+            name="phone"
+            value={formData.phone}
             onChange={handleChange}
             disabled={!isEditing}
             className="input-medical disabled:bg-medical-gray-50 disabled:cursor-not-allowed"

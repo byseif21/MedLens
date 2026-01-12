@@ -414,6 +414,7 @@ class ConnectedUser(BaseModel):
     id: str
     name: str
     email: str
+    phone: Optional[str] = None
 
 class LinkedConnection(BaseModel):
     id: str
@@ -486,7 +487,8 @@ async def get_all_connections(user_id: str):
                             connected_user=ConnectedUser(
                                 id=user_data['id'],
                                 name=user_data['name'],
-                                email=user_data['email']
+                                email=user_data['email'],
+                                phone=user_data.get('phone')
                             ),
                             relationship=connection['relationship'],
                             created_at=connection['created_at']
