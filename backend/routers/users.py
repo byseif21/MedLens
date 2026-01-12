@@ -9,6 +9,7 @@ class UserSearchResult(BaseModel):
     id: str
     name: str
     email: str
+    connection_status: str = "none" # "none", "connected", "pending_sent", "pending_received"
 
 class UserSearchResponse(BaseModel):
     users: List[UserSearchResult]
@@ -16,15 +17,15 @@ class UserSearchResponse(BaseModel):
 @router.get("/search", response_model=UserSearchResponse)
 async def search_users(
     q: str = Query(..., min_length=2, description="Search query (name or ID)"),
-    current_user_id: str = Query(None, description="Current user ID to exclude from results")
+    current_user_id: str = Query(None, description="Current user ID to exclude from results and check status")
 ):
     """
     Search for users by name or ID.
     
     - **q**: Search query (minimum 2 characters)
-    - **current_user_id**: Optional - ID of current user to exclude from results
+    - **current_user_id**: Optional - ID of current user to exclude from results and check connection status
     
-    Returns up to 20 matching users with id, name, and email only.
+    Returns up to 20 matching users with id, name, email, and connection_status.
     """
     supabase = get_supabase_service()
     
@@ -57,33 +58,48 @@ async def search_users(
     except Exception as e:
         print(f"Email search error: {e}")
     
-    # Search by ID - fetch all users and filter by first 8 chars of UUID
-    try:
-        all_users_result = supabase.client.table('users').select('id, name, email').limit(1000).execute()
-        if all_users_result.data:
-            for user in all_users_result.data:
-                # Check if query matches the first 8 characters of the UUID
-                if user['id'].lower().startswith(query):
-                    all_users[user['id']] = user
-    except Exception as e:
-        print(f"ID search error: {e}")
-    
-    # Convert to list
-    users_list = list(all_users.values())
-    
-    # Exclude current user if provided
-    if current_user_id:
-        users_list = [user for user in users_list if user['id'] != current_user_id]
+    # Convert to list and exclude current user
+    users_list = [user for user in all_users.values() if not current_user_id or user['id'] != current_user_id]
     
     # Limit to 20 results
     users_list = users_list[:20]
+    
+    # Get connection statuses if current_user_id is provided
+    user_statuses = {}
+    if current_user_id and users_list:
+        try:
+            target_ids = [u['id'] for u in users_list]
+            
+            # Check existing connections
+            connections = supabase.client.table('user_connections').select('connected_user_id').eq('user_id', current_user_id).in_('connected_user_id', target_ids).execute()
+            if connections.data:
+                for conn in connections.data:
+                    user_statuses[conn['connected_user_id']] = "connected"
+                
+            # Check pending requests sent BY current user
+            sent_requests = supabase.client.table('connection_requests').select('receiver_id').eq('sender_id', current_user_id).in_('receiver_id', target_ids).eq('status', 'pending').execute()
+            if sent_requests.data:
+                for req in sent_requests.data:
+                    user_statuses[req['receiver_id']] = "pending_sent"
+            
+            # Check pending requests received BY current user
+            received_requests = supabase.client.table('connection_requests').select('sender_id').eq('receiver_id', current_user_id).in_('sender_id', target_ids).eq('status', 'pending').execute()
+            if received_requests.data:
+                for req in received_requests.data:
+                    # Only set if not already set (though should be impossible to have both in pending)
+                    if req['sender_id'] not in user_statuses:
+                        user_statuses[req['sender_id']] = "pending_received"
+        except Exception as e:
+            print(f"Error checking connection statuses: {e}")
+            # Continue with search results even if status check fails
     
     # Convert to response model
     search_results = [
         UserSearchResult(
             id=user['id'],
             name=user['name'],
-            email=user['email']
+            email=user['email'],
+            connection_status=user_statuses.get(user['id'], "none")
         )
         for user in users_list
     ]

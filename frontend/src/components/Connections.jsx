@@ -6,6 +6,9 @@ import {
   createExternalContact,
   updateConnection,
   deleteConnection,
+  getPendingRequests,
+  acceptConnectionRequest,
+  rejectConnectionRequest,
 } from '../services/api';
 import ConnectionCard from './ConnectionCard';
 import AddConnectionModal from './AddConnectionModal';
@@ -15,6 +18,7 @@ const Connections = ({ onUpdate }) => {
   const [loading, setLoading] = useState(false);
   const [linkedConnections, setLinkedConnections] = useState([]);
   const [externalContacts, setExternalContacts] = useState([]);
+  const [pendingRequests, setPendingRequests] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingContact, setEditingContact] = useState(null);
   const [error, setError] = useState(null);
@@ -25,6 +29,7 @@ const Connections = ({ onUpdate }) => {
   // Fetch connections on mount
   useEffect(() => {
     fetchConnections();
+    fetchPendingRequests();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -46,6 +51,51 @@ const Connections = ({ onUpdate }) => {
       setError('An unexpected error occurred while loading connections. Please refresh the page.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPendingRequests = async () => {
+    try {
+      const result = await getPendingRequests();
+      if (result.success) {
+        setPendingRequests(result.data || []);
+      }
+    } catch (err) {
+      console.error('Error fetching pending requests:', err);
+    }
+  };
+
+  const handleAcceptRequest = async (requestId) => {
+    try {
+      const result = await acceptConnectionRequest(requestId);
+      if (result.success) {
+        setSuccessMessage('Connection request accepted!');
+        await fetchConnections();
+        await fetchPendingRequests();
+        if (onUpdate) onUpdate();
+        setTimeout(() => setSuccessMessage(null), 3000);
+      } else {
+        setError(result.error || 'Failed to accept request');
+      }
+    } catch (err) {
+      console.error('Error accepting request:', err);
+      setError('Failed to accept request');
+    }
+  };
+
+  const handleRejectRequest = async (requestId) => {
+    try {
+      const result = await rejectConnectionRequest(requestId);
+      if (result.success) {
+        setSuccessMessage('Connection request rejected');
+        await fetchPendingRequests();
+        setTimeout(() => setSuccessMessage(null), 3000);
+      } else {
+        setError(result.error || 'Failed to reject request');
+      }
+    } catch (err) {
+      console.error('Error rejecting request:', err);
+      setError('Failed to reject request');
     }
   };
 
@@ -202,6 +252,58 @@ const Connections = ({ onUpdate }) => {
             />
           </svg>
           {error}
+        </div>
+      )}
+
+      {/* Pending Requests Section */}
+      {pendingRequests.length > 0 && (
+        <div className="mb-8 p-4 bg-medical-light/30 border border-medical-primary/20 rounded-xl">
+          <h3 className="text-lg font-semibold text-medical-dark mb-4 flex items-center gap-2">
+            <svg
+              className="w-5 h-5 text-medical-primary"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
+              />
+            </svg>
+            Pending Connection Requests ({pendingRequests.length})
+          </h3>
+          <div className="space-y-3">
+            {pendingRequests.map((request) => (
+              <div
+                key={request.id}
+                className="flex items-center justify-between p-3 bg-white border border-medical-gray-200 rounded-lg shadow-sm"
+              >
+                <div>
+                  <p className="font-medium text-medical-dark">{request.sender_name}</p>
+                  <p className="text-xs text-medical-gray-500">{request.sender_email}</p>
+                  <p className="text-sm text-medical-primary font-medium mt-1">
+                    Wants to connect as: {request.relationship}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleAcceptRequest(request.id)}
+                    className="px-3 py-1.5 bg-medical-primary text-white text-sm font-medium rounded-md hover:bg-medical-primary-dark transition-colors"
+                  >
+                    Accept
+                  </button>
+                  <button
+                    onClick={() => handleRejectRequest(request.id)}
+                    className="px-3 py-1.5 bg-medical-gray-100 text-medical-gray-700 text-sm font-medium rounded-md hover:bg-medical-gray-200 transition-colors"
+                  >
+                    Decline
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
