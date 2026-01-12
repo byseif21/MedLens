@@ -106,7 +106,7 @@ async def login_with_face(image: UploadFile = File(...)):
             )
         
         # Get user details from database
-        response = supabase.client.table('users').select('id, name, email').eq('id', match_result.user_id).execute()
+        response = supabase.client.table('users').select('id, name, email, phone, id_number').eq('id', match_result.user_id).execute()
         
         if not response.data or len(response.data) == 0:
             raise HTTPException(status_code=404, detail="User not found")
@@ -123,6 +123,8 @@ async def login_with_face(image: UploadFile = File(...)):
             "user_id": user['id'],
             "name": user['name'],
             "email": user['email'],
+            "phone": user.get('phone'),
+            "id_number": user.get('id_number'),
             "profile_picture_url": profile_picture_url,
             "confidence": match_result.confidence,
             "message": "Face identified successfully"

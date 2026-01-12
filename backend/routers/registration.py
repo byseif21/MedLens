@@ -18,6 +18,7 @@ async def register_user(
     name: str = Form(...),
     email: str = Form(...),
     password: str = Form(...),
+    phone: Optional[str] = Form(None),
     age: Optional[int] = Form(None),
     gender: Optional[str] = Form(None),
     nationality: Optional[str] = Form(None),
@@ -83,6 +84,7 @@ async def register_user(
         user_data = {
             "name": name,
             "email": email,
+            "phone": phone,
             "password_hash": password_hash,
             "age": age,
             "gender": gender,

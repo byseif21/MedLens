@@ -16,6 +16,7 @@ const RegisterPage = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    phone: '',
     password: '',
     age: '',
     nationality: '',
@@ -31,6 +32,7 @@ const RegisterPage = () => {
     if (
       !formData.name ||
       !formData.email ||
+      !formData.phone ||
       !formData.password ||
       !formData.age ||
       !formData.gender
@@ -64,6 +66,7 @@ const RegisterPage = () => {
       const formDataToSend = new FormData();
       formDataToSend.append('name', formData.name);
       formDataToSend.append('email', formData.email);
+      formDataToSend.append('phone', formData.phone);
       formDataToSend.append('password', formData.password);
       formDataToSend.append('age', formData.age);
       formDataToSend.append('nationality', formData.nationality);
@@ -171,6 +174,18 @@ const RegisterPage = () => {
                     onChange={handleChange}
                     className="input-medical"
                     placeholder="your.email@example.com"
+                  />
+                </div>
+
+                <div>
+                  <label className="label-medical">Phone Number *</label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    className="input-medical"
+                    placeholder="e.g. +01234567890"
                   />
                 </div>
 

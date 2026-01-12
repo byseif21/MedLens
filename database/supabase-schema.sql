@@ -9,6 +9,7 @@ CREATE TABLE users (
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     name VARCHAR(255) NOT NULL,
+    phone VARCHAR(50), -- Added phone number for users
     age INTEGER,
     gender VARCHAR(20),
     nationality VARCHAR(100),
