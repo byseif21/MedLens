@@ -122,7 +122,7 @@ const Connections = ({ onUpdate }) => {
   };
 
   const handleRemoveConnection = async (connection) => {
-    // Custom confirmation dialog
+    // TODO: GeneralModal confirm dialog (consistent UX)
     const confirmDelete = window.confirm(
       `Are you sure you want to remove ${connection.name || connection.connected_user?.name}?\n\nThis action cannot be undone.`
     );

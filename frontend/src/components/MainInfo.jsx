@@ -29,6 +29,7 @@ const MainInfo = ({ profile, onUpdate, readOnly = false }) => {
       setIsEditing(false);
       onUpdate();
     } else {
+      // TODO: replace alert with GeneralModal (unified app modal) for error feedback
       alert('Failed to update: ' + result.error);
     }
     setLoading(false);
