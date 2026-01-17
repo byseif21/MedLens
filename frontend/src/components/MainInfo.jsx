@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { updateMainInfo } from '../services/api';
+import { countries } from '../utils/countries';
 import LoadingSpinner from './LoadingSpinner';
 
 const MainInfo = ({ profile, onUpdate, readOnly = false }) => {
@@ -118,14 +119,20 @@ const MainInfo = ({ profile, onUpdate, readOnly = false }) => {
 
         <div>
           <label className="label-medical">Nationality</label>
-          <input
-            type="text"
+          <select
             name="nationality"
             value={formData.nationality}
             onChange={handleChange}
             disabled={!isEditing}
             className="input-medical disabled:bg-medical-gray-50 disabled:cursor-not-allowed"
-          />
+          >
+            <option value="">Select Nationality</option>
+            {countries.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div>

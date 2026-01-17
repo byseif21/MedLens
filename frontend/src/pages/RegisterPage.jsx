@@ -4,6 +4,7 @@ import MultiFaceCapture from '../components/MultiFaceCapture';
 import FaceUploader from '../components/FaceUploader';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { registerUser } from '../services/api';
+import { countries } from '../utils/countries';
 
 const RegisterPage = () => {
   const [step, setStep] = useState(1); // 1: info, 2: face
@@ -234,14 +235,19 @@ const RegisterPage = () => {
 
                 <div>
                   <label className="label-medical">Nationality</label>
-                  <input
-                    type="text"
+                  <select
                     name="nationality"
                     value={formData.nationality}
                     onChange={handleChange}
                     className="input-medical"
-                    placeholder="Your nationality"
-                  />
+                  >
+                    <option value="">Select Nationality</option>
+                    {countries.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
