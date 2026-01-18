@@ -1,30 +1,37 @@
 import { useState, useEffect } from 'react';
-import PropTypes from 'prop-types';
 import {
   getConnections,
   createLinkedConnection,
   createExternalContact,
   updateConnection,
   deleteConnection,
+  getPendingRequests,
+  acceptConnectionRequest,
+  rejectConnectionRequest,
 } from '../services/api';
 import ConnectionCard from './ConnectionCard';
 import AddConnectionModal from './AddConnectionModal';
 import LoadingSpinner from './LoadingSpinner';
 
-const Connections = ({ onUpdate }) => {
+const Connections = () => {
   const [loading, setLoading] = useState(false);
   const [linkedConnections, setLinkedConnections] = useState([]);
   const [externalContacts, setExternalContacts] = useState([]);
+  const [pendingRequests, setPendingRequests] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingContact, setEditingContact] = useState(null);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmTarget, setConfirmTarget] = useState(null);
+  const [confirmBusy, setConfirmBusy] = useState(false);
 
   const userId = localStorage.getItem('user_id');
 
   // Fetch connections on mount
   useEffect(() => {
     fetchConnections();
+    fetchPendingRequests();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -49,6 +56,52 @@ const Connections = ({ onUpdate }) => {
     }
   };
 
+  const fetchPendingRequests = async () => {
+    try {
+      const result = await getPendingRequests();
+      if (result.success) {
+        setPendingRequests(result.data || []);
+      }
+    } catch (err) {
+      console.error('Error fetching pending requests:', err);
+    }
+  };
+
+  const handleAcceptRequest = async (requestId) => {
+    try {
+      const result = await acceptConnectionRequest(requestId);
+      if (result.success) {
+        // TODO: integrate with global notification box instead of local successMessage
+        // setSuccessMessage('Connection request accepted!');
+        await fetchConnections();
+        await fetchPendingRequests();
+        // setTimeout(() => setSuccessMessage(null), 3000);
+      } else {
+        setError(result.error || 'Failed to accept request');
+      }
+    } catch (err) {
+      console.error('Error accepting request:', err);
+      setError('Failed to accept request');
+    }
+  };
+
+  const handleRejectRequest = async (requestId) => {
+    try {
+      const result = await rejectConnectionRequest(requestId);
+      if (result.success) {
+        // TODO: integrate with global notification box instead of local successMessage
+        // setSuccessMessage('Connection request rejected');
+        await fetchPendingRequests();
+        // setTimeout(() => setSuccessMessage(null), 3000);
+      } else {
+        setError(result.error || 'Failed to reject request');
+      }
+    } catch (err) {
+      console.error('Error rejecting request:', err);
+      setError('Failed to reject request');
+    }
+  };
+
   const handleAddConnection = async (connectionData) => {
     setError(null);
 
@@ -70,14 +123,18 @@ const Connections = ({ onUpdate }) => {
       }
 
       if (result.success) {
-        setSuccessMessage('Connection added successfully!');
+        const message =
+          connectionData.type === 'linked'
+            ? 'Connection request sent successfully! Waiting for approval.'
+            : 'Contact added successfully!';
+
+        setSuccessMessage(message);
         setShowAddModal(false);
         setEditingContact(null);
         await fetchConnections();
-        if (onUpdate) onUpdate();
 
         // Clear success message after 3 seconds
-        setTimeout(() => setSuccessMessage(null), 3000);
+        setTimeout(() => setSuccessMessage(null), 5000);
       } else {
         setError(result.error || 'Failed to add connection. Please try again.');
         throw new Error(result.error);
@@ -106,12 +163,19 @@ const Connections = ({ onUpdate }) => {
         setEditingContact(null);
         setShowAddModal(false);
         await fetchConnections();
-        if (onUpdate) onUpdate();
 
         setTimeout(() => setSuccessMessage(null), 3000);
       } else {
-        setError(result.error || 'Failed to update connection. Please try again.');
-        throw new Error(result.error);
+        if (result.status === 404) {
+          setSuccessMessage('This connection no longer exists. It may have been removed.');
+          setEditingContact(null);
+          setShowAddModal(false);
+          await fetchConnections();
+          setTimeout(() => setSuccessMessage(null), 4000);
+        } else {
+          setError(result.error || 'Failed to update connection. Please try again.');
+          throw new Error(result.error);
+        }
       }
     } catch (err) {
       console.error('Error updating connection:', err);
@@ -120,28 +184,29 @@ const Connections = ({ onUpdate }) => {
       }
     }
   };
+  
+// TODO: unify in GeneralModal (consistent UX)
+  const handleRemoveConnection = (connection) => {
+    setConfirmTarget(connection);
+    setConfirmOpen(true);
+  };
 
-  const handleRemoveConnection = async (connection) => {
-    // TODO: GeneralModal confirm dialog (consistent UX)
-    const confirmDelete = window.confirm(
-      `Are you sure you want to remove ${connection.name || connection.connected_user?.name}?\n\nThis action cannot be undone.`
-    );
-
-    if (!confirmDelete) {
-      return;
-    }
-
+  const confirmRemoveConnection = async () => {
+    if (!confirmTarget || confirmBusy) return;
+    setConfirmBusy(true);
     setError(null);
 
     try {
-      const result = await deleteConnection(connection.id);
+      const result = await deleteConnection(confirmTarget.id);
 
       if (result.success) {
-        setSuccessMessage('Connection removed successfully!');
+        setSuccessMessage(
+          'Connection removed successfully! Any pending requests have also been cleared.'
+        );
         await fetchConnections();
-        if (onUpdate) onUpdate();
-
-        setTimeout(() => setSuccessMessage(null), 3000);
+        setConfirmOpen(false);
+        setConfirmTarget(null);
+        setTimeout(() => setSuccessMessage(null), 5000);
       } else {
         setError(result.error || 'Failed to remove connection. Please try again.');
         throw new Error(result.error);
@@ -151,6 +216,8 @@ const Connections = ({ onUpdate }) => {
       if (!error) {
         setError('An unexpected error occurred. Please check your connection and try again.');
       }
+    } finally {
+      setConfirmBusy(false);
     }
   };
 
@@ -202,6 +269,58 @@ const Connections = ({ onUpdate }) => {
             />
           </svg>
           {error}
+        </div>
+      )}
+
+      {/* Pending Requests Section */}
+      {pendingRequests.length > 0 && (
+        <div className="mb-8 p-4 bg-medical-light/30 border border-medical-primary/20 rounded-xl">
+          <h3 className="text-lg font-semibold text-medical-dark mb-4 flex items-center gap-2">
+            <svg
+              className="w-5 h-5 text-medical-primary"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
+              />
+            </svg>
+            Pending Connection Requests ({pendingRequests.length})
+          </h3>
+          <div className="space-y-3">
+            {pendingRequests.map((request) => (
+              <div
+                key={request.id}
+                className="flex items-center justify-between p-3 bg-white border border-medical-gray-200 rounded-lg shadow-sm"
+              >
+                <div>
+                  <p className="font-medium text-medical-dark">{request.sender_name}</p>
+                  <p className="text-xs text-medical-gray-500">{request.sender_email}</p>
+                  <p className="text-sm text-medical-primary font-medium mt-1">
+                    Wants to connect as: {request.relationship}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleAcceptRequest(request.id)}
+                    className="px-3 py-1.5 bg-medical-primary text-white text-sm font-medium rounded-md hover:bg-medical-primary-dark transition-colors"
+                  >
+                    Accept
+                  </button>
+                  <button
+                    onClick={() => handleRejectRequest(request.id)}
+                    className="px-3 py-1.5 bg-medical-gray-100 text-medical-gray-700 text-sm font-medium rounded-md hover:bg-medical-gray-200 transition-colors"
+                  >
+                    Decline
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -309,12 +428,53 @@ const Connections = ({ onUpdate }) => {
         currentUserId={userId}
         existingConnections={linkedConnections.map((c) => c.connected_user?.id).filter(Boolean)}
       />
+      {confirmOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !confirmBusy) {
+              setConfirmOpen(false);
+              setConfirmTarget(null);
+            }
+          }}
+        >
+          <div className="bg-white rounded-lg shadow-medical-lg w-full max-w-md overflow-hidden animate-slide-down">
+            <div className="p-6 border-b border-medical-gray-200">
+              <h3 className="text-xl font-semibold text-medical-dark">Remove Connection</h3>
+              <p className="text-sm text-medical-gray-600 mt-2">
+                Are you sure you want to remove{' '}
+                <span className="font-medium text-medical-dark">
+                  {confirmTarget?.name || confirmTarget?.connected_user?.name}
+                </span>
+                ? This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex justify-end gap-3 p-4">
+              <button
+                onClick={() => {
+                  if (!confirmBusy) {
+                    setConfirmOpen(false);
+                    setConfirmTarget(null);
+                  }
+                }}
+                disabled={confirmBusy}
+                className="btn-medical-secondary px-6 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmRemoveConnection}
+                disabled={confirmBusy}
+                className="btn-medical-primary px-6 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {confirmBusy ? 'Removing...' : 'Remove'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
-};
-
-Connections.propTypes = {
-  onUpdate: PropTypes.func.isRequired,
 };
 
 export default Connections;

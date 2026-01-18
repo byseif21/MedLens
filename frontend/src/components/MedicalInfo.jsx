@@ -26,7 +26,7 @@ const MedicalInfo = ({ profile, onUpdate }) => {
 
     if (result.success) {
       setIsEditing(false);
-      onUpdate();
+      onUpdate({ silent: true });
     } else {
       // TODO: replace alert with GeneralModal (unified app modal) for error feedback
       alert('Failed to update: ' + result.error);

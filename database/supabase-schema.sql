@@ -59,6 +59,19 @@ CREATE TABLE user_connections (
     CONSTRAINT no_self_connection CHECK (user_id != connected_user_id)
 );
 
+-- Connection requests table (for request-based linked connections)
+CREATE TABLE connection_requests (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    sender_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    receiver_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    relationship VARCHAR(50) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending', -- 'pending', 'accepted', 'rejected'
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    CONSTRAINT unique_request UNIQUE(sender_id, receiver_id),
+    CONSTRAINT no_self_request CHECK (sender_id != receiver_id)
+);
+
 -- Face images table (for multiple face angles)
 CREATE TABLE face_images (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -78,6 +91,9 @@ CREATE INDEX idx_face_images_user_id ON face_images(user_id);
 CREATE INDEX idx_user_connections_user_id ON user_connections(user_id);
 CREATE INDEX idx_user_connections_connected_user_id ON user_connections(connected_user_id);
 CREATE INDEX idx_user_connections_relationship ON user_connections(relationship);
+CREATE INDEX idx_connection_requests_sender_id ON connection_requests(sender_id);
+CREATE INDEX idx_connection_requests_receiver_id ON connection_requests(receiver_id);
+CREATE INDEX idx_connection_requests_status ON connection_requests(status);
 
 -- Row Level Security (RLS) Policies
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
@@ -85,6 +101,7 @@ ALTER TABLE medical_info ENABLE ROW LEVEL SECURITY;
 ALTER TABLE relatives ENABLE ROW LEVEL SECURITY;
 ALTER TABLE face_images ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_connections ENABLE ROW LEVEL SECURITY;
+ALTER TABLE connection_requests ENABLE ROW LEVEL SECURITY;
 
 -- Users can only read their own data
 CREATE POLICY "Users can view own data" ON users
@@ -121,6 +138,19 @@ CREATE POLICY "Users can update own connections" ON user_connections
 CREATE POLICY "Users can delete own connections" ON user_connections
     FOR DELETE USING (auth.uid() = user_id);
 
+-- Connection requests policies
+CREATE POLICY "Users can view own connection requests" ON connection_requests
+    FOR SELECT USING (auth.uid() = sender_id OR auth.uid() = receiver_id);
+
+CREATE POLICY "Users can create connection requests" ON connection_requests
+    FOR INSERT WITH CHECK (auth.uid() = sender_id);
+
+CREATE POLICY "Users can update own connection requests" ON connection_requests
+    FOR UPDATE USING (auth.uid() = sender_id OR auth.uid() = receiver_id);
+
+CREATE POLICY "Users can delete own connection requests" ON connection_requests
+    FOR DELETE USING (auth.uid() = sender_id OR auth.uid() = receiver_id);
+
 -- Function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -141,4 +171,7 @@ CREATE TRIGGER update_relatives_updated_at BEFORE UPDATE ON relatives
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_user_connections_updated_at BEFORE UPDATE ON user_connections
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_connection_requests_updated_at BEFORE UPDATE ON connection_requests
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

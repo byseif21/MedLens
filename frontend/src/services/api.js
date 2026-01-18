@@ -209,11 +209,16 @@ export const checkHealth = async () => {
 /**
  * Search for users by name or ID
  * @param {string} query - Search query
+ * @param {string} currentUserId - Optional current user ID for exclusion and status check
  * @returns {Promise} API response with matching users
  */
-export const searchUsers = async (query) => {
+export const searchUsers = async (query, currentUserId = null) => {
   try {
-    const response = await apiClient.get(`/api/users/search?q=${encodeURIComponent(query)}`);
+    let url = `/api/users/search?q=${encodeURIComponent(query)}`;
+    if (currentUserId) {
+      url += `&current_user_id=${encodeURIComponent(currentUserId)}`;
+    }
+    const response = await apiClient.get(url);
     return {
       success: true,
       data: response.data,
@@ -247,13 +252,12 @@ export const getConnections = async (userId) => {
 };
 
 /**
- * Create a linked connection to another user
- * @param {Object} data - Connection data {connected_user_id, relationship}
- * @returns {Promise} API response
+ * Get pending connection requests for a user
+ * @returns {Promise} API response with pending requests
  */
-export const createLinkedConnection = async (data) => {
+export const getPendingRequests = async () => {
   try {
-    const response = await apiClient.post('/api/connections/linked', data);
+    const response = await apiClient.get('/api/connections/requests/pending');
     return {
       success: true,
       data: response.data,
@@ -261,7 +265,67 @@ export const createLinkedConnection = async (data) => {
   } catch (error) {
     return {
       success: false,
-      error: error.response?.data?.error || error.message || 'Failed to create connection',
+      error: error.response?.data?.detail || error.message || 'Failed to fetch pending requests',
+    };
+  }
+};
+
+/**
+ * Accept a connection request
+ * @param {string} requestId - Request ID
+ * @returns {Promise} API response
+ */
+export const acceptConnectionRequest = async (requestId) => {
+  try {
+    const response = await apiClient.post(`/api/connections/requests/${requestId}/accept`);
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.detail || error.message || 'Failed to accept request',
+    };
+  }
+};
+
+/**
+ * Reject a connection request
+ * @param {string} requestId - Request ID
+ * @returns {Promise} API response
+ */
+export const rejectConnectionRequest = async (requestId) => {
+  try {
+    const response = await apiClient.post(`/api/connections/requests/${requestId}/reject`);
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.detail || error.message || 'Failed to reject request',
+    };
+  }
+};
+
+/**
+ * Create a linked connection request to another user
+ * @param {Object} data - Connection data {connected_user_id, relationship}
+ * @returns {Promise} API response
+ */
+export const createLinkedConnection = async (data) => {
+  try {
+    const response = await apiClient.post('/api/connections/linked/request', data);
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.detail || error.message || 'Failed to send connection request',
     };
   }
 };
@@ -313,6 +377,7 @@ export const updateConnection = async (connectionId, data, connectionType) => {
         error.response?.data?.error ||
         error.message ||
         'Failed to update connection',
+      status: error.response?.status,
     };
   }
 };

@@ -2,12 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { searchUsers } from '../services/api';
 
-const UserSearchInput = ({
-  onUserSelect,
-  selectedUser = null,
-  currentUserId = null,
-  existingConnections = [],
-}) => {
+const UserSearchInput = ({ onUserSelect, selectedUser = null, currentUserId = null }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -28,14 +23,10 @@ const UserSearchInput = ({
       setHasSearched(true);
 
       try {
-        const result = await searchUsers(query);
+        const result = await searchUsers(query, currentUserId);
 
         if (result.success) {
-          // Filter out current user from results
-          const filteredUsers = (result.data.users || []).filter(
-            (user) => user.id !== currentUserId
-          );
-          setSearchResults(filteredUsers);
+          setSearchResults(result.data.users || []);
         } else {
           setError(result.error || 'Search failed. Please try again.');
           setSearchResults([]);
@@ -64,11 +55,6 @@ const UserSearchInput = ({
     setSearchQuery(e.target.value);
   };
 
-  const isUserConnected = (userId) => {
-    // existingConnections is an array of user IDs (strings)
-    return existingConnections.includes(userId);
-  };
-
   const handleSelectUser = (user) => {
     // Validate user object
     if (!user || !user.id) {
@@ -77,7 +63,7 @@ const UserSearchInput = ({
       return;
     }
 
-    if (!isUserConnected(user.id)) {
+    if (user.connection_status === 'none') {
       onUserSelect(user);
     }
   };
@@ -150,8 +136,9 @@ const UserSearchInput = ({
           ) : (
             <div className="max-h-80 overflow-y-auto">
               {searchResults.map((user) => {
-                const isConnected = isUserConnected(user.id);
                 const isSelected = selectedUser?.id === user.id;
+                const status = user.connection_status;
+                const isUnavailable = status !== 'none';
 
                 return (
                   <div
@@ -159,7 +146,7 @@ const UserSearchInput = ({
                     className={`p-4 border-b border-medical-gray-200 last:border-b-0 transition-colors ${
                       isSelected
                         ? 'bg-medical-light'
-                        : isConnected
+                        : isUnavailable
                           ? 'bg-medical-gray-50'
                           : 'hover:bg-medical-gray-50'
                     }`}
@@ -192,9 +179,17 @@ const UserSearchInput = ({
                         </div>
                       </div>
                       <div>
-                        {isConnected ? (
+                        {status === 'connected' ? (
                           <span className="px-3 py-1 bg-medical-gray-200 text-medical-gray-600 text-sm rounded-full">
                             Already connected
+                          </span>
+                        ) : status === 'pending_sent' ? (
+                          <span className="px-3 py-1 bg-yellow-100 text-yellow-700 text-sm rounded-full">
+                            Request sent
+                          </span>
+                        ) : status === 'pending_received' ? (
+                          <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded-full">
+                            Request received
                           </span>
                         ) : isSelected ? (
                           <span className="px-3 py-1 bg-medical-primary text-white text-sm rounded-full">
@@ -225,7 +220,6 @@ UserSearchInput.propTypes = {
   onUserSelect: PropTypes.func.isRequired,
   selectedUser: PropTypes.object,
   currentUserId: PropTypes.string,
-  existingConnections: PropTypes.array,
 };
 
 export default UserSearchInput;
