@@ -19,7 +19,7 @@ const RegisterPage = () => {
     email: '',
     phone: '',
     password: '',
-    age: '',
+    date_of_birth: '',
     nationality: '',
     gender: '',
     id_number: '',
@@ -35,7 +35,7 @@ const RegisterPage = () => {
       !formData.email ||
       !formData.phone ||
       !formData.password ||
-      !formData.age ||
+      !formData.date_of_birth ||
       !formData.gender
     ) {
       setError('Please fill in all required fields');
@@ -69,7 +69,7 @@ const RegisterPage = () => {
       formDataToSend.append('email', formData.email);
       formDataToSend.append('phone', formData.phone);
       formDataToSend.append('password', formData.password);
-      formDataToSend.append('age', formData.age);
+      formDataToSend.append('date_of_birth', formData.date_of_birth);
       formDataToSend.append('nationality', formData.nationality);
       formDataToSend.append('gender', formData.gender);
       formDataToSend.append('id_number', formData.id_number);
@@ -206,14 +206,14 @@ const RegisterPage = () => {
 
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <label className="label-medical">Age *</label>
+                    <label className="label-medical">Birthday *</label>
                     <input
-                      type="number"
-                      name="age"
-                      value={formData.age}
+                      type="date"
+                      name="date_of_birth"
+                      value={formData.date_of_birth}
                       onChange={handleChange}
                       className="input-medical"
-                      placeholder="Age"
+                      placeholder="YYYY-MM-DD"
                     />
                   </div>
 
