@@ -133,13 +133,15 @@ const ProfileDashboard = () => {
       {/* Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="animate-fade-in">
-          {activeTab === 'main' && (
+          <div hidden={activeTab !== 'main'}>
             <MainInfo profile={profile} onUpdate={loadProfile} readOnly={isViewingOther} />
-          )}
-          {activeTab === 'medical' && (
+          </div>
+          <div hidden={activeTab !== 'medical'}>
             <MedicalInfo profile={profile} onUpdate={loadProfile} readOnly={isViewingOther} />
-          )}
-          {activeTab === 'connections' && <Connections />}
+          </div>
+          <div hidden={activeTab !== 'connections'}>
+            <Connections />
+          </div>
         </div>
       </main>
     </div>
