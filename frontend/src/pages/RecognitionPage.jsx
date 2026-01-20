@@ -29,11 +29,6 @@ const RecognitionPage = () => {
       if (result.success && result.data.match) {
         setRecognizedPerson(result.data);
         setShowViewProfile(true);
-
-        // Auto-navigate after 3 seconds (or user can click button immediately)
-        setTimeout(() => {
-          handleViewProfile(result.data);
-        }, 3000);
       } else {
         setError('Face not recognized. Person may not be registered in the system.');
       }
@@ -114,15 +109,6 @@ const RecognitionPage = () => {
                   </button>
                 </div>
               </div>
-
-              {showViewProfile && (
-                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-center">
-                  <p className="text-blue-700 text-sm">
-                    Redirecting to profile in 3 seconds... or click &quot;View Full Profile&quot;
-                    now
-                  </p>
-                </div>
-              )}
 
               <div className="bg-medical-light p-6 rounded-lg">
                 <div className="flex items-center gap-4 mb-6">
