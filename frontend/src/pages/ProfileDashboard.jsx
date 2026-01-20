@@ -51,9 +51,10 @@ const ProfileDashboard = () => {
   };
 
   useEffect(() => {
+    setActiveTab('main');
     loadProfile();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [urlUserId]);
 
   const tabs = [
     { id: 'main', label: 'Main Info', icon: 'user' },
