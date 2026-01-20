@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 from services.storage_service import get_supabase_service
 from services.profile_picture_service import get_profile_picture_url, ProfilePictureError
-from routers.auth import get_current_user_payload, verify_user_access
+from routers.auth import get_current_user, verify_user_access
 
 router = APIRouter(prefix="/api/profile", tags=["profile"])
 
@@ -34,7 +34,7 @@ class RelativesUpdate(BaseModel):
     relatives: List[Relative]
 
 @router.get("/{user_id}")
-async def get_profile(user_id: str, current_user: dict = Depends(get_current_user_payload)):
+async def get_profile(user_id: str, current_user: dict = Depends(get_current_user)):
     """
     Get complete user profile including medical info, relatives, and profile picture URL
     """
@@ -88,7 +88,7 @@ async def get_profile(user_id: str, current_user: dict = Depends(get_current_use
         raise HTTPException(status_code=500, detail=f"Failed to fetch profile: {str(e)}")
 
 @router.put("/main-info/{user_id}")
-async def update_main_info(user_id: str, data: MainInfoUpdate, current_user: dict = Depends(get_current_user_payload)):
+async def update_main_info(user_id: str, data: MainInfoUpdate, current_user: dict = Depends(get_current_user)):
     """
     Update user's main information
     """
@@ -120,7 +120,7 @@ async def update_main_info(user_id: str, data: MainInfoUpdate, current_user: dic
         raise HTTPException(status_code=500, detail=f"Failed to update main info: {str(e)}")
 
 @router.put("/medical-info/{user_id}")
-async def update_medical_info(user_id: str, data: MedicalInfoUpdate, current_user: dict = Depends(get_current_user_payload)):
+async def update_medical_info(user_id: str, data: MedicalInfoUpdate, current_user: dict = Depends(get_current_user)):
     """
     Update user's medical information
     """
@@ -157,7 +157,7 @@ async def update_medical_info(user_id: str, data: MedicalInfoUpdate, current_use
         raise HTTPException(status_code=500, detail=f"Failed to update medical info: {str(e)}")
 
 @router.put("/relatives/{user_id}")
-async def update_relatives(user_id: str, data: RelativesUpdate, current_user: dict = Depends(get_current_user_payload)):
+async def update_relatives(user_id: str, data: RelativesUpdate, current_user: dict = Depends(get_current_user)):
     """
     Update user's relatives/connections
     """

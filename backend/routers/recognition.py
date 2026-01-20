@@ -3,13 +3,13 @@ import json
 from services.face_service import get_face_service
 from services.storage_service import get_supabase_service
 from utils.config import get_config
-from routers.auth import get_current_user_payload
+from routers.auth import get_current_user
 
 router = APIRouter(prefix="/api", tags=["recognition"])
 settings = get_config()
 
 @router.post("/recognize")
-async def recognize_face(image: UploadFile = File(...), current_user: dict = Depends(get_current_user_payload)):
+async def recognize_face(image: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
     """
     Recognize a person from their face image.
     Returns complete profile if match found.
