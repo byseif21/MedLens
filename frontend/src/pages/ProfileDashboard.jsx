@@ -11,15 +11,19 @@ const ProfileDashboard = () => {
   const [activeTab, setActiveTab] = useState('main');
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isViewingOther, setIsViewingOther] = useState(false);
   const navigate = useNavigate();
   const { userId: urlUserId } = useParams();
+  const currentUserId = localStorage.getItem('user_id');
   const userRole = localStorage.getItem('user_role') || 'user';
+
+  // derived state
+  const isViewingOther = urlUserId && urlUserId !== currentUserId;
+  const isAdmin = userRole === 'admin';
+  const canViewMedical = !isViewingOther || isAdmin || userRole === 'doctor';
+  const canEdit = !isViewingOther || isAdmin;
 
   const loadProfile = async (options = {}) => {
     const silent = !!options?.silent;
-    // Check if viewing another user's profile or own profile
-    const currentUserId = localStorage.getItem('user_id');
     const viewingUserId = urlUserId || currentUserId;
 
     if (!currentUserId) {
@@ -27,7 +31,6 @@ const ProfileDashboard = () => {
       return;
     }
 
-    setIsViewingOther(urlUserId && urlUserId !== currentUserId);
     if (!silent) setLoading(true);
     const result = await getProfile(viewingUserId);
 
@@ -52,11 +55,6 @@ const ProfileDashboard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const isAdmin = userRole === 'admin';
-  const isDoctor = userRole === 'doctor';
-  const canViewMedical = !isViewingOther || isAdmin || isDoctor;
-  const canEditViewedProfile = !isViewingOther || isAdmin;
-  const isReadOnly = !canEditViewedProfile;
   const tabs = [
     { id: 'main', label: 'Main Info', icon: 'user' },
     ...(canViewMedical ? [{ id: 'medical', label: 'Medical Info', icon: 'heart' }] : []),
@@ -175,8 +173,8 @@ const ProfileDashboard = () => {
             <MainInfo
               profile={profile}
               onUpdate={loadProfile}
-              readOnly={isReadOnly}
-              targetUserId={urlUserId || localStorage.getItem('user_id')}
+              readOnly={!canEdit}
+              targetUserId={urlUserId}
             />
           </div>
           {canViewMedical && (
@@ -184,8 +182,8 @@ const ProfileDashboard = () => {
               <MedicalInfo
                 profile={profile}
                 onUpdate={loadProfile}
-                readOnly={isReadOnly}
-                targetUserId={urlUserId || localStorage.getItem('user_id')}
+                readOnly={!canEdit}
+                targetUserId={urlUserId}
               />
             </div>
           )}
