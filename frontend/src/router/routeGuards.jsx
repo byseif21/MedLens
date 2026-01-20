@@ -6,12 +6,21 @@ const isAuthenticated = () => {
   return Boolean(token && userId);
 };
 
+const isAdmin = () => {
+  const role = localStorage.getItem('user_role');
+  return isAuthenticated() && role === 'admin';
+};
+
 export const PublicRoute = () => {
   return isAuthenticated() ? <Navigate to="/dashboard" replace /> : <Outlet />;
 };
 
 export const ProtectedRoute = () => {
   return isAuthenticated() ? <Outlet /> : <Navigate to="/login" replace />;
+};
+
+export const AdminRoute = () => {
+  return isAdmin() ? <Outlet /> : <Navigate to="/dashboard" replace />;
 };
 
 export const RootRedirect = () => {
