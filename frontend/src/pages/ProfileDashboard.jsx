@@ -42,6 +42,7 @@ const ProfileDashboard = () => {
     localStorage.removeItem('user_id');
     localStorage.removeItem('auth_token');
     localStorage.removeItem('user_name');
+    localStorage.removeItem('user_role');
     navigate('/login', { replace: true });
   };
 

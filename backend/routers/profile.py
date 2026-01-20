@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 from services.storage_service import get_supabase_service
 from services.profile_picture_service import get_profile_picture_url, ProfilePictureError
-from routers.auth import get_current_user
+from routers.auth import get_current_user_payload
 
 router = APIRouter(prefix="/api/profile", tags=["profile"])
 
@@ -34,13 +34,16 @@ class RelativesUpdate(BaseModel):
     relatives: List[Relative]
 
 @router.get("/{user_id}")
-async def get_profile(user_id: str):
+async def get_profile(user_id: str, current_user: dict = Depends(get_current_user_payload)):
     """
     Get complete user profile including medical info, relatives, and profile picture URL
     """
     supabase = get_supabase_service()
     
     try:
+        current_user_id = (current_user or {}).get("sub")
+        role = (current_user or {}).get("role") or "user"
+
         # Get user basic info
         user_response = supabase.client.table('users').select('id, name, email, phone, date_of_birth, gender, nationality, id_number').eq('id', user_id).execute()
         
@@ -48,15 +51,7 @@ async def get_profile(user_id: str):
             raise HTTPException(status_code=404, detail="User not found")
         
         user = user_response.data[0]
-        
-        # Get medical info
-        medical_response = supabase.client.table('medical_info').select('*').eq('user_id', user_id).execute()
-        medical_info = medical_response.data[0] if medical_response.data else {}
-        
-        # Get relatives
-        relatives_response = supabase.client.table('relatives').select('*').eq('user_id', user_id).execute()
-        relatives = relatives_response.data if relatives_response.data else []
-        
+
         # Get profile picture URL
         # If retrieval fails, set to None to maintain backward compatibility
         profile_picture_url = None
@@ -66,12 +61,26 @@ async def get_profile(user_id: str):
             # Log error but don't fail the entire request
             print(f"Warning: Failed to retrieve profile picture for user {user_id}: {str(e)}")
         
-        return {
+        is_self = current_user_id == user_id
+        can_view_full = is_self or role in ["doctor", "admin"]
+
+        response_payload = {
             **user,
-            "medical_info": medical_info,
-            "relatives": relatives,
             "profile_picture_url": profile_picture_url
         }
+
+        if can_view_full:
+            medical_response = supabase.client.table('medical_info').select('*').eq('user_id', user_id).execute()
+            medical_info = medical_response.data[0] if medical_response.data else {}
+            relatives_response = supabase.client.table('relatives').select('*').eq('user_id', user_id).execute()
+            relatives = relatives_response.data if relatives_response.data else []
+
+            response_payload["medical_info"] = medical_info
+            response_payload["relatives"] = relatives
+        else:
+            response_payload.pop("email", None)
+
+        return response_payload
     
     except HTTPException:
         raise
@@ -79,13 +88,18 @@ async def get_profile(user_id: str):
         raise HTTPException(status_code=500, detail=f"Failed to fetch profile: {str(e)}")
 
 @router.put("/main-info/{user_id}")
-async def update_main_info(user_id: str, data: MainInfoUpdate):
+async def update_main_info(user_id: str, data: MainInfoUpdate, current_user: dict = Depends(get_current_user_payload)):
     """
     Update user's main information
     """
     supabase = get_supabase_service()
     
     try:
+        current_user_id = (current_user or {}).get("sub")
+        role = (current_user or {}).get("role") or "user"
+        if current_user_id != user_id and role != "admin":
+            raise HTTPException(status_code=403, detail="Not authorized to update this profile")
+
         # Prepare update data (only include non-None values)
         update_data = {k: v for k, v in data.dict().items() if v is not None}
         
@@ -109,13 +123,18 @@ async def update_main_info(user_id: str, data: MainInfoUpdate):
         raise HTTPException(status_code=500, detail=f"Failed to update main info: {str(e)}")
 
 @router.put("/medical-info/{user_id}")
-async def update_medical_info(user_id: str, data: MedicalInfoUpdate):
+async def update_medical_info(user_id: str, data: MedicalInfoUpdate, current_user: dict = Depends(get_current_user_payload)):
     """
     Update user's medical information
     """
     supabase = get_supabase_service()
     
     try:
+        current_user_id = (current_user or {}).get("sub")
+        role = (current_user or {}).get("role") or "user"
+        if current_user_id != user_id and role != "admin":
+            raise HTTPException(status_code=403, detail="Not authorized to update this profile")
+
         # Prepare update data
         update_data = {k: v for k, v in data.dict().items() if v is not None}
         update_data['user_id'] = user_id
@@ -144,13 +163,18 @@ async def update_medical_info(user_id: str, data: MedicalInfoUpdate):
         raise HTTPException(status_code=500, detail=f"Failed to update medical info: {str(e)}")
 
 @router.put("/relatives/{user_id}")
-async def update_relatives(user_id: str, data: RelativesUpdate):
+async def update_relatives(user_id: str, data: RelativesUpdate, current_user: dict = Depends(get_current_user_payload)):
     """
     Update user's relatives/connections
     """
     supabase = get_supabase_service()
     
     try:
+        current_user_id = (current_user or {}).get("sub")
+        role = (current_user or {}).get("role") or "user"
+        if current_user_id != user_id and role != "admin":
+            raise HTTPException(status_code=403, detail="Not authorized to update this profile")
+
         # Delete existing relatives
         supabase.client.table('relatives').delete().eq('user_id', user_id).execute()
         

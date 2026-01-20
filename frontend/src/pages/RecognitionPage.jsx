@@ -13,6 +13,9 @@ const RecognitionPage = () => {
   const [recognizedPerson, setRecognizedPerson] = useState(null);
   const [showViewProfile, setShowViewProfile] = useState(false);
   const navigate = useNavigate();
+  const userRole = localStorage.getItem('user_role') || 'user';
+  const canViewFullProfile = userRole === 'doctor' || userRole === 'admin';
+  const canViewMedicalInfo = canViewFullProfile;
 
   const handleFaceSubmit = async (imageFile) => {
     setLoading(true);
@@ -28,7 +31,7 @@ const RecognitionPage = () => {
 
       if (result.success && result.data.match) {
         setRecognizedPerson(result.data);
-        setShowViewProfile(true);
+        setShowViewProfile(canViewFullProfile);
       } else {
         setError('Face not recognized. Person may not be registered in the system.');
       }
@@ -96,7 +99,7 @@ const RecognitionPage = () => {
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-semibold text-green-600">✓ Person Recognized</h2>
                 <div className="flex gap-2">
-                  {showViewProfile && (
+                  {showViewProfile && canViewFullProfile && (
                     <button
                       onClick={() => handleViewProfile(recognizedPerson)}
                       className="btn-medical-primary text-sm px-4 py-2"
@@ -166,7 +169,7 @@ const RecognitionPage = () => {
                 </div>
 
                 {/* Medical Info */}
-                {recognizedPerson.medical_info && (
+                {canViewMedicalInfo && recognizedPerson.medical_info && (
                   <div className="border-t border-medical-gray-200 pt-4">
                     <h4 className="font-semibold text-medical-dark mb-3">Medical Information</h4>
                     <div className="space-y-3">

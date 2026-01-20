@@ -6,7 +6,7 @@ try:
     from pydantic import EmailStr as EmailType
 except Exception:
     EmailType = str
-from typing import Optional
+from typing import Optional, Dict, Any
 import bcrypt
 import jwt
 from datetime import datetime, timedelta
@@ -27,6 +27,7 @@ class LoginResponse(BaseModel):
     user_id: str
     name: str
     email: str
+    role: str
     token: str
     message: str
 
@@ -67,12 +68,14 @@ async def login(credentials: LoginRequest):
             raise HTTPException(status_code=401, detail="Invalid email or password")
         
         # Create access token
-        token = create_access_token({"sub": user['id'], "email": user['email']})
+        role = user.get('role') or 'user'
+        token = create_access_token({"sub": user['id'], "email": user['email'], "role": role})
         
         return LoginResponse(
             user_id=user['id'],
             name=user['name'],
             email=user['email'],
+            role=role,
             token=token,
             message="Login successful"
         )
@@ -158,12 +161,14 @@ async def confirm_face_login(payload: FaceLoginConfirmRequest):
         if not verify_password(payload.password, user['password_hash']):
             raise HTTPException(status_code=401, detail="Invalid password")
 
-        token = create_access_token({"sub": user['id'], "email": user['email']})
+        role = user.get('role') or 'user'
+        token = create_access_token({"sub": user['id'], "email": user['email'], "role": role})
 
         return LoginResponse(
             user_id=user['id'],
             name=user['name'],
             email=user['email'],
+            role=role,
             token=token,
             message="Login successful"
         )
@@ -184,6 +189,19 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
         if user_id is None:
             raise HTTPException(status_code=401, detail="Invalid authentication credentials")
         return user_id
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token has expired")
+    except jwt.JWTError:
+        raise HTTPException(status_code=401, detail="Could not validate credentials")
+
+def get_current_user_payload(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Dict[str, Any]:
+    try:
+        token = credentials.credentials
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        user_id: str = payload.get("sub")
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="Invalid authentication credentials")
+        return payload
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token has expired")
     except jwt.JWTError:

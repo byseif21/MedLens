@@ -1,14 +1,15 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 import json
 from services.face_service import get_face_service
 from services.storage_service import get_supabase_service
 from utils.config import get_config
+from routers.auth import get_current_user_payload
 
 router = APIRouter(prefix="/api", tags=["recognition"])
 settings = get_config()
 
 @router.post("/recognize")
-async def recognize_face(image: UploadFile = File(...)):
+async def recognize_face(image: UploadFile = File(...), current_user: dict = Depends(get_current_user_payload)):
     """
     Recognize a person from their face image.
     Returns complete profile if match found.
@@ -25,16 +26,6 @@ async def recognize_face(image: UploadFile = File(...)):
             error_msg = result.error or "No face detected in the image"
             raise HTTPException(status_code=400, detail=error_msg)
         
-        # Get all users with face encodings
-        response = supabase.client.table('users').select('*').not_.is_('face_encoding', 'null').execute()
-        
-        if not response.data:
-            return {
-                "success": False,
-                "match": False,
-                "message": "No registered users found"
-            }
-        
         match_result = face_service.find_match(result.encoding)
         
         # Check if match is good enough
@@ -43,22 +34,26 @@ async def recognize_face(image: UploadFile = File(...)):
             if not user_resp.data:
                 raise HTTPException(status_code=404, detail="User not found")
             user = user_resp.data[0]
-            medical_response = supabase.client.table('medical_info').select('*').eq('user_id', user['id']).execute()
-            medical_info = medical_response.data[0] if medical_response.data else {}
             relatives_response = supabase.client.table('relatives').select('*').eq('user_id', user['id']).execute()
             relatives = relatives_response.data if relatives_response.data else []
-            return {
+            role = (current_user or {}).get('role') or 'user'
+            response_payload = {
                 "success": True,
                 "match": True,
                 "confidence": match_result.confidence,
+                "user_id": user['id'],
                 "name": user['name'],
                 "date_of_birth": user.get('date_of_birth'),
                 "gender": user.get('gender'),
                 "nationality": user.get('nationality'),
                 "id_number": user.get('id_number'),
-                "medical_info": medical_info,
                 "relatives": relatives
             }
+            if role in ["doctor", "admin"]:
+                medical_response = supabase.client.table('medical_info').select('*').eq('user_id', user['id']).execute()
+                medical_info = medical_response.data[0] if medical_response.data else {}
+                response_payload["medical_info"] = medical_info
+            return response_payload
         else:
             return {
                 "success": True,
