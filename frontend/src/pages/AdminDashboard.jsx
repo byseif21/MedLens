@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useNotifications } from '../hooks/useNotifications';
@@ -14,15 +13,10 @@ const AdminDashboard = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalUsers, setTotalUsers] = useState(0);
   const [editingUser, setEditingUser] = useState(null); // User being edited
-  
+
   const { notify } = useNotifications();
-  const navigate = useNavigate();
 
   const pageSize = 10;
-
-  useEffect(() => {
-    fetchUsers();
-  }, [page, roleFilter]); // Refetch when page or filter changes
 
   const fetchUsers = async (query = searchTerm) => {
     setLoading(true);
@@ -37,6 +31,11 @@ const AdminDashboard = () => {
     setLoading(false);
   };
 
+  useEffect(() => {
+    fetchUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, roleFilter]); // Refetch when page or filter changes
+
   const handleSearch = (e) => {
     e.preventDefault();
     setPage(1); // Reset to first page
@@ -44,7 +43,11 @@ const AdminDashboard = () => {
   };
 
   const handleDelete = async (userId, userName) => {
-    if (!window.confirm(`Are you sure you want to delete user "${userName}"? This action cannot be undone.`)) {
+    if (
+      !window.confirm(
+        `Are you sure you want to delete user "${userName}"? This action cannot be undone.`
+      )
+    ) {
       return;
     }
 
@@ -71,13 +74,11 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-medical-light">
       <Navbar />
-      
+
       <main className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-medical-dark">Admin Dashboard</h1>
-          <div className="text-sm text-gray-500">
-            Total Users: {totalUsers}
-          </div>
+          <div className="text-sm text-gray-500">Total Users: {totalUsers}</div>
         </div>
 
         {/* Search and Filter */}
@@ -148,11 +149,13 @@ const AdminDashboard = () => {
                               <option value="admin">Admin</option>
                             </select>
                           ) : (
-                            <span 
+                            <span
                               className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                                user.role === 'admin' ? 'bg-purple-100 text-purple-700' :
-                                user.role === 'doctor' ? 'bg-blue-100 text-blue-700' :
-                                'bg-gray-100 text-gray-700'
+                                user.role === 'admin'
+                                  ? 'bg-purple-100 text-purple-700'
+                                  : user.role === 'doctor'
+                                    ? 'bg-blue-100 text-blue-700'
+                                    : 'bg-gray-100 text-gray-700'
                               }`}
                             >
                               {user.role}
@@ -195,7 +198,7 @@ const AdminDashboard = () => {
         {totalPages > 1 && (
           <div className="flex justify-center mt-6 gap-2">
             <button
-              onClick={() => setPage(p => Math.max(1, p - 1))}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
               className="px-4 py-2 rounded-lg bg-white shadow-sm disabled:opacity-50 hover:bg-gray-50"
             >
@@ -205,7 +208,7 @@ const AdminDashboard = () => {
               Page {page} of {totalPages}
             </span>
             <button
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
               className="px-4 py-2 rounded-lg bg-white shadow-sm disabled:opacity-50 hover:bg-gray-50"
             >

@@ -1,3 +1,4 @@
+/* eslint-env browser */
 import apiClient from './axios';
 
 /**
@@ -9,7 +10,7 @@ import apiClient from './axios';
  */
 export const getAdminUsers = async (page = 1, pageSize = 20, q = '', role = '') => {
   try {
-    const params = new URLSearchParams({ page, page_size: pageSize });
+    const params = new window.URLSearchParams({ page, page_size: pageSize });
     if (q) params.append('q', q);
     if (role) params.append('role', role);
 

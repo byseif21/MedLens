@@ -52,96 +52,76 @@ async def list_users_admin(
     """
     supabase = get_supabase_service()
     
-    # If search query is present, use direct API call for proper OR filtering support
-    if q:
-        try:
-            headers = {
-                "apikey": settings.SUPABASE_KEY,
-                "Authorization": f"Bearer {settings.SUPABASE_KEY}",
-                "Prefer": "count=exact"
-            }
+    try:
+        if q:
+            # If searching, we'll perform two separate queries and merge them
+            # This is more robust than using .or_() which varies by client version
             
-            # PostgREST parameters
-            params = {
-                "select": "*",
-                "limit": str(page_size),
-                "offset": str((page - 1) * page_size),
-                "order": "created_at.desc",
-                "or": f"(name.ilike.*{q}*,email.ilike.*{q}*)"
-            }
+            # 1. Search by name
+            query_name = supabase.client.table('users').select('*').ilike('name', f'%{q}%')
+            if role:
+                query_name = query_name.eq('role', role)
+            name_results = query_name.execute()
+            
+            # 2. Search by email
+            query_email = supabase.client.table('users').select('*').ilike('email', f'%{q}%')
+            if role:
+                query_email = query_email.eq('role', role)
+            email_results = query_email.execute()
+            
+            # Merge results (deduplicate by ID)
+            all_users_map = {}
+            for u in (name_results.data or []):
+                all_users_map[u['id']] = u
+            for u in (email_results.data or []):
+                all_users_map[u['id']] = u
+                
+            users_data = list(all_users_map.values())
+            
+            # Manual sorting (created_at desc)
+            users_data.sort(key=lambda x: x.get('created_at', ''), reverse=True)
+            
+            # Manual pagination
+            total = len(users_data)
+            start_idx = (page - 1) * page_size
+            end_idx = start_idx + page_size
+            users_data = users_data[start_idx:end_idx]
+            
+        else:
+            # Standard query for no search term
+            query = supabase.client.table('users').select('*', count='exact')
             
             if role:
-                params["role"] = f"eq.{role}"
-            
-            async with httpx.AsyncClient() as client:
-                response = await client.get(
-                    f"{settings.SUPABASE_URL}/rest/v1/users", 
-                    headers=headers, 
-                    params=params
-                )
+                query = query.eq('role', role)
                 
-            if response.status_code != 200:
-                raise HTTPException(status_code=500, detail=f"Database error: {response.text}")
-                
-            users_data = response.json()
+            query = query.order('created_at', desc=True)
+            query = query.range((page - 1) * page_size, page * page_size - 1)
             
-            # Extract total count from Content-Range header (format: 0-24/100)
-            content_range = response.headers.get("Content-Range")
-            total = int(content_range.split('/')[1]) if content_range and '/' in content_range else len(users_data)
-            
-            users = []
-            for u in users_data:
-                users.append(UserAdminView(
-                    id=u['id'],
-                    name=u.get('name', 'Unknown'),
-                    email=u.get('email', 'Unknown'),
-                    role=u.get('role', 'user'),
-                    created_at=u.get('created_at'),
-                    last_login=u.get('last_sign_in_at')
-                ))
-                
-            return {
-                "users": users,
-                "total": total,
-                "page": page,
-                "page_size": page_size
-            }
-            
-        except Exception as e:
-            print(f"Search error: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
-
-    # Standard query using client (when no complex OR filter is needed)
-    query_builder = supabase.client.table('users').select('*', count='exact')
-    
-    if role:
-        query_builder = query_builder.eq('role', role)
+            result = query.execute()
+            users_data = result.data
+            total = result.count if result.count is not None else len(users_data)
         
-    # Pagination
-    start = (page - 1) * page_size
-    end = start + page_size - 1
-    
-    # Execute query
-    result = query_builder.range(start, end).order('created_at', desc=True).execute()
-    
-    users = []
-    if result.data:
-        for u in result.data:
+        users = []
+        for u in users_data:
             users.append(UserAdminView(
                 id=u['id'],
-                name=u.get('name', 'Unknown'), # Safety get
+                name=u.get('name', 'Unknown'),
                 email=u.get('email', 'Unknown'),
                 role=u.get('role', 'user'),
                 created_at=u.get('created_at'),
                 last_login=u.get('last_sign_in_at')
             ))
             
-    return {
-        "users": users,
-        "total": result.count or 0,
-        "page": page,
-        "page_size": page_size
-    }
+        return {
+            "users": users,
+            "total": total,
+            "page": page,
+            "page_size": page_size
+        }
+        
+    except Exception as e:
+        print(f"Admin list users error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/users/{user_id}")
 async def delete_user_admin(
