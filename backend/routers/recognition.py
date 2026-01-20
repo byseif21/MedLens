@@ -3,6 +3,7 @@ import json
 from services.face_service import get_face_service
 from services.storage_service import get_supabase_service
 from services.contact_service import get_emergency_contacts
+from services.profile_picture_service import get_profile_picture_url
 from utils.config import get_config
 from routers.auth import get_current_user
 
@@ -35,6 +36,14 @@ async def recognize_face(image: UploadFile = File(...), current_user: dict = Dep
             if not user_resp.data:
                 raise HTTPException(status_code=404, detail="User not found")
             user = user_resp.data[0]
+            
+            # Fetch profile picture URL
+            profile_picture_url = None
+            try:
+                profile_picture_url = get_profile_picture_url(user['id'], supabase.client)
+            except Exception:
+                profile_picture_url = None
+                
             role = (current_user or {}).get('role') or 'user'
             response_payload = {
                 "success": True,
@@ -42,6 +51,7 @@ async def recognize_face(image: UploadFile = File(...), current_user: dict = Dep
                 "confidence": match_result.confidence,
                 "user_id": user['id'],
                 "name": user['name'],
+                "profile_picture_url": profile_picture_url,
                 "date_of_birth": user.get('date_of_birth'),
                 "gender": user.get('gender'),
                 "nationality": user.get('nationality'),
