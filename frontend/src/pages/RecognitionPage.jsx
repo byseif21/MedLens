@@ -15,7 +15,8 @@ const RecognitionPage = () => {
   const [showViewProfile, setShowViewProfile] = useState(false);
   const navigate = useNavigate();
   const userRole = localStorage.getItem('user_role') || 'user';
-  const canViewFullProfile = userRole === 'doctor' || userRole === 'admin';
+  const isAdmin = (userRole || '').toLowerCase() === 'admin';
+  const canViewFullProfile = userRole === 'doctor' || isAdmin;
   const canViewMedicalInfo = canViewFullProfile;
 
   const handleFaceSubmit = async (imageFile) => {
@@ -85,9 +86,16 @@ const RecognitionPage = () => {
                 <p className="text-sm text-medical-gray-600">Smart Glass Recognition System</p>
               </div>
             </div>
-            <Link to="/dashboard" className="btn-medical-secondary text-sm px-4 py-2">
-              My Dashboard
-            </Link>
+            <div className="flex gap-2">
+              {isAdmin && (
+                <Link to="/admin" className="btn-medical-secondary text-sm px-4 py-2 bg-pink-50 text-pink-600 border-pink-200 hover:bg-pink-100">
+                  Admin Panel
+                </Link>
+              )}
+              <Link to="/dashboard" className="btn-medical-secondary text-sm px-4 py-2">
+                My Dashboard
+              </Link>
+            </div>
           </div>
         </div>
       </header>

@@ -1,10 +1,13 @@
 from fastapi import APIRouter, HTTPException, Query, Depends
 from pydantic import BaseModel
 from typing import List, Optional
+import httpx
 from services.storage_service import get_supabase_service
 from routers.auth import get_current_user
+from utils.config import get_config
 
 router = APIRouter(prefix="/api/users", tags=["users"])
+settings = get_config()
 
 # --- Admin Endpoints ---
 
@@ -41,14 +44,67 @@ async def list_users_admin(
     """
     supabase = get_supabase_service()
     
-    # Start building query
-    query_builder = supabase.client.table('users').select('*', count='exact')
-    
+    # If search query is present, use direct API call for proper OR filtering support
     if q:
-        # Search by name or email
-        # Note: Supabase/PostgREST syntax for OR is slightly complex in python client, 
-        # usually .or_(f"name.ilike.%{q}%,email.ilike.%{q}%")
-        query_builder = query_builder.or_(f"name.ilike.%{q}%,email.ilike.%{q}%")
+        try:
+            headers = {
+                "apikey": settings.SUPABASE_KEY,
+                "Authorization": f"Bearer {settings.SUPABASE_KEY}",
+                "Prefer": "count=exact"
+            }
+            
+            # PostgREST parameters
+            params = {
+                "select": "*",
+                "limit": str(page_size),
+                "offset": str((page - 1) * page_size),
+                "order": "created_at.desc",
+                "or": f"(name.ilike.*{q}*,email.ilike.*{q}*)"
+            }
+            
+            if role:
+                params["role"] = f"eq.{role}"
+            
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    f"{settings.SUPABASE_URL}/rest/v1/users", 
+                    headers=headers, 
+                    params=params
+                )
+                
+            if response.status_code != 200:
+                raise HTTPException(status_code=500, detail=f"Database error: {response.text}")
+                
+            users_data = response.json()
+            
+            # Extract total count from Content-Range header (format: 0-24/100)
+            content_range = response.headers.get("Content-Range")
+            total = int(content_range.split('/')[1]) if content_range and '/' in content_range else len(users_data)
+            
+            users = []
+            for u in users_data:
+                users.append(UserAdminView(
+                    id=u['id'],
+                    name=u.get('name', 'Unknown'),
+                    email=u.get('email', 'Unknown'),
+                    role=u.get('role', 'user'),
+                    created_at=u.get('created_at'),
+                    last_login=u.get('last_sign_in_at')
+                ))
+                
+            return {
+                "users": users,
+                "total": total,
+                "page": page,
+                "page_size": page_size
+            }
+            
+        except Exception as e:
+            print(f"Search error: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
+
+    # Standard query using client (when no complex OR filter is needed)
+    query_builder = supabase.client.table('users').select('*', count='exact')
     
     if role:
         query_builder = query_builder.eq('role', role)
@@ -65,11 +121,11 @@ async def list_users_admin(
         for u in result.data:
             users.append(UserAdminView(
                 id=u['id'],
-                name=u['name'],
-                email=u['email'],
+                name=u.get('name', 'Unknown'), # Safety get
+                email=u.get('email', 'Unknown'),
                 role=u.get('role', 'user'),
                 created_at=u.get('created_at'),
-                last_login=u.get('last_sign_in_at') # Supabase auth field, might be in separate table but we use 'users' table copy
+                last_login=u.get('last_sign_in_at')
             ))
             
     return {

@@ -18,7 +18,7 @@ const ProfileDashboard = () => {
 
   // derived state
   const isViewingOther = urlUserId && urlUserId !== currentUserId;
-  const isAdmin = userRole === 'admin';
+  const isAdmin = (userRole || '').toLowerCase() === 'admin';
   const canViewMedical = !isViewingOther || isAdmin || userRole === 'doctor';
   const canEdit = !isViewingOther || isAdmin;
 
@@ -107,6 +107,11 @@ const ProfileDashboard = () => {
               </div>
             </div>
             <div className="flex gap-3">
+              {isAdmin && (
+                <Link to="/admin" className="btn-medical-secondary text-sm px-4 py-2 bg-pink-50 text-pink-600 border-pink-200 hover:bg-pink-100">
+                  Admin Panel
+                </Link>
+              )}
               {isViewingOther && (
                 <a href="/dashboard" className="btn-medical-secondary text-sm px-4 py-2">
                   ← My Profile
