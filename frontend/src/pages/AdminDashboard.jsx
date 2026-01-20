@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useNotifications } from '../hooks/useNotifications';
-import { getAdminUsers, deleteUserAdmin, updateUserAdmin } from '../services/api';
+import { getAdminUsers, deleteUserAdmin, updateUserAdmin } from '../services/adminApi';
 
 const AdminDashboard = () => {
   const [users, setUsers] = useState([]);

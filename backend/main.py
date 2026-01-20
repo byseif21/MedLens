@@ -28,7 +28,7 @@ app.add_middleware(
 )
 
 # Include routers
-from routers import auth, profile, users, connections
+from routers import auth, profile, users, connections, admin
 
 app.include_router(registration.router)
 app.include_router(recognition.router)
@@ -36,6 +36,7 @@ app.include_router(auth.router)
 app.include_router(profile.router)
 app.include_router(users.router)
 app.include_router(connections.router)
+app.include_router(admin.router)
 
 # Run migrations on startup
 @app.on_event("startup")
