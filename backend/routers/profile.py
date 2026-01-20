@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 from services.storage_service import get_supabase_service
 from services.profile_picture_service import get_profile_picture_url, ProfilePictureError
-from routers.auth import get_current_user_payload
+from routers.auth import get_current_user_payload, verify_user_access
 
 router = APIRouter(prefix="/api/profile", tags=["profile"])
 
@@ -95,10 +95,7 @@ async def update_main_info(user_id: str, data: MainInfoUpdate, current_user: dic
     supabase = get_supabase_service()
     
     try:
-        current_user_id = (current_user or {}).get("sub")
-        role = (current_user or {}).get("role") or "user"
-        if current_user_id != user_id and role != "admin":
-            raise HTTPException(status_code=403, detail="Not authorized to update this profile")
+        verify_user_access(current_user, user_id)
 
         # Prepare update data (only include non-None values)
         update_data = {k: v for k, v in data.dict().items() if v is not None}
@@ -130,10 +127,7 @@ async def update_medical_info(user_id: str, data: MedicalInfoUpdate, current_use
     supabase = get_supabase_service()
     
     try:
-        current_user_id = (current_user or {}).get("sub")
-        role = (current_user or {}).get("role") or "user"
-        if current_user_id != user_id and role != "admin":
-            raise HTTPException(status_code=403, detail="Not authorized to update this profile")
+        verify_user_access(current_user, user_id)
 
         # Prepare update data
         update_data = {k: v for k, v in data.dict().items() if v is not None}
@@ -170,10 +164,7 @@ async def update_relatives(user_id: str, data: RelativesUpdate, current_user: di
     supabase = get_supabase_service()
     
     try:
-        current_user_id = (current_user or {}).get("sub")
-        role = (current_user or {}).get("role") or "user"
-        if current_user_id != user_id and role != "admin":
-            raise HTTPException(status_code=403, detail="Not authorized to update this profile")
+        verify_user_access(current_user, user_id)
 
         # Delete existing relatives
         supabase.client.table('relatives').delete().eq('user_id', user_id).execute()

@@ -206,3 +206,16 @@ def get_current_user_payload(credentials: HTTPAuthorizationCredentials = Depends
         raise HTTPException(status_code=401, detail="Token has expired")
     except jwt.JWTError:
         raise HTTPException(status_code=401, detail="Could not validate credentials")
+
+def verify_user_access(current_user: dict, target_user_id: str):
+    """
+    Verify that the current user is authorized to access/modify the target user's data.
+    Allows access if:
+    1. current_user is the target_user (self-access)
+    2. current_user has 'admin' role
+    """
+    current_user_id = (current_user or {}).get("sub")
+    role = (current_user or {}).get("role") or "user"
+    
+    if current_user_id != target_user_id and role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized to update this profile")
