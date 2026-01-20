@@ -12,7 +12,9 @@ dlib==19.24.6
 Pillow==10.4.0
 
 # Database and Storage
-supabase==2.0.3
+supabase==2.27.2
+postgrest==2.27.2
+websockets<16
 
 # Environment Variables
 python-dotenv==1.0.0
