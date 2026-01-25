@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { supabase } from '../services/supabase';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { getCurrentUser, clearSession, isAuthenticated } from '../services/auth';
 import { getProfile } from '../services/api';
 import ProfileAvatar from './ProfileAvatar';
 import '../styles/glassmorphism.css';
@@ -9,7 +9,9 @@ const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [profileData, setProfileData] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const fetchProfileData = async (userId) => {
     try {
@@ -23,51 +25,37 @@ const Navbar = () => {
   };
 
   useEffect(() => {
-    // Check current auth status
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfileData(session.user.id);
-      }
-    });
+    const checkAuth = () => {
+      const user = getCurrentUser();
 
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfileData(session.user.id);
+      if (isAuthenticated() && user) {
+        setUser({ id: user.id, email: user.name }); // Minimal user object
+        setIsAdmin(user.role === 'admin');
+        fetchProfileData(user.id);
       } else {
+        setUser(null);
+        setIsAdmin(false);
         setProfileData(null);
       }
-    });
+    };
 
-    return () => subscription.unsubscribe();
-  }, []);
+    checkAuth();
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    // Listen for storage changes (in case of login/logout in another tab/component)
+    window.addEventListener('storage', checkAuth);
+    return () => window.removeEventListener('storage', checkAuth);
+  }, [location.pathname]); // Re-check on route change
+
+  const handleSignOut = () => {
+    clearSession();
     setUser(null);
+    setProfileData(null);
+    setIsAdmin(false);
+    navigate('/login');
   };
 
-  const handleSignIn = async () => {
-    // Simple email/password sign in - you can customize this
-    // TODO: replace prompt inputs with GeneralModal form for sign-in
-    const email = prompt('Enter your email:');
-    const password = prompt('Enter your password:');
-
-    if (email && password) {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        // TODO: replace alert with GeneralModal for error feedback
-        alert('Sign in failed: ' + error.message);
-      }
-    }
+  const handleSignIn = () => {
+    navigate('/login');
   };
 
   const isActive = (path) => location.pathname === path;
@@ -96,16 +84,20 @@ const Navbar = () => {
               >
                 Home
               </Link>
-              <Link
-                to="/register"
-                className={`px-4 py-2 rounded-lg transition-all duration-300 ${
-                  isActive('/register')
-                    ? 'glow-border-pink text-white'
-                    : 'text-gray-300 hover:text-white hover:glow-border-blue'
-                }`}
-              >
-                Register
-              </Link>
+
+              {isAdmin && (
+                <Link
+                  to="/admin"
+                  className={`px-4 py-2 rounded-lg transition-all duration-300 ${
+                    isActive('/admin')
+                      ? 'glow-border-pink text-white'
+                      : 'text-gray-300 hover:text-white hover:glow-border-blue'
+                  }`}
+                >
+                  Admin
+                </Link>
+              )}
+
               <Link
                 to="/recognize"
                 className={`px-4 py-2 rounded-lg transition-all duration-300 ${
@@ -121,21 +113,33 @@ const Navbar = () => {
               <div className="ml-4 flex items-center space-x-2">
                 {user ? (
                   <>
-                    <ProfileAvatar
-                      imageUrl={profileData?.profile_picture_url}
-                      userName={user.email}
-                      size="sm"
-                      className="mr-2"
-                    />
-                    <span className="text-sm text-gray-400 px-3">{user.email}</span>
+                    <Link to="/dashboard" className="flex items-center">
+                      <ProfileAvatar
+                        imageUrl={profileData?.profile_picture_url}
+                        userName={user.email}
+                        size="sm"
+                        className="mr-2"
+                      />
+                      <span className="text-sm text-gray-400 px-3 hover:text-white transition-colors">
+                        {user.email}
+                      </span>
+                    </Link>
                     <button onClick={handleSignOut} className="glass-button text-sm">
                       Sign Out
                     </button>
                   </>
                 ) : (
-                  <button onClick={handleSignIn} className="neon-button text-sm">
-                    Sign In
-                  </button>
+                  <>
+                    <Link
+                      to="/register"
+                      className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+                    >
+                      Register
+                    </Link>
+                    <button onClick={handleSignIn} className="neon-button text-sm">
+                      Sign In
+                    </button>
+                  </>
                 )}
               </div>
             </div>
@@ -185,17 +189,21 @@ const Navbar = () => {
             >
               Home
             </Link>
-            <Link
-              to="/register"
-              onClick={() => setIsMenuOpen(false)}
-              className={`block px-3 py-2 rounded-lg transition-all duration-300 ${
-                isActive('/register')
-                  ? 'glow-border-pink text-white'
-                  : 'text-gray-300 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              Register
-            </Link>
+
+            {isAdmin && (
+              <Link
+                to="/admin"
+                onClick={() => setIsMenuOpen(false)}
+                className={`block px-3 py-2 rounded-lg transition-all duration-300 ${
+                  isActive('/admin')
+                    ? 'glow-border-pink text-white'
+                    : 'text-gray-300 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                Admin
+              </Link>
+            )}
+
             <Link
               to="/recognize"
               onClick={() => setIsMenuOpen(false)}
@@ -212,14 +220,18 @@ const Navbar = () => {
             <div className="pt-4 border-t border-white/10 mt-4">
               {user ? (
                 <>
-                  <div className="px-3 py-2 flex items-center space-x-3">
+                  <Link
+                    to="/dashboard"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="px-3 py-2 flex items-center space-x-3 hover:bg-white/5 rounded-lg"
+                  >
                     <ProfileAvatar
                       imageUrl={profileData?.profile_picture_url}
                       userName={user.email}
                       size="sm"
                     />
                     <span className="text-sm text-gray-400">{user.email}</span>
-                  </div>
+                  </Link>
                   <button
                     onClick={() => {
                       handleSignOut();
@@ -231,15 +243,24 @@ const Navbar = () => {
                   </button>
                 </>
               ) : (
-                <button
-                  onClick={() => {
-                    handleSignIn();
-                    setIsMenuOpen(false);
-                  }}
-                  className="w-full neon-button"
-                >
-                  Sign In
-                </button>
+                <>
+                  <Link
+                    to="/register"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="block px-3 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-white/5"
+                  >
+                    Register
+                  </Link>
+                  <button
+                    onClick={() => {
+                      handleSignIn();
+                      setIsMenuOpen(false);
+                    }}
+                    className="w-full neon-button mt-2"
+                  >
+                    Sign In
+                  </button>
+                </>
               )}
             </div>
           </div>

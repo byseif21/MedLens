@@ -1,9 +1,8 @@
 import { Navigate, Outlet } from 'react-router-dom';
+import { isAuthenticated, isAdmin as checkIsAdmin } from '../services/auth';
 
-const isAuthenticated = () => {
-  const token = localStorage.getItem('auth_token');
-  const userId = localStorage.getItem('user_id');
-  return Boolean(token && userId);
+const isAdmin = () => {
+  return isAuthenticated() && checkIsAdmin();
 };
 
 export const PublicRoute = () => {
@@ -12,6 +11,10 @@ export const PublicRoute = () => {
 
 export const ProtectedRoute = () => {
   return isAuthenticated() ? <Outlet /> : <Navigate to="/login" replace />;
+};
+
+export const AdminRoute = () => {
+  return isAdmin() ? <Outlet /> : <Navigate to="/dashboard" replace />;
 };
 
 export const RootRedirect = () => {

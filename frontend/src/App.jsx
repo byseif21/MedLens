@@ -3,7 +3,8 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ProfileDashboard from './pages/ProfileDashboard';
 import RecognitionPage from './pages/RecognitionPage';
-import { ProtectedRoute, PublicRoute, RootRedirect } from './router/routeGuards';
+import AdminDashboard from './pages/AdminDashboard';
+import { ProtectedRoute, PublicRoute, RootRedirect, AdminRoute } from './router/routeGuards';
 
 function App() {
   return (
@@ -17,6 +18,10 @@ function App() {
         <Route element={<PublicRoute />}>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+        </Route>
+
+        <Route element={<AdminRoute />}>
+          <Route path="/admin" element={<AdminDashboard />} />
         </Route>
 
         <Route element={<ProtectedRoute />}>
