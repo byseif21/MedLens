@@ -104,50 +104,34 @@ def save_profile_picture(user_id: str, image_bytes: bytes, supabase_client: Clie
     try:
         file_path = f"{user_id}/avatar.jpg"
         
-        # 1. Upload to storage
-        # We try to upload directly. If it fails due to duplication, we remove and re-upload.
-        # This is because .update() is not available on SyncBucketProxy and upsert behavior can be inconsistent.
+        # Always try to remove the file first.
+        # This avoids "Duplicate" errors and doesn't rely on flaky 'upsert' behavior
+        # cuz Db have some issues with update.
         try:
-            supabase_client.storage.from_('face-images').upload(
-                file_path,
-                image_bytes,
-                {"content-type": "image/jpeg"}
-            )
-        except Exception as storage_error:
-            # Check if error is due to duplicate file
-            error_str = str(storage_error)
-            if "Duplicate" in error_str or "already exists" in error_str or "400" in error_str:
-                # File exists, remove it first then upload new one
-                print(f"File {file_path} exists, removing and re-uploading...")
-                try:
-                    supabase_client.storage.from_('face-images').remove([file_path])
-                    supabase_client.storage.from_('face-images').upload(
-                        file_path,
-                        image_bytes,
-                        {"content-type": "image/jpeg"}
-                    )
-                except Exception as retry_error:
-                    print(f"Retry upload failed: {retry_error}")
-                    raise retry_error
-            else:
-                # Re-raise other storage errors
-                raise storage_error
+            supabase_client.storage.from_('face-images').remove([file_path])
+        except Exception:
+            # Ignore errors
+            pass
+
+        # upload the new file
+        supabase_client.storage.from_('face-images').upload(
+            file_path,
+            image_bytes,
+            {"content-type": "image/jpeg"}
+        )
         
-        # 2. Update database record
-        # Remove existing avatar entry to avoid duplicates
+        # Update database record (delete old, insert new)
         supabase_client.table('face_images').delete() \
             .eq('user_id', user_id) \
             .eq('image_type', 'avatar') \
             .execute()
             
-        # Insert new entry
         supabase_client.table('face_images').insert({
             "user_id": user_id,
             "image_url": file_path,
             "image_type": "avatar"
         }).execute()
         
-        # 3. Return public URL
         return supabase_client.storage.from_('face-images').get_public_url(file_path)
         
     except Exception as e:
