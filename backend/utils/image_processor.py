@@ -17,7 +17,7 @@ class ImageProcessingError(Exception):
 class ImageProcessor:
     """Handles image processing operations for face recognition."""
     
-    SUPPORTED_FORMATS = {'JPEG', 'PNG', 'JPG'}
+    SUPPORTED_FORMATS = {'JPEG', 'PNG', 'JPG', 'WEBP'}
     MAX_DIMENSION = 800  # Maximum width or height in pixels
     
     @staticmethod
