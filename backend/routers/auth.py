@@ -134,7 +134,7 @@ async def login_with_face(image: UploadFile = File(...)):
         
         profile_picture_url = None
         try:
-            profile_picture_url = get_profile_picture_url(user['id'], supabase.client)
+            profile_picture_url = get_profile_picture_url(user['id'], supabase)
         except Exception:
             profile_picture_url = None
         

@@ -52,7 +52,7 @@ async def recognize_face(image: UploadFile = File(...), current_user: dict = Dep
             # Fetch profile picture URL
             profile_picture_url = None
             try:
-                profile_picture_url = get_profile_picture_url(user['id'], supabase.client)
+                profile_picture_url = get_profile_picture_url(user['id'], supabase)
             except Exception:
                 profile_picture_url = None
                 

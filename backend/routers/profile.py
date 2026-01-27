@@ -73,7 +73,7 @@ async def get_profile(user_id: str, current_user: dict = Depends(get_current_use
         # If retrieval fails, set to None to maintain backward compatibility
         profile_picture_url = None
         try:
-            profile_picture_url = get_profile_picture_url(user_id, supabase.client)
+            profile_picture_url = get_profile_picture_url(user_id, supabase)
         except ProfilePictureError as e:
             # Log error but don't fail the entire request
             print(f"Warning: Failed to retrieve profile picture for user {user_id}: {str(e)}")
