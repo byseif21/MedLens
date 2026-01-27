@@ -15,6 +15,7 @@ CREATE TABLE users (
     nationality VARCHAR(100),
     id_number VARCHAR(100),
     face_encoding TEXT, -- Store face encoding as JSON string
+    face_updated_at TIMESTAMP WITH TIME ZONE, -- Timestamp when face ID was last updated
     role VARCHAR(20) NOT NULL DEFAULT 'user', -- User role: 'user', 'doctor', 'admin'
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()

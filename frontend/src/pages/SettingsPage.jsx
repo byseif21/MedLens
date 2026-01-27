@@ -6,7 +6,7 @@ import ProfileAvatar from '../components/ProfileAvatar';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useNotifications } from '../hooks/useNotifications';
 import { getCurrentUser } from '../services/auth';
-import { updateFaceEnrollment, updateProfilePicture } from '../services/api';
+import { updateFaceEnrollment, updateProfilePicture, getProfile } from '../services/api';
 
 const SettingsPage = () => {
   const [activeSection, setActiveSection] = useState('security');
@@ -17,6 +17,7 @@ const SettingsPage = () => {
   const [isSubmittingFace, setIsSubmittingFace] = useState(false);
   const [isSubmittingAvatar, setIsSubmittingAvatar] = useState(false);
   const [selectedAvatarFile, setSelectedAvatarFile] = useState(null);
+  const [faceLastUpdated, setFaceLastUpdated] = useState(null);
   const navigate = useNavigate();
   const { notify } = useNotifications();
 
@@ -25,7 +26,21 @@ const SettingsPage = () => {
   useEffect(() => {
     if (!currentUser) {
       navigate('/login', { replace: true });
+      return;
     }
+
+    const fetchProfile = async () => {
+      try {
+        const result = await getProfile(currentUser.id);
+        if (result.success && result.data.face_updated_at) {
+          setFaceLastUpdated(result.data.face_updated_at);
+        }
+      } catch (err) {
+        console.error('Failed to fetch profile settings:', err);
+      }
+    };
+
+    fetchProfile();
   }, [currentUser, navigate]);
 
   const handleFaceCaptureComplete = async (imageFiles) => {
@@ -78,6 +93,7 @@ const SettingsPage = () => {
           title: 'Face ID updated',
           message: 'Your face template has been refreshed successfully.',
         });
+        setFaceLastUpdated(new Date().toISOString());
         setFacePassword('');
         setFaceMode(null);
         setShowPasswordModal(false);
@@ -208,6 +224,19 @@ const SettingsPage = () => {
                     <p className="text-sm text-medical-gray-600">
                       Re-register your face to keep recognition accurate. For security, we require
                       your password before updating your face template.
+                    </p>
+                    <p className="text-xs text-medical-gray-500 mt-2">
+                      {faceLastUpdated ? (
+                        <>
+                          Last updated: {new Date(faceLastUpdated).toLocaleDateString()} at{' '}
+                          {new Date(faceLastUpdated).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </>
+                      ) : (
+                        'Last updated: Not available'
+                      )}
                     </p>
                   </div>
                 </div>

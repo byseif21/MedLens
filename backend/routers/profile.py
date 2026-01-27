@@ -49,7 +49,7 @@ async def get_profile(user_id: str, current_user: dict = Depends(get_current_use
         role = (current_user or {}).get("role") or "user"
 
         # Get user basic info
-        user_response = supabase.client.table('users').select('id, name, email, phone, date_of_birth, gender, nationality, id_number').eq('id', user_id).execute()
+        user_response = supabase.client.table('users').select('id, name, email, phone, date_of_birth, gender, nationality, id_number, face_updated_at').eq('id', user_id).execute()
         
         if not user_response.data:
             raise HTTPException(status_code=404, detail="User not found")
