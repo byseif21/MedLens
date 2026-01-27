@@ -5,14 +5,15 @@ import MultiFaceCapture from '../components/MultiFaceCapture';
 import ProfileAvatar from '../components/ProfileAvatar';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useNotifications } from '../hooks/useNotifications';
-import { getCurrentUser } from '../services/auth';
 import {
   updateFaceEnrollment,
   updateProfilePicture,
   getProfile,
   updatePrivacySettings,
   changePassword,
+  deleteAccount,
 } from '../services/api';
+import { getCurrentUser, clearSession } from '../services/auth';
 import { defaultPrivacySettings } from '../utils/constants';
 
 const SettingsPage = () => {
@@ -36,12 +37,56 @@ const SettingsPage = () => {
   });
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [isPasswordFormVisible, setIsPasswordFormVisible] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const navigate = useNavigate();
   const { notify } = useNotifications();
 
   const currentUser = getCurrentUser();
   const userId = currentUser?.id;
+
+  const handleDeleteAccount = async (e) => {
+    e.preventDefault();
+    if (!deletePassword) {
+      notify({
+        type: 'warning',
+        title: 'Password Required',
+        message: 'Please enter your password to confirm account deletion.',
+      });
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const result = await deleteAccount(deletePassword);
+      if (result.success) {
+        notify({
+          type: 'success',
+          title: 'Account Deleted',
+          message: 'Your account has been permanently deleted.',
+        });
+        clearSession();
+        navigate('/login', { replace: true });
+      } else {
+        notify({
+          type: 'error',
+          title: 'Deletion Failed',
+          message: result.error,
+        });
+      }
+    } catch (err) {
+      console.error('Delete account error:', err);
+      notify({
+        type: 'error',
+        title: 'Unexpected Error',
+        message: 'An error occurred while deleting your account.',
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const fetchProfile = useCallback(async () => {
     if (!userId) return;
@@ -590,6 +635,24 @@ const SettingsPage = () => {
                     </div>
                   )}
                 </div>
+
+                <div className="medical-card mt-6 border-red-100 bg-red-50/30">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h2 className="text-2xl font-semibold mb-1 text-red-600">Danger Zone</h2>
+                      <p className="text-sm text-red-600/80">
+                        Permanently delete your account and all associated data.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowDeleteModal(true)}
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors shadow-sm"
+                    >
+                      Delete Account
+                    </button>
+                  </div>
+                </div>
               </>
             )}
 
@@ -934,6 +997,67 @@ const SettingsPage = () => {
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="bg-white rounded-lg shadow-medical-lg w-full max-w-md overflow-hidden animate-slide-up">
+            <div className="p-6 border-b border-gray-100">
+              <h3 className="text-xl font-bold text-red-600 mb-1">Delete Account</h3>
+              <p className="text-sm text-gray-500">This action cannot be undone.</p>
+            </div>
+
+            <div className="p-6">
+              <p className="text-gray-600 mb-6">
+                Are you sure you want to delete your account? All of your data, including medical
+                info, connections, and face data will be permanently removed.
+              </p>
+
+              <form onSubmit={handleDeleteAccount} className="space-y-4">
+                <div>
+                  <label className="label-medical text-gray-700">Confirm with Password</label>
+                  <input
+                    type="password"
+                    value={deletePassword}
+                    onChange={(e) => setDeletePassword(e.target.value)}
+                    className="input-medical w-full border-red-300 focus:border-red-500 focus:ring-red-200"
+                    placeholder="Enter your password"
+                    required
+                    autoFocus
+                  />
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowDeleteModal(false);
+                      setDeletePassword('');
+                    }}
+                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-colors"
+                    disabled={isDeleting}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors shadow-sm flex items-center gap-2"
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? (
+                      <>
+                        <LoadingSpinner size="sm" color="text-white" />
+                        Deleting...
+                      </>
+                    ) : (
+                      'Delete Permanently'
+                    )}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>

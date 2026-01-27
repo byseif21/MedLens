@@ -52,6 +52,28 @@ export const changePassword = async (currentPassword, newPassword) => {
   }
 };
 
+/**
+ * Delete user account
+ * @param {string} password - User password for confirmation
+ * @returns {Promise} API response
+ */
+export const deleteAccount = async (password) => {
+  try {
+    const response = await apiClient.post('/api/auth/delete-account', {
+      password: password,
+    });
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.detail || error.message || 'Failed to delete account',
+    };
+  }
+};
+
 export const confirmFaceLogin = async ({ userId, password }) => {
   try {
     const response = await apiClient.post(
