@@ -11,6 +11,7 @@ import {
   updateProfilePicture,
   getProfile,
   updatePrivacySettings,
+  changePassword,
 } from '../services/api';
 import { defaultPrivacySettings } from '../utils/constants';
 
@@ -28,6 +29,14 @@ const SettingsPage = () => {
   const [profilePictureUrl, setProfilePictureUrl] = useState(null);
   const [uploaderKey, setUploaderKey] = useState(0);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isPasswordFormVisible, setIsPasswordFormVisible] = useState(false);
+
   const navigate = useNavigate();
   const { notify } = useNotifications();
 
@@ -206,6 +215,63 @@ const SettingsPage = () => {
     }
   };
 
+  const handlePasswordChange = (e) => {
+    setPasswordForm({ ...passwordForm, [e.target.name]: e.target.value });
+  };
+
+  const submitPasswordChange = async (e) => {
+    e.preventDefault();
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      notify({
+        type: 'error',
+        title: 'Passwords do not match',
+        message: 'New password and confirmation must match.',
+      });
+      return;
+    }
+
+    if (passwordForm.newPassword.length < 6) {
+      notify({
+        type: 'error',
+        title: 'Weak password',
+        message: 'Password must be at least 6 characters long.',
+      });
+      return;
+    }
+
+    setIsChangingPassword(true);
+
+    try {
+      const result = await changePassword(passwordForm.currentPassword, passwordForm.newPassword);
+
+      if (result.success) {
+        notify({
+          type: 'success',
+          title: 'Password Updated',
+          message: 'Your password has been changed successfully.',
+        });
+        setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+        setIsPasswordFormVisible(false);
+      } else {
+        notify({
+          type: 'error',
+          title: 'Update Failed',
+          message: result.error,
+        });
+      }
+    } catch (err) {
+      console.error('Password change error:', err);
+      notify({
+        type: 'error',
+        title: 'Unexpected Error',
+        message: 'An error occurred while changing your password.',
+      });
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-medical-gradient">
       <header className="bg-white shadow-medical">
@@ -280,149 +346,251 @@ const SettingsPage = () => {
 
           <section className="space-y-6">
             {activeSection === 'security' && (
-              <div className="medical-card">
-                <div className="flex items-start justify-between mb-6">
-                  <div>
-                    <h2 className="text-2xl font-semibold mb-1">Face ID</h2>
-                    <p className="text-sm text-medical-gray-600">
-                      Re-register your face to keep recognition accurate. For security, we require
-                      your password before updating your face template.
-                    </p>
-                    <p className="text-xs text-medical-gray-500 mt-2">
-                      {faceLastUpdated ? (
-                        <>
-                          Last updated: {new Date(faceLastUpdated).toLocaleDateString()} at{' '}
-                          {new Date(faceLastUpdated).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </>
-                      ) : (
-                        'Last updated: Not available'
-                      )}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-6">
-                  {!faceMode ? (
-                    <div className="space-y-4">
-                      <p className="text-medical-gray-600 text-sm">
-                        Choose how you want to update your Face ID.
+              <>
+                <div className="medical-card">
+                  <div className="flex items-start justify-between mb-6">
+                    <div>
+                      <h2 className="text-2xl font-semibold mb-1">Face ID</h2>
+                      <p className="text-sm text-medical-gray-600">
+                        Re-register your face to keep recognition accurate. For security, we require
+                        your password before updating your face template.
                       </p>
-                      <div className="grid sm:grid-cols-2 gap-4">
-                        <button
-                          type="button"
-                          onClick={() => setFaceMode('capture')}
-                          className="w-full btn-medical-primary flex items-center justify-center gap-3"
-                        >
-                          <svg
-                            className="w-6 h-6"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
+                      <p className="text-xs text-medical-gray-500 mt-2">
+                        {faceLastUpdated ? (
+                          <>
+                            Last updated: {new Date(faceLastUpdated).toLocaleDateString()} at{' '}
+                            {new Date(faceLastUpdated).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </>
+                        ) : (
+                          'Last updated: Not available'
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-6">
+                    {!faceMode ? (
+                      <div className="space-y-4">
+                        <p className="text-medical-gray-600 text-sm">
+                          Choose how you want to update your Face ID.
+                        </p>
+                        <div className="grid sm:grid-cols-2 gap-4">
+                          <button
+                            type="button"
+                            onClick={() => setFaceMode('capture')}
+                            className="w-full btn-medical-primary flex items-center justify-center gap-3"
                           >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
-                            />
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
-                            />
-                          </svg>
-                          Capture Multi-Angle Face
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setFaceMode('upload')}
-                          className="w-full btn-medical-secondary flex items-center justify-center gap-3"
-                        >
-                          <svg
-                            className="w-6 h-6"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
+                            <svg
+                              className="w-6 h-6"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                              />
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
+                              />
+                            </svg>
+                            Capture Multi-Angle Face
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFaceMode('upload')}
+                            className="w-full btn-medical-secondary flex items-center justify-center gap-3"
                           >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                            />
-                          </svg>
-                          Upload New Face Photo
-                        </button>
+                            <svg
+                              className="w-6 h-6"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                              />
+                            </svg>
+                            Upload New Face Photo
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ) : faceMode === 'capture' ? (
-                    <div>
-                      <button
-                        type="button"
-                        onClick={() => setFaceMode(null)}
-                        className="mb-4 text-medical-primary hover:text-cyan-700 flex items-center gap-2 text-sm"
-                      >
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
+                    ) : faceMode === 'capture' ? (
+                      <div>
+                        <button
+                          type="button"
+                          onClick={() => setFaceMode(null)}
+                          className="mb-4 text-medical-primary hover:text-cyan-700 flex items-center gap-2 text-sm"
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M15 19l-7-7 7-7"
-                          />
-                        </svg>
-                        Back
-                      </button>
-                      <MultiFaceCapture onComplete={handleFaceCaptureComplete} />
-                    </div>
-                  ) : (
-                    <div>
-                      <button
-                        type="button"
-                        onClick={() => setFaceMode(null)}
-                        className="mb-4 text-medical-primary hover:text-cyan-700 flex items-center gap-2 text-sm"
-                      >
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M15 19l-7-7 7-7"
+                            />
+                          </svg>
+                          Back
+                        </button>
+                        <MultiFaceCapture onComplete={handleFaceCaptureComplete} />
+                      </div>
+                    ) : (
+                      <div>
+                        <button
+                          type="button"
+                          onClick={() => setFaceMode(null)}
+                          className="mb-4 text-medical-primary hover:text-cyan-700 flex items-center gap-2 text-sm"
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M15 19l-7-7 7-7"
-                          />
-                        </svg>
-                        Back
-                      </button>
-                      <FaceUploader onUpload={handleFaceCaptureComplete} />
-                    </div>
-                  )}
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M15 19l-7-7 7-7"
+                            />
+                          </svg>
+                          Back
+                        </button>
+                        <FaceUploader onUpload={handleFaceCaptureComplete} />
+                      </div>
+                    )}
 
-                  {isSubmittingFace && (
-                    <div className="mt-4">
-                      <LoadingSpinner text="Updating Face ID..." />
-                    </div>
-                  )}
+                    {isSubmittingFace && (
+                      <div className="mt-4">
+                        <LoadingSpinner text="Updating Face ID..." />
+                      </div>
+                    )}
 
-                  <div className="mt-4 bg-medical-light border border-medical-primary/20 rounded-lg p-4">
-                    <p className="text-medical-gray-700 text-sm">
-                      Face ID settings are separate from your personal information. Updating your
-                      face template does not change your name, medical data, or emergency contacts.
-                    </p>
+                    <div className="mt-4 bg-medical-light border border-medical-primary/20 rounded-lg p-4">
+                      <p className="text-medical-gray-700 text-sm">
+                        Face ID settings are separate from your personal information. Updating your
+                        face template does not change your name, medical data, or emergency
+                        contacts.
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
+
+                <div className="medical-card mt-6">
+                  <div className="flex items-start justify-between mb-6">
+                    <div>
+                      <h2 className="text-2xl font-semibold mb-1">Password</h2>
+                      <p className="text-sm text-medical-gray-600">
+                        Update your account password to keep your account secure.
+                      </p>
+                    </div>
+
+                    {!isPasswordFormVisible && (
+                      <button
+                        type="button"
+                        onClick={() => setIsPasswordFormVisible(true)}
+                        className="btn-medical-secondary"
+                      >
+                        Change Password
+                      </button>
+                    )}
+                  </div>
+
+                  {isPasswordFormVisible && (
+                    <div className="bg-medical-gray-50/50 rounded-xl p-6 border border-medical-gray-100">
+                      <form onSubmit={submitPasswordChange} className="space-y-4 max-w-md">
+                        <div>
+                          <label className="label-medical block text-sm font-medium text-medical-gray-700 mb-1">
+                            Current Password
+                          </label>
+                          <input
+                            type="password"
+                            name="currentPassword"
+                            value={passwordForm.currentPassword}
+                            onChange={handlePasswordChange}
+                            className="input-medical w-full"
+                            placeholder="Enter current password"
+                            required
+                          />
+                        </div>
+
+                        <div>
+                          <label className="label-medical block text-sm font-medium text-medical-gray-700 mb-1">
+                            New Password
+                          </label>
+                          <input
+                            type="password"
+                            name="newPassword"
+                            value={passwordForm.newPassword}
+                            onChange={handlePasswordChange}
+                            className="input-medical w-full"
+                            placeholder="Enter new password (min. 6 chars)"
+                            minLength={6}
+                            required
+                          />
+                        </div>
+
+                        <div>
+                          <label className="label-medical block text-sm font-medium text-medical-gray-700 mb-1">
+                            Confirm New Password
+                          </label>
+                          <input
+                            type="password"
+                            name="confirmPassword"
+                            value={passwordForm.confirmPassword}
+                            onChange={handlePasswordChange}
+                            className="input-medical w-full"
+                            placeholder="Confirm new password"
+                            minLength={6}
+                            required
+                          />
+                        </div>
+
+                        <div className="flex gap-3 pt-2">
+                          <button
+                            type="submit"
+                            className="btn-medical-primary flex-1 py-2.5 shadow-sm"
+                            disabled={isChangingPassword}
+                          >
+                            {isChangingPassword ? 'Updating...' : 'Update Password'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsPasswordFormVisible(false);
+                              setPasswordForm({
+                                currentPassword: '',
+                                newPassword: '',
+                                confirmPassword: '',
+                              });
+                            }}
+                            className="btn-medical-secondary flex-1 py-2.5 bg-white hover:bg-gray-50"
+                            disabled={isChangingPassword}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  )}
+                </div>
+              </>
             )}
 
             {activeSection === 'privacy' && (

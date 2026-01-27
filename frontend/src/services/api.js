@@ -28,6 +28,30 @@ export const loginWithFace = async (formData) => {
   }
 };
 
+/**
+ * Change user password
+ * @param {string} currentPassword - Current password
+ * @param {string} newPassword - New password
+ * @returns {Promise} API response
+ */
+export const changePassword = async (currentPassword, newPassword) => {
+  try {
+    const response = await apiClient.post('/api/auth/change-password', {
+      current_password: currentPassword,
+      new_password: newPassword,
+    });
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.detail || error.message || 'Failed to change password',
+    };
+  }
+};
+
 export const confirmFaceLogin = async ({ userId, password }) => {
   try {
     const response = await apiClient.post(
