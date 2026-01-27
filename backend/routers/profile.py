@@ -1,9 +1,12 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
+import bcrypt
+import json
 from services.storage_service import get_supabase_service
 from services.profile_picture_service import get_profile_picture_url, ProfilePictureError
 from services.contact_service import get_emergency_contacts
+from services.face_service import get_face_service, FaceRecognitionError, upload_face_images, collect_face_images
 from routers.auth import get_current_user, verify_user_access
 
 router = APIRouter(prefix="/api/profile", tags=["profile"])
@@ -197,3 +200,79 @@ async def update_relatives(user_id: str, data: RelativesUpdate, current_user: di
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to update relatives: {str(e)}")
+
+@router.post("/face/{user_id}")
+async def update_face_enrollment(
+    user_id: str,
+    password: str = Form(...),
+    image: Optional[UploadFile] = File(None),
+    image_front: Optional[UploadFile] = File(None),
+    image_left: Optional[UploadFile] = File(None),
+    image_right: Optional[UploadFile] = File(None),
+    image_up: Optional[UploadFile] = File(None),
+    image_down: Optional[UploadFile] = File(None),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Update user's face enrollment data.
+    Requires password verification.
+    """
+    supabase = get_supabase_service()
+    face_service = get_face_service()
+
+    try:
+        # Verify access rights
+        verify_user_access(current_user, user_id)
+
+        # Get current user data including password hash
+        user_response = supabase.client.table('users').select('password_hash, email, name').eq('id', user_id).execute()
+        if not user_response.data:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        user = user_response.data[0]
+        stored_hash = user.get('password_hash')
+
+        # Verify password
+        if not stored_hash or not bcrypt.checkpw(password.encode('utf-8'), stored_hash.encode('utf-8')):
+             raise HTTPException(status_code=403, detail="Invalid password")
+
+        # Collect face images
+        face_images = await collect_face_images(
+            image, image_front, image_left, image_right, image_up, image_down
+        )
+        
+        if not face_images:
+            raise HTTPException(status_code=400, detail="At least one face image is required")
+
+        # Process face images to get average encoding
+        try:
+            avg_encoding = face_service.process_face_images(face_images)
+        except FaceRecognitionError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        
+        face_encoding_json = json.dumps(avg_encoding)
+
+        # Update user record
+        response = supabase.client.table('users').update({
+            "face_encoding": face_encoding_json
+        }).eq('id', user_id).execute()
+
+        # Update local face service
+        try:
+            face_service.save_encoding(
+                user_id=user_id,
+                encoding=avg_encoding,
+                user_data={"name": user['name'], "email": user['email']}
+            )
+        except Exception as e:
+            print(f"Warning: Failed to update local encoding: {str(e)}")
+
+        # Update storage images (overwrite/add new ones)
+        upload_face_images(supabase, user_id, face_images)
+
+        return {"message": "Face enrollment updated successfully"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update face enrollment: {str(e)}")
