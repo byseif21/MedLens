@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 import threading
 from fastapi import UploadFile
+import logging
 
 from models.face_encoding import (
     FaceExtractionResult,
@@ -17,6 +18,8 @@ from models.face_encoding import (
     FaceEncodingStorage
 )
 from utils.config import config
+
+logger = logging.getLogger(__name__)
 
 
 class FaceRecognitionError(Exception):
@@ -364,6 +367,7 @@ class FaceRecognitionService:
         except FaceRecognitionError:
             raise
         except Exception as e:
+            logger.error(f"Unexpected error in process_face_images: {e}", exc_info=True)
             raise FaceRecognitionError(f"Failed to process face images: {str(e)}")
 
     def delete_encoding(self, user_id: str) -> bool:
@@ -431,7 +435,7 @@ def upload_face_images(supabase, user_id: str, images: Dict[str, bytes]) -> None
                 "image_type": angle
             }).execute()
         except Exception as e:
-            print(f"Warning: Failed to upload {angle} image: {str(e)}")
+            logger.warning(f"Failed to upload {angle} image: {str(e)}")
 
 
 async def collect_face_images(
