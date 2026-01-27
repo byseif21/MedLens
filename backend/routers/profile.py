@@ -4,7 +4,7 @@ from typing import List, Optional, Dict, Any
 import bcrypt
 import json
 from services.storage_service import get_supabase_service
-from services.profile_picture_service import get_profile_picture_url, ProfilePictureError
+from services.profile_picture_service import get_profile_picture_url, save_profile_picture, ProfilePictureError
 from services.contact_service import get_emergency_contacts
 from services.face_service import get_face_service, FaceRecognitionError, upload_face_images, collect_face_images
 from routers.auth import get_current_user, verify_user_access
@@ -276,3 +276,45 @@ async def update_face_enrollment(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to update face enrollment: {str(e)}")
+
+@router.post("/avatar/{user_id}")
+async def update_profile_picture(
+    user_id: str,
+    image: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Update user's profile picture (avatar).
+    Does not require password.
+    Does not update biometric face encoding (purely cosmetic).
+    """
+    supabase = get_supabase_service()
+
+    try:
+        # Verify access rights
+        verify_user_access(current_user, user_id)
+
+        # Read image
+        image_bytes = await image.read()
+        
+        if not image_bytes:
+            raise HTTPException(status_code=400, detail="Empty image file")
+
+        # Save profile picture using dedicated service
+        # This handles storage upload and DB record update for 'avatar' type
+        # NOTE: get_supabase_service() returns a SupabaseService wrapper object, 
+        # but save_profile_picture expects the raw supabase client.
+        # We access the raw client via the .client attribute.
+        public_url = save_profile_picture(user_id, image_bytes, supabase.client)
+
+        return {
+            "message": "Profile picture updated successfully",
+            "data": {
+                "profile_picture_url": public_url
+            }
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update profile picture: {str(e)}")

@@ -18,10 +18,28 @@ const SettingsPage = () => {
   const [isSubmittingAvatar, setIsSubmittingAvatar] = useState(false);
   const [selectedAvatarFile, setSelectedAvatarFile] = useState(null);
   const [faceLastUpdated, setFaceLastUpdated] = useState(null);
+  const [profilePictureUrl, setProfilePictureUrl] = useState(null);
   const navigate = useNavigate();
   const { notify } = useNotifications();
 
   const currentUser = getCurrentUser();
+
+  const fetchProfile = async () => {
+    try {
+      const result = await getProfile(currentUser.id);
+      if (result.success) {
+        if (result.data.face_updated_at) {
+          setFaceLastUpdated(result.data.face_updated_at);
+        }
+        if (result.data.profile_picture_url) {
+          const timestamp = new Date().getTime();
+          setProfilePictureUrl(`${result.data.profile_picture_url}?t=${timestamp}`);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch profile settings:', err);
+    }
+  };
 
   useEffect(() => {
     if (!currentUser) {
@@ -29,19 +47,9 @@ const SettingsPage = () => {
       return;
     }
 
-    const fetchProfile = async () => {
-      try {
-        const result = await getProfile(currentUser.id);
-        if (result.success && result.data.face_updated_at) {
-          setFaceLastUpdated(result.data.face_updated_at);
-        }
-      } catch (err) {
-        console.error('Failed to fetch profile settings:', err);
-      }
-    };
-
     fetchProfile();
-  }, [currentUser, navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser?.id, navigate]);
 
   const handleFaceCaptureComplete = async (imageFiles) => {
     const hasFiles =
@@ -135,6 +143,7 @@ const SettingsPage = () => {
           message: 'Your profile photo has been updated successfully.',
         });
         setSelectedAvatarFile(null);
+        fetchProfile();
       } else {
         notify({
           type: 'error',
@@ -377,7 +386,7 @@ const SettingsPage = () => {
                 <div className="grid md:grid-cols-2 gap-8">
                   <div className="flex flex-col items-center space-y-4">
                     <ProfileAvatar
-                      imageUrl={null}
+                      imageUrl={profilePictureUrl}
                       userName={currentUser?.name}
                       size="lg"
                       clickable={false}
