@@ -1,5 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, File, UploadFile, Form
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import APIRouter, HTTPException, Depends, File, UploadFile
 from pydantic import BaseModel, Field
 try:
     import email_validator  # noqa: F401
@@ -15,9 +14,9 @@ from services.face_service import get_face_service
 from services.profile_picture_service import get_profile_picture_url
 from services.security import verify_password, hash_password
 from utils.config import get_config
+from dependencies import get_current_user, security
 
 router = APIRouter(prefix="/api", tags=["authentication"])
-security = HTTPBearer()
 settings = get_config()
 
 class LoginRequest(BaseModel):
@@ -188,35 +187,6 @@ async def confirm_face_login(payload: FaceLoginConfirmRequest):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Login failed: {str(e)}")
-
-def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Dict[str, Any]:
-    """
-    Verify JWT token and return current user payload (including role)
-    """
-    try:
-        token = credentials.credentials
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        user_id: str = payload.get("sub")
-        if user_id is None:
-            raise HTTPException(status_code=401, detail="Invalid authentication credentials")
-        return payload
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token has expired")
-    except jwt.JWTError:
-        raise HTTPException(status_code=401, detail="Could not validate credentials")
-
-def verify_user_access(current_user: dict, target_user_id: str):
-    """
-    Verify that the current user is authorized to access/modify the target user's data.
-    Allows access if:
-    1. current_user is the target_user (self-access)
-    2. current_user has 'admin' role
-    """
-    current_user_id = (current_user or {}).get("sub")
-    role = (current_user or {}).get("role") or "user"
-    
-    if current_user_id != target_user_id and role != "admin":
-        raise HTTPException(status_code=403, detail="Not authorized to update this profile")
 
 @router.post("/auth/change-password")
 async def change_password(

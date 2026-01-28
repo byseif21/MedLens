@@ -1,9 +1,7 @@
-from fastapi import APIRouter, HTTPException, Query, Depends
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from typing import List, Optional
-import httpx
 from services.storage_service import get_supabase_service
-from routers.auth import get_current_user
 from utils.config import get_config
 
 router = APIRouter(prefix="/api/users", tags=["users"])

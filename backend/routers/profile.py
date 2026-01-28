@@ -1,14 +1,13 @@
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
-import bcrypt
 import json
 from services.storage_service import get_supabase_service
 from services.profile_picture_service import get_profile_picture_url, save_profile_picture, ProfilePictureError
 from services.contact_service import get_emergency_contacts
 from services.face_service import get_face_service, FaceRecognitionError, upload_face_images, collect_face_images
 from services.security import verify_password
-from routers.auth import get_current_user, verify_user_access
+from dependencies import get_current_user, verify_user_access
 
 router = APIRouter(prefix="/api/profile", tags=["profile"])
 

@@ -1,11 +1,10 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
-import json
 from services.face_service import get_face_service
 from services.storage_service import get_supabase_service
 from services.contact_service import get_emergency_contacts
 from services.profile_picture_service import get_profile_picture_url
 from utils.config import get_config
-from routers.auth import get_current_user
+from dependencies import get_current_user
 
 router = APIRouter(prefix="/api", tags=["recognition"])
 settings = get_config()

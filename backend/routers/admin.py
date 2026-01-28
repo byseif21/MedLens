@@ -1,9 +1,8 @@
 from fastapi import APIRouter, HTTPException, Query, Depends
 from pydantic import BaseModel
 from typing import List, Optional
-import httpx
 from services.storage_service import get_supabase_service
-from routers.auth import get_current_user
+from dependencies import get_current_user
 from utils.config import get_config
 
 router = APIRouter(prefix="/api/users", tags=["admin"])
