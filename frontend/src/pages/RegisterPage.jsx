@@ -5,6 +5,7 @@ import FaceUploader from '../components/FaceUploader';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { registerUser } from '../services/api';
 import { countries } from '../utils/countries';
+import { registrationSchema, validateWithSchema } from '../utils/validation';
 
 const RegisterPage = () => {
   const [step, setStep] = useState(1); // 1: info, 2: face
@@ -30,21 +31,14 @@ const RegisterPage = () => {
   };
 
   const handleNextStep = () => {
-    if (
-      !formData.name ||
-      !formData.email ||
-      !formData.phone ||
-      !formData.password ||
-      !formData.date_of_birth ||
-      !formData.gender
-    ) {
-      setError('Please fill in all required fields');
+    const { isValid, data, errors } = validateWithSchema(registrationSchema, formData);
+
+    if (!isValid) {
+      const firstError = Object.values(errors)[0];
+      setError(firstError);
       return;
     }
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters');
-      return;
-    }
+    setFormData(data);
     setError('');
     setStep(2);
   };
@@ -200,7 +194,7 @@ const RegisterPage = () => {
                     value={formData.password}
                     onChange={handleChange}
                     className="input-medical"
-                    placeholder="Create a password (min 6 characters)"
+                    placeholder="Create a password (min 8 characters)"
                   />
                 </div>
 

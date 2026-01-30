@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
 import RelationshipSelector from './RelationshipSelector';
+import { externalContactSchema, validateWithSchema } from '../utils/validation';
 
 const ExternalContactForm = ({
   onSubmit,
@@ -30,49 +31,6 @@ const ExternalContactForm = ({
       });
     }
   }, [initialData]);
-
-  const validatePhone = (phone) => {
-    // Basic phone validation - allows various formats
-    const phoneRegex = /^[\d\s\-+()]+$/;
-    return phoneRegex.test(phone) && phone.replace(/\D/g, '').length >= 10;
-  };
-
-  const validateForm = () => {
-    const newErrors = {};
-
-    // Name validation
-    const trimmedName = formData.name.trim();
-    if (!trimmedName) {
-      newErrors.name = 'Name is required';
-    } else if (trimmedName.length < 2) {
-      newErrors.name = 'Name must be at least 2 characters';
-    } else if (trimmedName.length > 100) {
-      newErrors.name = 'Name must be less than 100 characters';
-    } else if (!/^[a-zA-Z\s\-']+$/.test(trimmedName)) {
-      newErrors.name = 'Name can only contain letters, spaces, hyphens, and apostrophes';
-    }
-
-    // Phone validation
-    const trimmedPhone = formData.phone.trim();
-    if (!trimmedPhone) {
-      newErrors.phone = 'Phone number is required';
-    } else if (!validatePhone(trimmedPhone)) {
-      newErrors.phone = 'Please enter a valid phone number (at least 10 digits)';
-    }
-
-    // Address validation (optional but if provided, check length)
-    if (formData.address && formData.address.trim().length > 200) {
-      newErrors.address = 'Address must be less than 200 characters';
-    }
-
-    // Relationship validation
-    if (!formData.relationship) {
-      newErrors.relationship = 'Relationship is required';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -112,7 +70,14 @@ const ExternalContactForm = ({
       return;
     }
 
-    if (!validateForm()) {
+    const {
+      isValid,
+      errors: validationErrors,
+      data: sanitizedData,
+    } = validateWithSchema(externalContactSchema, formData);
+
+    if (!isValid) {
+      setErrors(validationErrors);
       return;
     }
 
@@ -120,7 +85,7 @@ const ExternalContactForm = ({
     setErrors({}); // Clear previous errors
 
     try {
-      await onSubmit(formData);
+      await onSubmit(sanitizedData);
       // Reset form on success only if not in edit mode
       if (!isEditMode) {
         setFormData({

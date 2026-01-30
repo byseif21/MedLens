@@ -5,6 +5,7 @@ import { getCurrentUser } from '../services/auth';
 import { countries } from '../utils/countries';
 import LoadingSpinner from './LoadingSpinner';
 import { computeAge } from '../utils/dateUtils';
+import { profileUpdateSchema, validateWithSchema } from '../utils/validation';
 
 const getFormDataFromProfile = (profile) => ({
   name: profile?.name || '',
@@ -20,19 +21,37 @@ const MainInfo = ({ profile, onUpdate, readOnly = false, targetUserId = null }) 
   const canEdit = !readOnly;
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState(getFormDataFromProfile(profile));
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
+    // eslint-disable-next-line
     setFormData(getFormDataFromProfile(profile));
+    setErrors({});
   }, [profile]);
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    if (errors[name]) {
+      setErrors({ ...errors, [name]: '' });
+    }
   };
 
   const handleSave = async () => {
+    const {
+      isValid,
+      errors: validationErrors,
+      data: sanitizedData,
+    } = validateWithSchema(profileUpdateSchema, formData);
+
+    if (!isValid) {
+      setErrors(validationErrors);
+      return;
+    }
+
     setLoading(true);
     const userId = targetUserId || getCurrentUser()?.id;
-    const result = await updateMainInfo(userId, formData);
+    const result = await updateMainInfo(userId, sanitizedData);
 
     if (result.success) {
       setIsEditing(false);
@@ -90,8 +109,11 @@ const MainInfo = ({ profile, onUpdate, readOnly = false, targetUserId = null }) 
             value={formData.name}
             onChange={handleChange}
             disabled={!isEditing}
-            className="input-medical disabled:bg-medical-gray-50 disabled:cursor-not-allowed"
+            className={`input-medical disabled:bg-medical-gray-50 disabled:cursor-not-allowed ${
+              errors.name ? 'border-red-500' : ''
+            }`}
           />
+          {errors.name && <p className="text-sm text-red-500 mt-1">{errors.name}</p>}
         </div>
 
         <div>
@@ -102,8 +124,11 @@ const MainInfo = ({ profile, onUpdate, readOnly = false, targetUserId = null }) 
             value={formData.phone}
             onChange={handleChange}
             disabled={!isEditing}
-            className="input-medical disabled:bg-medical-gray-50 disabled:cursor-not-allowed"
+            className={`input-medical disabled:bg-medical-gray-50 disabled:cursor-not-allowed ${
+              errors.phone ? 'border-red-500' : ''
+            }`}
           />
+          {errors.phone && <p className="text-sm text-red-500 mt-1">{errors.phone}</p>}
         </div>
 
         <div>
@@ -124,8 +149,11 @@ const MainInfo = ({ profile, onUpdate, readOnly = false, targetUserId = null }) 
               name="date_of_birth"
               value={formData.date_of_birth}
               onChange={handleChange}
-              className="input-medical"
+              className={`input-medical ${errors.date_of_birth ? 'border-red-500' : ''}`}
             />
+            {errors.date_of_birth && (
+              <p className="text-sm text-red-500 mt-1">{errors.date_of_birth}</p>
+            )}
           </div>
         )}
 
@@ -136,7 +164,9 @@ const MainInfo = ({ profile, onUpdate, readOnly = false, targetUserId = null }) 
             value={formData.nationality}
             onChange={handleChange}
             disabled={!isEditing}
-            className="input-medical disabled:bg-medical-gray-50 disabled:cursor-not-allowed"
+            className={`input-medical disabled:bg-medical-gray-50 disabled:cursor-not-allowed ${
+              errors.nationality ? 'border-red-500' : ''
+            }`}
           >
             <option value="">Select Nationality</option>
             {countries.map((c) => (
@@ -145,6 +175,7 @@ const MainInfo = ({ profile, onUpdate, readOnly = false, targetUserId = null }) 
               </option>
             ))}
           </select>
+          {errors.nationality && <p className="text-sm text-red-500 mt-1">{errors.nationality}</p>}
         </div>
 
         <div>
@@ -154,13 +185,16 @@ const MainInfo = ({ profile, onUpdate, readOnly = false, targetUserId = null }) 
             value={formData.gender}
             onChange={handleChange}
             disabled={!isEditing}
-            className="input-medical disabled:bg-medical-gray-50 disabled:cursor-not-allowed"
+            className={`input-medical disabled:bg-medical-gray-50 disabled:cursor-not-allowed ${
+              errors.gender ? 'border-red-500' : ''
+            }`}
           >
             <option value="">Select Gender</option>
             <option value="male">Male</option>
             <option value="female">Female</option>
             <option value="other">Other</option>
           </select>
+          {errors.gender && <p className="text-sm text-red-500 mt-1">{errors.gender}</p>}
         </div>
 
         <div className={isEditing ? 'md:col-span-2' : ''}>
@@ -172,8 +206,11 @@ const MainInfo = ({ profile, onUpdate, readOnly = false, targetUserId = null }) 
             onChange={handleChange}
             disabled={!isEditing}
             placeholder="National ID, Passport, or Driver's License"
-            className="input-medical disabled:bg-medical-gray-50 disabled:cursor-not-allowed"
+            className={`input-medical disabled:bg-medical-gray-50 disabled:cursor-not-allowed ${
+              errors.id_number ? 'border-red-500' : ''
+            }`}
           />
+          {errors.id_number && <p className="text-sm text-red-500 mt-1">{errors.id_number}</p>}
         </div>
       </div>
     </div>

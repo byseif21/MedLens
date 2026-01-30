@@ -15,6 +15,7 @@ import {
 } from '../services/api';
 import { getCurrentUser, clearSession } from '../services/auth';
 import { defaultPrivacySettings } from '../utils/constants';
+import { changePasswordSchema, validateWithSchema } from '../utils/validation';
 
 const SettingsPage = () => {
   const [activeSection, setActiveSection] = useState('profile');
@@ -267,20 +268,14 @@ const SettingsPage = () => {
   const submitPasswordChange = async (e) => {
     e.preventDefault();
 
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      notify({
-        type: 'error',
-        title: 'Passwords do not match',
-        message: 'New password and confirmation must match.',
-      });
-      return;
-    }
+    const { isValid, errors } = validateWithSchema(changePasswordSchema, passwordForm);
 
-    if (passwordForm.newPassword.length < 6) {
+    if (!isValid) {
+      const firstError = Object.values(errors)[0];
       notify({
         type: 'error',
-        title: 'Weak password',
-        message: 'Password must be at least 6 characters long.',
+        title: 'Validation Error',
+        message: firstError,
       });
       return;
     }
@@ -880,8 +875,8 @@ const SettingsPage = () => {
                             value={passwordForm.newPassword}
                             onChange={handlePasswordChange}
                             className="input-medical w-full"
-                            placeholder="Enter new password (min. 6 chars)"
-                            minLength={6}
+                            placeholder="Enter new password (min. 8 chars)"
+                            minLength={8}
                             required
                           />
                         </div>
@@ -897,7 +892,7 @@ const SettingsPage = () => {
                             onChange={handlePasswordChange}
                             className="input-medical w-full"
                             placeholder="Confirm new password"
-                            minLength={6}
+                            minLength={8}
                             required
                           />
                         </div>

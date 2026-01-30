@@ -8,10 +8,11 @@ import { useNotifications } from '../hooks/useNotifications';
 import { setSession } from '../services/auth';
 import { confirmFaceLogin, loginWithFace } from '../services/api';
 import { getTraditionalLoginErrorMessage, getSafeLoginErrorMessage } from '../utils/errorHelpers';
+import { normalizeEmail } from '../utils/validation';
 
 const LoginPage = () => {
-  const [loginMethod, setLoginMethod] = useState('traditional'); // 'traditional' or 'face'
-  const [faceMode, setFaceMode] = useState(null); // 'capture' or 'upload'
+  const [loginMethod, setLoginMethod] = useState('traditional');
+  const [faceMode, setFaceMode] = useState(null);
   const [faceIdentifiedUser, setFaceIdentifiedUser] = useState(null);
   const [facePassword, setFacePassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -45,6 +46,8 @@ const LoginPage = () => {
     setLoading(true);
     setError('');
 
+    const normalizedEmail = normalizeEmail(credentials.email);
+
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/login`, {
         method: 'POST',
@@ -52,7 +55,7 @@ const LoginPage = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: credentials.email,
+          email: normalizedEmail,
           password: credentials.password,
         }),
       });
