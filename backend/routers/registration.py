@@ -4,6 +4,7 @@ import json
 from services.face_service import get_face_service, FaceRecognitionError, upload_face_images, collect_face_images
 from services.storage_service import get_supabase_service
 from services.security import hash_password
+from utils.validation import normalize_email, sanitize_text, validate_password, validate_phone, ValidationError
 
 router = APIRouter(prefix="/api", tags=["registration"])
 
@@ -33,6 +34,25 @@ async def register_user(
     face_service = get_face_service()
     
     try:
+        # Input Validation & Sanitization
+        try:
+            name = sanitize_text(name)
+            if not name:
+                raise ValidationError("Name is required")
+                
+            email = normalize_email(email)
+            validate_password(password)
+            phone = validate_phone(phone)
+            
+            # Optional fields sanitization
+            date_of_birth = sanitize_text(date_of_birth)
+            gender = sanitize_text(gender)
+            nationality = sanitize_text(nationality)
+            id_number = sanitize_text(id_number)
+            
+        except ValidationError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+
         # Check if user already exists
         existing = supabase.client.table('users').select('id').eq('email', email).execute()
         if existing.data:

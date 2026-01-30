@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, File, UploadFile
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 try:
     import email_validator  # noqa: F401
     from pydantic import EmailStr as EmailType
@@ -15,6 +15,7 @@ from services.profile_picture_service import get_profile_picture_url
 from services.security import verify_password, hash_password
 from utils.config import get_config
 from dependencies import get_current_user, security
+from utils.validation import normalize_email
 
 router = APIRouter(prefix="/api", tags=["authentication"])
 settings = get_config()
@@ -22,6 +23,10 @@ settings = get_config()
 class LoginRequest(BaseModel):
     email: EmailType
     password: str
+
+    @field_validator('email')
+    def validate_email_field(cls, v):
+        return normalize_email(v)
 
 class LoginResponse(BaseModel):
     user_id: str

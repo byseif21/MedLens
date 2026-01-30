@@ -3,20 +3,32 @@ User data models for Smart Glass AI system.
 """
 
 from typing import Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 try:
     import email_validator  # noqa: F401
     from pydantic import EmailStr as EmailType
 except Exception:
     EmailType = str
 from datetime import datetime
-
+from utils.validation import sanitize_text, normalize_email, validate_phone
 
 class UserBase(BaseModel):
     """Base user model with common fields."""
     name: str = Field(..., min_length=1, max_length=255, description="User's full name")
     email: EmailType = Field(..., description="User's email address")
     phone: Optional[str] = Field(None, max_length=50, description="User's phone number")
+
+    @field_validator('name')
+    def validate_name(cls, v):
+        return sanitize_text(v)
+
+    @field_validator('email')
+    def validate_email_field(cls, v):
+        return normalize_email(v)
+
+    @field_validator('phone')
+    def validate_phone_field(cls, v):
+        return validate_phone(v)
 
 
 class UserCreate(UserBase):
@@ -39,6 +51,18 @@ class RegistrationRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     email: EmailType
     phone: Optional[str] = Field(None, max_length=50)
+
+    @field_validator('name')
+    def validate_name(cls, v):
+        return sanitize_text(v)
+
+    @field_validator('email')
+    def validate_email_field(cls, v):
+        return normalize_email(v)
+
+    @field_validator('phone')
+    def validate_phone_field(cls, v):
+        return validate_phone(v)
 
 
 class RegistrationResponse(BaseModel):
