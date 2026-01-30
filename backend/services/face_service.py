@@ -406,23 +406,88 @@ class FaceRecognitionService:
         except Exception as e:
             raise FaceRecognitionError(f"Failed to delete encoding: {str(e)}")
 
+    def crop_face(self, image_bytes: bytes, padding_top: float = 0.8, padding_bottom: float = 0.4, padding_side: float = 0.5) -> Optional[bytes]:
+        """
+        Detect and crop face from image bytes with smart asymmetric padding.
+        Prioritizes keeping hair (more top padding) and neck (bottom padding).
+        
+        Args:
+            image_bytes: Raw image bytes
+            padding_top: Padding above face (relative to face height). Default 0.8 for hair.
+            padding_bottom: Padding below face. Default 0.4 for neck.
+            padding_side: Padding on sides. Default 0.5 for ears/width.
+            
+        Returns:
+            Optional[bytes]: Cropped image bytes or None
+        """
+        try:
+            import face_recognition as fr
+            from PIL import Image
+            import io
+            import numpy as np
+
+            image = fr.load_image_file(io.BytesIO(image_bytes))
+            face_locations = fr.face_locations(image)
+            
+            # strictly 1 face for the profile image
+            if len(face_locations) != 1:
+                return None
+            
+            # face_locations gives (top, right, bottom, left)
+            top, right, bottom, left = face_locations[0]
+            
+            height = bottom - top
+            width = right - left
+            
+            pad_top_px = int(height * padding_top)
+            pad_bottom_px = int(height * padding_bottom)
+            pad_side_px = int(width * padding_side)
+            
+            img_h, img_w, _ = image.shape
+            
+            # Expand box within image boundaries
+            new_top = max(0, top - pad_top_px)
+            new_bottom = min(img_h, bottom + pad_bottom_px)
+            new_left = max(0, left - pad_side_px)
+            new_right = min(img_w, right + pad_side_px)
+            
+            face_image = image[new_top:new_bottom, new_left:new_right]
+            pil_image = Image.fromarray(face_image)
+            
+            output = io.BytesIO()
+            pil_image.save(output, format="JPEG", quality=95)
+            return output.getvalue()
+            
+        except Exception as e:
+            logger.error(f"Error cropping face: {e}")
+            return None
+
 
 def upload_face_images(supabase, user_id: str, images: Dict[str, bytes]) -> None:
     """
     Upload face images to Supabase storage and update database records.
+    Automatically crops faces before uploading to ensure only face data is stored.
     
     Args:
         supabase: Supabase service/client
         user_id: User identifier
         images: Dictionary of angle -> image bytes
     """
+    face_service = get_face_service()
+    
     for angle, image_data in images.items():
         try:
+            # Attempt to crop the face to store only the face region
+            cropped_data = face_service.crop_face(image_data)
+            
+            # cropped data if successful, otherwise fallback to original
+            data_to_upload = cropped_data if cropped_data else image_data
+            
             file_path = f"{user_id}/{angle}.jpg"
             # Upload to storage (upsert=True to overwrite)
             supabase.client.storage.from_('face-images').upload(
                 file_path,
-                image_data,
+                data_to_upload,
                 {"content-type": "image/jpeg", "upsert": "true"}
             )
             
