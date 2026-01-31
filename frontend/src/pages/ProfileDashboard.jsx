@@ -11,6 +11,7 @@ import {
   Settings,
   LogOut,
   Shield,
+  Menu,
 } from 'lucide-react';
 import { getCurrentUser, getUserRole, clearSession } from '../services/auth';
 import MainInfo from '../components/MainInfo';
@@ -18,6 +19,7 @@ import MedicalInfo from '../components/MedicalInfo';
 import Connections from '../components/Connections';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ProfileAvatar from '../components/ProfileAvatar';
+import MobileMenuDrawer from '../components/MobileMenuDrawer';
 import { getProfile } from '../services/api';
 
 const ProfileDashboard = () => {
@@ -25,6 +27,7 @@ const ProfileDashboard = () => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [idCopied, setIdCopied] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
   const { userId: urlUserId } = useParams();
   const currentUserId = getCurrentUser()?.id;
@@ -96,15 +99,22 @@ const ProfileDashboard = () => {
       {/* Header */}
       <header className="bg-white shadow-medical">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <div className="flex items-start sm:items-center justify-between">
+            <div className="flex flex-row items-center gap-3">
+              <ProfileAvatar
+                imageUrl={profile?.profile_picture_url}
+                userName={profile?.name}
+                size="sm"
+                className="sm:hidden"
+              />
               <ProfileAvatar
                 imageUrl={profile?.profile_picture_url}
                 userName={profile?.name}
                 size="md"
+                className="max-sm:hidden"
               />
               <div>
-                <h1 className="text-xl font-bold text-medical-dark">
+                <h1 className="text-lg sm:text-xl font-bold text-medical-dark">
                   {profile?.name || 'User Profile'}
                 </h1>
                 <p className="text-sm text-medical-gray-600">
@@ -137,11 +147,12 @@ const ProfileDashboard = () => {
                 )}
               </div>
             </div>
-            <div className="flex flex-col-reverse sm:flex-row sm:items-center gap-2 sm:gap-2 md:gap-3">
+            {/* Desktop Navigation */}
+            <div className="max-sm:hidden flex flex-col-reverse sm:flex-row sm:items-center gap-2 sm:gap-2 md:gap-3">
               {isAdmin && (
                 <Link
                   to="/admin"
-                  className="btn-medical-secondary bg-pink-50 text-pink-600 border-pink-200 hover:bg-pink-100 flex flex-col sm:flex-row items-center justify-center p-1 sm:px-2 sm:py-1.5 md:px-4 md:py-2 gap-0.5 sm:gap-1 md:gap-2 min-w-[50px] sm:min-w-0"
+                  className="btn-medical-secondary bg-red-50 text-red-600 border-red-200 hover:bg-red-100 flex flex-col sm:flex-row items-center justify-center p-1 sm:px-2 sm:py-1.5 md:px-4 md:py-2 gap-0.5 sm:gap-1 md:gap-2 min-w-[50px] sm:min-w-0"
                 >
                   <Shield className="w-4 h-4 sm:w-4 sm:h-4" />
                   <span className="text-sm md:text-base leading-none sm:leading-normal">Admin</span>
@@ -192,14 +203,87 @@ const ProfileDashboard = () => {
                 )}
               </div>
             </div>
+
+            {/* Mobile Menu Button */}
+            <div className="sm:hidden">
+              <button
+                onClick={() => setIsMenuOpen(true)}
+                className="p-2 rounded-lg text-medical-gray-600 hover:text-medical-primary hover:bg-medical-gray-50 transition-colors"
+                aria-label="Open menu"
+              >
+                <Menu className="h-6 w-6" />
+              </button>
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Tabs */}
-      <div className="bg-white border-b border-medical-gray-200">
+      {/* Mobile Menu Drawer */}
+      <MobileMenuDrawer
+        isOpen={isMenuOpen}
+        onClose={() => setIsMenuOpen(false)}
+        footer={
+          !isViewingOther && (
+            <button
+              onClick={() => {
+                handleLogout();
+                setIsMenuOpen(false);
+              }}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-medical-gray-200 text-medical-gray-600 font-medium hover:bg-red-50 hover:text-red-600 hover:border-red-100 transition-all"
+            >
+              <LogOut className="w-5 h-5" />
+              Logout
+            </button>
+          )
+        }
+      >
+        {isAdmin && (
+          <Link
+            to="/admin"
+            onClick={() => setIsMenuOpen(false)}
+            className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-red-600 bg-red-50 hover:bg-red-100 hover:text-red-700"
+          >
+            <Shield className="w-5 h-5" />
+            Admin
+          </Link>
+        )}
+
+        {isViewingOther && (
+          <a
+            href="/dashboard"
+            onClick={() => setIsMenuOpen(false)}
+            className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-medical-gray-600 hover:bg-medical-gray-50 hover:text-medical-primary"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            Profile
+          </a>
+        )}
+
+        <Link
+          to="/recognize"
+          onClick={() => setIsMenuOpen(false)}
+          className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-medical-gray-600 hover:bg-medical-gray-50 hover:text-medical-primary"
+        >
+          <ScanFace className="w-5 h-5" />
+          Recognize
+        </Link>
+
+        {!isViewingOther && (
+          <Link
+            to="/settings"
+            onClick={() => setIsMenuOpen(false)}
+            className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-medical-gray-600 hover:bg-medical-gray-50 hover:text-medical-primary"
+          >
+            <Settings className="w-5 h-5" />
+            Settings
+          </Link>
+        )}
+      </MobileMenuDrawer>
+
+      {/* Tabs (Desktop) */}
+      <div className="max-sm:hidden bg-white border-b border-medical-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex justify-around sm:justify-start sm:gap-4 md:gap-8">
+          <nav className="flex justify-start gap-4 md:gap-8">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
@@ -219,7 +303,7 @@ const ProfileDashboard = () => {
       </div>
 
       {/* Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 sm:pb-8">
         <div className="animate-fade-in">
           {isViewingOther && (
             <div className="medical-card mb-6 border border-yellow-200 bg-yellow-50">
@@ -293,6 +377,28 @@ const ProfileDashboard = () => {
           </div>
         </div>
       </main>
+
+      {/* Mobile Bottom Navigation */}
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-medical-gray-200 z-50 pb-safe-area-bottom">
+        <nav className="flex justify-around items-center px-2 py-3">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex flex-col items-center gap-1 p-2 min-w-[64px] rounded-lg transition-colors ${
+                activeTab === tab.id
+                  ? 'text-medical-primary'
+                  : 'text-medical-gray-500 hover:text-medical-gray-700'
+              }`}
+            >
+              <tab.icon className={`w-6 h-6 ${activeTab === tab.id ? 'fill-current' : ''}`} strokeWidth={activeTab === tab.id ? 2.5 : 2} />
+              <span className={`text-[10px] font-medium ${activeTab === tab.id ? 'font-bold' : ''}`}>
+                {tab.label === 'Emergency Contacts' ? 'Contacts' : tab.label}
+              </span>
+            </button>
+          ))}
+        </nav>
+      </div>
     </div>
   );
 };
