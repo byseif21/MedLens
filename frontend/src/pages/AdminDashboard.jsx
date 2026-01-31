@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Search, Edit2, Trash2, ChevronLeft, ChevronRight, Shield } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useNotifications } from '../hooks/useNotifications';
@@ -77,7 +78,12 @@ const AdminDashboard = () => {
 
       <main className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-medical-dark">Admin Dashboard</h1>
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-pink-100 rounded-lg">
+              <Shield className="w-6 h-6 text-pink-600" />
+            </div>
+            <h1 className="text-2xl font-bold text-medical-dark">Admin Dashboard</h1>
+          </div>
           <div className="text-sm text-gray-500">Total Users: {totalUsers}</div>
         </div>
 
@@ -105,7 +111,8 @@ const AdminDashboard = () => {
                 <option value="admin">Admin</option>
               </select>
             </div>
-            <button type="submit" className="btn-medical-primary whitespace-nowrap">
+            <button type="submit" className="btn-medical-primary whitespace-nowrap flex items-center gap-2">
+              <Search className="w-4 h-4" />
               Search
             </button>
           </form>
@@ -168,14 +175,16 @@ const AdminDashboard = () => {
                         <td className="p-4 text-right space-x-2">
                           <button
                             onClick={() => setEditingUser(user.id)}
-                            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                            className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
                           >
+                            <Edit2 className="w-3 h-3" />
                             Edit Role
                           </button>
                           <button
                             onClick={() => handleDelete(user.id, user.name)}
-                            className="text-red-600 hover:text-red-800 text-sm font-medium"
+                            className="text-red-600 hover:text-red-800 text-sm font-medium flex items-center gap-1"
                           >
+                            <Trash2 className="w-3 h-3" />
                             Delete
                           </button>
                         </td>
@@ -200,8 +209,9 @@ const AdminDashboard = () => {
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="px-4 py-2 rounded-lg bg-white shadow-sm disabled:opacity-50 hover:bg-gray-50"
+              className="px-4 py-2 rounded-lg bg-white shadow-sm disabled:opacity-50 hover:bg-gray-50 flex items-center gap-1"
             >
+              <ChevronLeft className="w-4 h-4" />
               Previous
             </button>
             <span className="px-4 py-2 flex items-center">
@@ -210,9 +220,10 @@ const AdminDashboard = () => {
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="px-4 py-2 rounded-lg bg-white shadow-sm disabled:opacity-50 hover:bg-gray-50"
+              className="px-4 py-2 rounded-lg bg-white shadow-sm disabled:opacity-50 hover:bg-gray-50 flex items-center gap-1"
             >
               Next
+              <ChevronRight className="w-4 h-4" />
             </button>
           </div>
         )}
