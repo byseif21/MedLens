@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { updateMainInfo } from '../services/api';
-import { getCurrentUser } from '../services/auth';
+import { useAuth } from '../hooks/useAuth';
 import { countries } from '../utils/countries';
 import LoadingSpinner from './LoadingSpinner';
 import { computeAge } from '../utils/dateUtils';
@@ -22,6 +22,7 @@ const MainInfo = ({ profile, onUpdate, readOnly = false, targetUserId = null }) 
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState(getFormDataFromProfile(profile));
   const [errors, setErrors] = useState({});
+  const { user } = useAuth();
 
   useEffect(() => {
     // eslint-disable-next-line
@@ -50,7 +51,7 @@ const MainInfo = ({ profile, onUpdate, readOnly = false, targetUserId = null }) 
     }
 
     setLoading(true);
-    const userId = targetUserId || getCurrentUser()?.id;
+    const userId = targetUserId || user?.id;
     const result = await updateMainInfo(userId, sanitizedData);
 
     if (result.success) {

@@ -11,17 +11,14 @@ import {
   UserPlus,
   Home,
 } from 'lucide-react';
-import { getCurrentUser, clearSession as logout, getUserRole } from '../services/auth';
-import { getProfile } from '../services/api';
+import { useAuth } from '../hooks/useAuth';
 import MobileMenuDrawer from './MobileMenuDrawer';
 import ProfileAvatar from './ProfileAvatar';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [user, setUser] = useState(() => getCurrentUser());
-  const [userRole, setUserRole] = useState(() => getUserRole());
-  const [userProfile, setUserProfile] = useState(null);
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -33,27 +30,14 @@ const Navbar = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  useEffect(() => {
-    // Check user status
-    if (user) {
-      getProfile(user.id).then((result) => {
-        if (result.success) {
-          setUserProfile(result.data);
-        }
-      });
-    }
-  }, [user]);
-
   const handleLogout = () => {
     logout();
-    setUser(null);
-    setUserRole(null);
     navigate('/login');
     setIsMenuOpen(false);
   };
 
   const isActive = (path) => location.pathname === path;
-  const isAdmin = (userRole || '').toLowerCase() === 'admin';
+  const isAdmin = (user?.role || '').toLowerCase() === 'admin';
 
   const navigationItems = [
     // Main Nav
@@ -170,7 +154,7 @@ const Navbar = () => {
 
                     <div className="flex items-center gap-3 px-3 py-1.5 rounded-full bg-gray-50 border border-gray-100">
                       <ProfileAvatar
-                        imageUrl={userProfile?.profile_picture_url}
+                        imageUrl={user?.profile_picture_url}
                         userName={user.name}
                         size="sm"
                         clickable={false}
@@ -240,14 +224,14 @@ const Navbar = () => {
         {user && (
           <div className="flex items-center gap-3 px-4 py-3 mb-4 bg-gray-50 rounded-xl border border-gray-100">
             <ProfileAvatar
-              imageUrl={userProfile?.profile_picture_url}
+              imageUrl={user?.profile_picture_url}
               userName={user.name}
               size="md"
               clickable={false}
             />
             <div className="flex flex-col">
               <span className="font-medium text-gray-900">{user.name}</span>
-              <span className="text-xs text-gray-500 capitalize">{userRole}</span>
+              <span className="text-xs text-gray-500 capitalize">{user.role}</span>
             </div>
           </div>
         )}

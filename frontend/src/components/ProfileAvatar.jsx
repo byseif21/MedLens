@@ -142,7 +142,7 @@ const ProfileAvatar = ({ imageUrl, userName, size = 'md', className = '', clicka
 ProfileAvatar.propTypes = {
   imageUrl: PropTypes.string,
   userName: PropTypes.string,
-  size: PropTypes.oneOf(['sm', 'md', 'lg']),
+  size: PropTypes.oneOf(['sm', 'md', 'lg', 'xl']),
   className: PropTypes.string,
   clickable: PropTypes.bool,
 };

@@ -24,6 +24,7 @@ import MultiFaceCapture from '../components/MultiFaceCapture';
 import ProfileAvatar from '../components/ProfileAvatar';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useNotifications } from '../hooks/useNotifications';
+import { useAuth } from '../hooks/useAuth';
 import {
   updateFaceEnrollment,
   updateProfilePicture,
@@ -32,7 +33,6 @@ import {
   changePassword,
   deleteAccount,
 } from '../services/api';
-import { getCurrentUser, clearSession } from '../services/auth';
 import { defaultPrivacySettings } from '../utils/constants';
 import { changePasswordSchema, validateWithSchema } from '../utils/validation';
 
@@ -47,7 +47,6 @@ const SettingsPage = () => {
   const [isSubmittingAvatar, setIsSubmittingAvatar] = useState(false);
   const [selectedAvatarFile, setSelectedAvatarFile] = useState(null);
   const [faceLastUpdated, setFaceLastUpdated] = useState(null);
-  const [profilePictureUrl, setProfilePictureUrl] = useState(null);
   const [uploaderKey, setUploaderKey] = useState(0);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [passwordForm, setPasswordForm] = useState({
@@ -66,9 +65,9 @@ const SettingsPage = () => {
 
   const navigate = useNavigate();
   const { notify } = useNotifications();
+  const { user, updateUser, logout } = useAuth();
 
-  const currentUser = getCurrentUser();
-  const userId = currentUser?.id;
+  const userId = user?.id;
 
   const settingsTabs = [
     { id: 'profile', label: 'Profile Picture', icon: User },
@@ -97,7 +96,7 @@ const SettingsPage = () => {
           title: 'Account Deleted',
           message: 'Your account has been permanently deleted.',
         });
-        clearSession();
+        logout();
         navigate('/login', { replace: true });
       } else {
         notify({
@@ -128,9 +127,10 @@ const SettingsPage = () => {
         if (result.data.face_updated_at) {
           setFaceLastUpdated(result.data.face_updated_at);
         }
-        if (result.data.profile_picture_url) {
-          setProfilePictureUrl(result.data.profile_picture_url);
+        if (result.data.profile_picture_url !== user.profile_picture_url) {
+          updateUser({ profile_picture_url: result.data.profile_picture_url });
         }
+
         const loadedSettings = Object.keys(defaultPrivacySettings).reduce((acc, key) => {
           acc[key] = result.data[key] ?? defaultPrivacySettings[key];
           return acc;
@@ -142,7 +142,7 @@ const SettingsPage = () => {
     } finally {
       setIsLoadingProfile(false);
     }
-  }, [userId]);
+  }, [userId, user.profile_picture_url, updateUser]);
 
   useEffect(() => {
     if (!userId) {
@@ -219,7 +219,7 @@ const SettingsPage = () => {
         });
       }
 
-      const result = await updateFaceEnrollment(currentUser.id, formData);
+      const result = await updateFaceEnrollment(userId, formData);
 
       if (result.success) {
         notify({
@@ -260,7 +260,7 @@ const SettingsPage = () => {
     setIsSubmittingAvatar(true);
 
     try {
-      const result = await updateProfilePicture(currentUser.id, formData);
+      const result = await updateProfilePicture(userId, formData);
 
       if (result.success) {
         notify({
@@ -353,7 +353,7 @@ const SettingsPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <ProfileAvatar imageUrl={null} userName={currentUser?.name} size="lg" />
+              <ProfileAvatar imageUrl={user?.profile_picture_url} userName={user?.name} size="lg" />
               <div>
                 <h1 className="text-xl font-bold text-medical-dark">Account Settings</h1>
                 <p className="text-sm text-medical-gray-600">
@@ -413,8 +413,8 @@ const SettingsPage = () => {
                 <div className="grid md:grid-cols-2 gap-8">
                   <div className="flex flex-col items-center space-y-4">
                     <ProfileAvatar
-                      imageUrl={profilePictureUrl}
-                      userName={currentUser?.name}
+                      imageUrl={user?.profile_picture_url}
+                      userName={user?.name}
                       size="xl"
                       clickable={false}
                       className="shadow-medical-lg"

@@ -6,7 +6,7 @@ import FaceUploader from '../components/FaceUploader';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ProfileAvatar from '../components/ProfileAvatar';
 import { useNotifications } from '../hooks/useNotifications';
-import { setSession } from '../services/auth';
+import { useAuth } from '../hooks/useAuth';
 import { confirmFaceLogin, loginWithFace } from '../services/api';
 import { getTraditionalLoginErrorMessage, getSafeLoginErrorMessage } from '../utils/errorHelpers';
 import { normalizeEmail } from '../utils/validation';
@@ -20,6 +20,7 @@ const LoginPage = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const { notify } = useNotifications();
+  const { login } = useAuth();
 
   // Traditional login form
   const [credentials, setCredentials] = useState({
@@ -82,7 +83,7 @@ const LoginPage = () => {
       }
 
       // Store user data
-      setSession(data);
+      await login(data);
 
       // Redirect to dashboard
       notify({ type: 'success', title: 'Welcome back', message: 'Signed in successfully.' });
@@ -170,7 +171,7 @@ const LoginPage = () => {
         return;
       }
 
-      setSession(result.data);
+      await login(result.data);
       notify({ type: 'success', title: 'Welcome back', message: 'Signed in successfully.' });
       navigate('/dashboard', { replace: true });
     } catch (err) {

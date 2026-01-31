@@ -13,7 +13,7 @@ import {
   Shield,
   Menu,
 } from 'lucide-react';
-import { getCurrentUser, getUserRole, clearSession } from '../services/auth';
+import { useAuth } from '../hooks/useAuth';
 import MainInfo from '../components/MainInfo';
 import MedicalInfo from '../components/MedicalInfo';
 import Connections from '../components/Connections';
@@ -29,9 +29,10 @@ const ProfileDashboard = () => {
   const [idCopied, setIdCopied] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const { userId: urlUserId } = useParams();
-  const currentUserId = getCurrentUser()?.id;
-  const userRole = getUserRole();
+  const currentUserId = user?.id;
+  const userRole = user?.role;
 
   // derived state
   const isViewingOther = urlUserId && urlUserId !== currentUserId;
@@ -60,7 +61,7 @@ const ProfileDashboard = () => {
   };
 
   const handleLogout = () => {
-    clearSession();
+    logout();
     navigate('/login', { replace: true });
   };
 

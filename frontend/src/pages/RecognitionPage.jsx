@@ -18,7 +18,8 @@ import FaceCapture from '../components/FaceCapture';
 import FaceUploader from '../components/FaceUploader';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ProfileAvatar from '../components/ProfileAvatar';
-import { getUserRole, setViewingUser, getCurrentUser } from '../services/auth';
+import { useAuth } from '../hooks/useAuth';
+import { setViewingUser } from '../services/auth';
 import { recognizeFace } from '../services/api';
 import { computeAge } from '../utils/dateUtils';
 
@@ -29,7 +30,8 @@ const RecognitionPage = () => {
   const [recognizedPerson, setRecognizedPerson] = useState(null);
   const [showViewProfile, setShowViewProfile] = useState(false);
   const navigate = useNavigate();
-  const userRole = getUserRole();
+  const { user } = useAuth();
+  const userRole = user?.role;
   const isAdmin = (userRole || '').toLowerCase() === 'admin';
   const canViewFullProfile = userRole === 'doctor' || isAdmin;
   const canViewMedicalInfo = canViewFullProfile;
@@ -62,7 +64,7 @@ const RecognitionPage = () => {
 
   const handleViewProfile = (person) => {
     // Store recognized person's ID and navigate to their dashboard
-    const currentUserId = getCurrentUser()?.id;
+    const currentUserId = user?.id;
     setViewingUser(person.user_id || currentUserId, person.name);
     navigate(`/profile/${person.user_id || currentUserId}`);
   };

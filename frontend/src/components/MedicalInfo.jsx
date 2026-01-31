@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { updateMedicalInfo } from '../services/api';
-import { getCurrentUser } from '../services/auth';
+import { useAuth } from '../hooks/useAuth';
 import LoadingSpinner from './LoadingSpinner';
 
 const getFormDataFromMedicalProfile = (profile) => ({
@@ -18,6 +18,7 @@ const MedicalInfo = ({ profile, onUpdate, readOnly = false, targetUserId = null 
   const canEdit = !readOnly;
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState(getFormDataFromMedicalProfile(profile));
+  const { user } = useAuth();
 
   useEffect(() => {
     setFormData(getFormDataFromMedicalProfile(profile));
@@ -29,7 +30,7 @@ const MedicalInfo = ({ profile, onUpdate, readOnly = false, targetUserId = null 
 
   const handleSave = async () => {
     setLoading(true);
-    const userId = targetUserId || getCurrentUser()?.id;
+    const userId = targetUserId || user?.id;
     const result = await updateMedicalInfo(userId, formData);
 
     if (result.success) {

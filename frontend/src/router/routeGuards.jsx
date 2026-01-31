@@ -1,22 +1,44 @@
 import { Navigate, Outlet } from 'react-router-dom';
-import { isAuthenticated, isAdmin as checkIsAdmin } from '../services/auth';
-
-const isAdmin = () => {
-  return isAuthenticated() && checkIsAdmin();
-};
+import { useAuth } from '../hooks/useAuth';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 export const PublicRoute = () => {
-  return isAuthenticated() ? <Navigate to="/dashboard" replace /> : <Outlet />;
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <LoadingSpinner fullScreen />;
+  }
+
+  return isAuthenticated ? <Navigate to="/dashboard" replace /> : <Outlet />;
 };
 
 export const ProtectedRoute = () => {
-  return isAuthenticated() ? <Outlet /> : <Navigate to="/login" replace />;
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <LoadingSpinner fullScreen />;
+  }
+
+  return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace />;
 };
 
 export const AdminRoute = () => {
-  return isAdmin() ? <Outlet /> : <Navigate to="/dashboard" replace />;
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <LoadingSpinner fullScreen />;
+  }
+
+  const isAdmin = user?.role === 'admin';
+  return isAdmin ? <Outlet /> : <Navigate to="/dashboard" replace />;
 };
 
 export const RootRedirect = () => {
-  return <Navigate to={isAuthenticated() ? '/dashboard' : '/login'} replace />;
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <LoadingSpinner fullScreen />;
+  }
+
+  return <Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />;
 };

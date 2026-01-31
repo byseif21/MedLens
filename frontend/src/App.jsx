@@ -7,34 +7,37 @@ import AdminDashboard from './pages/AdminDashboard';
 import SettingsPage from './pages/SettingsPage';
 import HomePage from './pages/HomePage';
 import { ProtectedRoute, PublicRoute, AdminRoute } from './router/routeGuards';
+import { AuthProvider } from './context/AuthProvider';
 
 function App() {
   return (
-    <Router
-      future={{
-        v7_startTransition: true,
-        v7_relativeSplatPath: true,
-      }}
-    >
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route element={<PublicRoute />}>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-        </Route>
+    <AuthProvider>
+      <Router
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route element={<PublicRoute />}>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+          </Route>
 
-        <Route element={<AdminRoute />}>
-          <Route path="/admin" element={<AdminDashboard />} />
-        </Route>
+          <Route element={<AdminRoute />}>
+            <Route path="/admin" element={<AdminDashboard />} />
+          </Route>
 
-        <Route element={<ProtectedRoute />}>
-          <Route path="/dashboard" element={<ProfileDashboard />} />
-          <Route path="/profile/:userId" element={<ProfileDashboard />} />
-          <Route path="/recognize" element={<RecognitionPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-        </Route>
-      </Routes>
-    </Router>
+          <Route element={<ProtectedRoute />}>
+            <Route path="/dashboard" element={<ProfileDashboard />} />
+            <Route path="/profile/:userId" element={<ProfileDashboard />} />
+            <Route path="/recognize" element={<RecognitionPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+          </Route>
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }
 

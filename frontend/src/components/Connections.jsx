@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getCurrentUser } from '../services/auth';
+import { useAuth } from '../hooks/useAuth';
 import {
   getConnections,
   createLinkedConnection,
@@ -35,8 +35,8 @@ const Connections = ({ targetUserId }) => {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState(null);
   const [confirmBusy, setConfirmBusy] = useState(false);
-
-  const userId = targetUserId || getCurrentUser()?.id;
+  const { user } = useAuth();
+  const userId = targetUserId || user?.id;
 
   // Fetch connections on mount
   useEffect(() => {
