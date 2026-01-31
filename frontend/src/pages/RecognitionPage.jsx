@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { ScanFace, Shield, LayoutDashboard, ArrowRight, CheckCircle, AlertTriangle, Activity, Pill, Camera, Upload, ChevronLeft } from 'lucide-react';
 import FaceCapture from '../components/FaceCapture';
 import FaceUploader from '../components/FaceUploader';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -67,19 +68,7 @@ const RecognitionPage = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-medical-primary rounded-full flex items-center justify-center">
-                <svg
-                  className="w-6 h-6 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
+                <ScanFace className="w-6 h-6 text-white" />
               </div>
               <div>
                 <h1 className="text-xl font-bold text-medical-dark">Face Recognition</h1>
@@ -90,12 +79,14 @@ const RecognitionPage = () => {
               {isAdmin && (
                 <Link
                   to="/admin"
-                  className="btn-medical-secondary text-sm px-4 py-2 bg-pink-50 text-pink-600 border-pink-200 hover:bg-pink-100"
+                  className="btn-medical-secondary text-sm px-4 py-2 bg-pink-50 text-pink-600 border-pink-200 hover:bg-pink-100 flex items-center gap-2"
                 >
+                  <Shield className="w-4 h-4" />
                   Admin Panel
                 </Link>
               )}
-              <Link to="/dashboard" className="btn-medical-secondary text-sm px-4 py-2">
+              <Link to="/dashboard" className="btn-medical-secondary text-sm px-4 py-2 flex items-center gap-2">
+                <LayoutDashboard className="w-4 h-4" />
                 My Dashboard
               </Link>
             </div>
@@ -109,14 +100,18 @@ const RecognitionPage = () => {
             {/* Recognition Result */}
             <div className="medical-card mb-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-semibold text-green-600">✓ Person Recognized</h2>
+                <h2 className="text-2xl font-semibold text-green-600 flex items-center gap-2">
+                  <CheckCircle className="w-6 h-6" />
+                  Person Recognized
+                </h2>
                 <div className="flex gap-2">
                   {showViewProfile && canViewFullProfile && (
                     <button
                       onClick={() => handleViewProfile(recognizedPerson)}
-                      className="btn-medical-primary text-sm px-4 py-2"
+                      className="btn-medical-primary text-sm px-4 py-2 flex items-center gap-2"
                     >
-                      View Full Profile →
+                      View Full Profile
+                      <ArrowRight className="w-4 h-4" />
                     </button>
                   )}
                   <button onClick={handleReset} className="btn-medical-secondary text-sm px-4 py-2">
@@ -179,32 +174,44 @@ const RecognitionPage = () => {
                     <div className="space-y-3">
                       {recognizedPerson.medical_info.allergies && (
                         <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                          <p className="text-sm font-medium text-red-800">⚠️ Allergies</p>
-                          <p className="text-sm text-red-600">
+                          <p className="text-sm font-medium text-red-800 flex items-center gap-2">
+                            <AlertTriangle className="w-4 h-4" />
+                            Allergies
+                          </p>
+                          <p className="text-sm text-red-600 mt-1">
                             {recognizedPerson.medical_info.allergies}
                           </p>
                         </div>
                       )}
                       {recognizedPerson.medical_info.chronic_conditions && (
                         <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                          <p className="text-sm font-medium text-yellow-800">Chronic Conditions</p>
-                          <p className="text-sm text-yellow-700">
+                          <p className="text-sm font-medium text-yellow-800 flex items-center gap-2">
+                            <Activity className="w-4 h-4" />
+                            Chronic Conditions
+                          </p>
+                          <p className="text-sm text-yellow-700 mt-1">
                             {recognizedPerson.medical_info.chronic_conditions}
                           </p>
                         </div>
                       )}
                       {recognizedPerson.medical_info.current_medications && (
                         <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                          <p className="text-sm font-medium text-blue-800">Current Medications</p>
-                          <p className="text-sm text-blue-700">
+                          <p className="text-sm font-medium text-blue-800 flex items-center gap-2">
+                            <Pill className="w-4 h-4" />
+                            Current Medications
+                          </p>
+                          <p className="text-sm text-blue-700 mt-1">
                             {recognizedPerson.medical_info.current_medications}
                           </p>
                         </div>
                       )}
                       {recognizedPerson.medical_info.emergency_notes && (
                         <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                          <p className="text-sm font-medium text-red-800">🚨 Emergency Notes</p>
-                          <p className="text-sm text-red-600">
+                          <p className="text-sm font-medium text-red-800 flex items-center gap-2">
+                            <AlertTriangle className="w-4 h-4" />
+                            Emergency Notes
+                          </p>
+                          <p className="text-sm text-red-600 mt-1">
                             {recognizedPerson.medical_info.emergency_notes}
                           </p>
                         </div>
@@ -257,20 +264,7 @@ const RecognitionPage = () => {
                     onClick={() => setMode('capture')}
                     className="w-full btn-medical-primary flex items-center justify-center gap-3"
                   >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                    </svg>
+                    <Camera className="w-6 h-6" />
                     Capture with Smart Glass Camera
                   </button>
 
@@ -278,14 +272,7 @@ const RecognitionPage = () => {
                     onClick={() => setMode('upload')}
                     className="w-full btn-medical-secondary flex items-center justify-center gap-3"
                   >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                      />
-                    </svg>
+                    <Upload className="w-6 h-6" />
                     Upload Photo
                   </button>
                 </div>
@@ -302,14 +289,7 @@ const RecognitionPage = () => {
                   onClick={() => setMode(null)}
                   className="mb-4 text-medical-primary hover:text-cyan-700 flex items-center gap-2"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 19l-7-7 7-7"
-                    />
-                  </svg>
+                  <ChevronLeft className="w-5 h-5" />
                   Back
                 </button>
                 <FaceCapture onCapture={handleFaceSubmit} />
@@ -325,14 +305,7 @@ const RecognitionPage = () => {
                   onClick={() => setMode(null)}
                   className="mb-4 text-medical-primary hover:text-cyan-700 flex items-center gap-2"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 19l-7-7 7-7"
-                    />
-                  </svg>
+                  <ChevronLeft className="w-5 h-5" />
                   Back
                 </button>
                 <FaceUploader onUpload={handleFaceSubmit} />
