@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { User } from 'lucide-react';
+import { User, X } from 'lucide-react';
 import '../styles/glassmorphism.css';
 
 // Fallback user icon SVG component (defined outside render)
-const UserIcon = ({ className }) => (
-  <User className={className} />
-);
+const UserIcon = ({ className }) => <User className={className} />;
 
 const ProfileAvatar = ({ imageUrl, userName, size = 'md', className = '', clickable = true }) => {
   const [imageError, setImageError] = useState(false);

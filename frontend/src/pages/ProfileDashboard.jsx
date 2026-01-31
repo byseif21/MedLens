@@ -145,7 +145,9 @@ const ProfileDashboard = () => {
                   title="Admin"
                 >
                   <Shield className="w-4 h-4 sm:w-4 sm:h-4" />
-                  <span className="text-[9px] sm:text-sm leading-none sm:leading-normal">Admin</span>
+                  <span className="text-[9px] sm:text-sm leading-none sm:leading-normal">
+                    Admin
+                  </span>
                 </Link>
               )}
               {isViewingOther && (
@@ -155,7 +157,9 @@ const ProfileDashboard = () => {
                   title="Profile"
                 >
                   <ArrowLeft className="w-4 h-4 sm:w-4 sm:h-4" />
-                  <span className="text-[9px] sm:text-sm leading-none sm:leading-normal">Profile</span>
+                  <span className="text-[9px] sm:text-sm leading-none sm:leading-normal">
+                    Profile
+                  </span>
                 </a>
               )}
               <Link
@@ -164,7 +168,9 @@ const ProfileDashboard = () => {
                 title="Recognize"
               >
                 <ScanFace className="w-4 h-4 sm:w-4 sm:h-4" />
-                <span className="text-[9px] sm:text-sm leading-none sm:leading-normal">Recognize</span>
+                <span className="text-[9px] sm:text-sm leading-none sm:leading-normal">
+                  Recognize
+                </span>
               </Link>
               {!isViewingOther && (
                 <Link
@@ -173,7 +179,9 @@ const ProfileDashboard = () => {
                   title="Settings"
                 >
                   <Settings className="w-4 h-4 sm:w-4 sm:h-4" />
-                  <span className="text-[9px] sm:text-sm leading-none sm:leading-normal">Settings</span>
+                  <span className="text-[9px] sm:text-sm leading-none sm:leading-normal">
+                    Settings
+                  </span>
                 </Link>
               )}
               {!isViewingOther && (
@@ -183,7 +191,9 @@ const ProfileDashboard = () => {
                   title="Logout"
                 >
                   <LogOut className="w-4 h-4 sm:w-4 sm:h-4" />
-                  <span className="text-[9px] sm:text-sm leading-none sm:leading-normal">Logout</span>
+                  <span className="text-[9px] sm:text-sm leading-none sm:leading-normal">
+                    Logout
+                  </span>
                 </button>
               )}
             </div>

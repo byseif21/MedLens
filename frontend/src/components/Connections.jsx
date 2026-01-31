@@ -13,7 +13,15 @@ import {
 import ConnectionCard from './ConnectionCard';
 import AddConnectionModal from './AddConnectionModal';
 import LoadingSpinner from './LoadingSpinner';
-import { UserPlus, CheckCircle, AlertCircle, Clock, Link as LinkIcon, Globe, Users } from 'lucide-react';
+import {
+  UserPlus,
+  CheckCircle,
+  AlertCircle,
+  Clock,
+  Link as LinkIcon,
+  Globe,
+  Users,
+} from 'lucide-react';
 
 const Connections = ({ targetUserId }) => {
   const [loading, setLoading] = useState(false);

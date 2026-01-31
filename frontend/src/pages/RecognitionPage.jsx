@@ -1,6 +1,18 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ScanFace, Shield, LayoutDashboard, ArrowRight, CheckCircle, AlertTriangle, Activity, Pill, Camera, Upload, ChevronLeft } from 'lucide-react';
+import {
+  ScanFace,
+  Shield,
+  LayoutDashboard,
+  ArrowRight,
+  CheckCircle,
+  AlertTriangle,
+  Activity,
+  Pill,
+  Camera,
+  Upload,
+  ChevronLeft,
+} from 'lucide-react';
 import FaceCapture from '../components/FaceCapture';
 import FaceUploader from '../components/FaceUploader';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -85,7 +97,10 @@ const RecognitionPage = () => {
                   Admin Panel
                 </Link>
               )}
-              <Link to="/dashboard" className="btn-medical-secondary text-sm px-4 py-2 flex items-center gap-2">
+              <Link
+                to="/dashboard"
+                className="btn-medical-secondary text-sm px-4 py-2 flex items-center gap-2"
+              >
                 <LayoutDashboard className="w-4 h-4" />
                 My Dashboard
               </Link>

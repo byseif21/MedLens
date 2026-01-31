@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Camera, Upload, ChevronLeft } from 'lucide-react';
+import { Camera, Upload, ChevronLeft } from 'lucide-react';
 import MultiFaceCapture from '../components/MultiFaceCapture';
 import FaceUploader from '../components/FaceUploader';
 import LoadingSpinner from '../components/LoadingSpinner';

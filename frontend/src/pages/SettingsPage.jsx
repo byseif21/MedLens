@@ -328,7 +328,10 @@ const SettingsPage = () => {
               </div>
             </div>
             <div className="flex gap-3">
-              <Link to="/dashboard" className="btn-medical-secondary text-sm px-4 py-2 flex items-center gap-2">
+              <Link
+                to="/dashboard"
+                className="btn-medical-secondary text-sm px-4 py-2 flex items-center gap-2"
+              >
                 <ArrowLeft className="w-4 h-4" />
                 Back to Profile
               </Link>
