@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import PropTypes from 'prop-types';
-import { Upload } from 'lucide-react';
+import { Upload, RefreshCw, ScanFace } from 'lucide-react';
 
 const FaceUploader = ({ onUpload, isLoading = false }) => {
   const [preview, setPreview] = useState(null);
@@ -59,9 +59,9 @@ const FaceUploader = ({ onUpload, isLoading = false }) => {
       {!preview ? (
         <div
           onClick={() => fileInputRef.current?.click()}
-          className="border-2 border-dashed border-medical-gray-300 rounded-lg p-12 text-center cursor-pointer hover:border-medical-primary hover:bg-medical-light/50 transition-all duration-200"
+          className="border-2 border-dashed border-medical-gray-300 rounded-lg p-8 sm:p-12 text-center cursor-pointer hover:border-medical-primary hover:bg-medical-light/50 transition-all duration-200"
         >
-          <Upload className="w-16 h-16 mx-auto text-medical-gray-400 mb-4" />
+          <Upload className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-medical-gray-400 mb-4" />
           <p className="text-medical-gray-600 mb-2">Click to select a photo</p>
           <p className="text-medical-gray-400 text-sm">JPEG, PNG (max 5MB)</p>
         </div>
@@ -74,17 +74,28 @@ const FaceUploader = ({ onUpload, isLoading = false }) => {
           <div className="flex gap-3">
             <button
               onClick={handleClear}
-              className="flex-1 btn-medical-secondary"
+              className="flex-1 btn-medical-secondary flex items-center justify-center gap-2"
               disabled={isLoading}
             >
+              <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5" />
               Change Photo
             </button>
             <button
               onClick={handleUpload}
-              className="flex-1 btn-medical-primary"
+              className="flex-1 btn-medical-primary flex items-center justify-center gap-2"
               disabled={isLoading}
             >
-              {isLoading ? 'Saving...' : 'Authenticate'}
+              {isLoading ? (
+                <>
+                  <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <ScanFace className="w-4 h-4 sm:w-5 sm:h-5" />
+                  Authenticate
+                </>
+              )}
             </button>
           </div>
         </div>
