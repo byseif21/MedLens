@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { Camera, RefreshCw } from 'lucide-react';
+import { useCamera } from '../hooks/useCamera';
 
 const overlayStyles = {
   sm: {
@@ -16,37 +17,12 @@ const overlayStyles = {
 };
 
 const FaceCapture = ({ onCapture, variant = 'lg' }) => {
-  const [stream, setStream] = useState(null);
+  const { videoRef, stream, error, startCamera, stopCamera, captureImage } = useCamera();
   const [captured, setCaptured] = useState(false);
-  const [error, setError] = useState('');
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
 
   // styles based on variant, fallback to 'lg' if invalid
   const styles = overlayStyles[variant] || overlayStyles.lg;
-
-  const startCamera = async () => {
-    try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: 640, height: 480 },
-      });
-      setStream(mediaStream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-      }
-      setError('');
-    } catch (err) {
-      setError('Unable to access camera. Please check permissions.');
-      console.error('Camera error:', err);
-    }
-  };
-
-  const stopCamera = () => {
-    if (stream) {
-      stream.getTracks().forEach((track) => track.stop());
-      setStream(null);
-    }
-  };
 
   useEffect(() => {
     startCamera();
@@ -56,28 +32,24 @@ const FaceCapture = ({ onCapture, variant = 'lg' }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const capturePhoto = () => {
-    if (!videoRef.current || !canvasRef.current) return;
-
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const context = canvas.getContext('2d');
-
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    context.drawImage(video, 0, 0);
-
-    canvas.toBlob((blob) => {
-      if (blob) {
-        const file = new File([blob], 'captured-face.jpg', { type: 'image/jpeg' });
-        setCaptured(true);
-        stopCamera();
-        onCapture(file);
-      }
-    }, 'image/jpeg');
+  const handleCapture = async () => {
+    try {
+      const file = await captureImage('captured-face.jpg');
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+      setCaptured(true);
+      stopCamera();
+      onCapture(file);
+    } catch (err) {
+      console.error('Capture failed:', err);
+    }
   };
 
   const retake = () => {
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(null);
+    }
     setCaptured(false);
     startCamera();
   };
@@ -117,7 +89,7 @@ const FaceCapture = ({ onCapture, variant = 'lg' }) => {
             </div>
           </>
         ) : (
-          <canvas ref={canvasRef} className="w-full h-full object-cover" />
+          <img src={previewUrl} alt="Captured face" className="w-full h-full object-cover" />
         )}
       </div>
 
@@ -130,7 +102,7 @@ const FaceCapture = ({ onCapture, variant = 'lg' }) => {
       <div className="flex gap-3">
         {!captured ? (
           <button
-            onClick={capturePhoto}
+            onClick={handleCapture}
             disabled={!stream}
             className="flex-1 btn-medical-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
@@ -147,8 +119,6 @@ const FaceCapture = ({ onCapture, variant = 'lg' }) => {
           </button>
         )}
       </div>
-
-      <canvas ref={canvasRef} className="hidden" />
     </div>
   );
 };

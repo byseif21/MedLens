@@ -1,13 +1,11 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
+import { useCamera } from '../hooks/useCamera';
 
 const MultiFaceCapture = ({ onComplete }) => {
-  const [stream, setStream] = useState(null);
+  const { videoRef, stream, error, startCamera, stopCamera, captureImage } = useCamera();
   const [currentAngle, setCurrentAngle] = useState(0);
   const [capturedImages, setCapturedImages] = useState({});
-  const [error, setError] = useState('');
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
 
   const angles = [
     { id: 'front', label: 'Front View', instruction: 'Look straight at the camera' },
@@ -25,57 +23,24 @@ const MultiFaceCapture = ({ onComplete }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const startCamera = async () => {
+  const handleCapture = async () => {
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: 640, height: 480 },
-      });
-      setStream(mediaStream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
+      const currentAngleId = angles[currentAngle].id;
+      const file = await captureImage(`face-${currentAngleId}.jpg`);
+
+      const newCaptured = { ...capturedImages, [currentAngleId]: file };
+      setCapturedImages(newCaptured);
+
+      // Move to next angle or complete
+      if (currentAngle < angles.length - 1) {
+        setCurrentAngle(currentAngle + 1);
+      } else {
+        stopCamera();
+        onComplete(newCaptured);
       }
-      setError('');
     } catch (err) {
-      setError('Unable to access camera. Please check permissions.');
-      console.error('Camera error:', err);
+      console.error('Capture failed:', err);
     }
-  };
-
-  const stopCamera = () => {
-    if (stream) {
-      stream.getTracks().forEach((track) => track.stop());
-      setStream(null);
-    }
-  };
-
-  const capturePhoto = () => {
-    if (!videoRef.current || !canvasRef.current) return;
-
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const context = canvas.getContext('2d');
-
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    context.drawImage(video, 0, 0);
-
-    canvas.toBlob((blob) => {
-      if (blob) {
-        const file = new File([blob], `face-${angles[currentAngle].id}.jpg`, {
-          type: 'image/jpeg',
-        });
-        const newCaptured = { ...capturedImages, [angles[currentAngle].id]: file };
-        setCapturedImages(newCaptured);
-
-        // Move to next angle or complete
-        if (currentAngle < angles.length - 1) {
-          setCurrentAngle(currentAngle + 1);
-        } else {
-          stopCamera();
-          onComplete(newCaptured);
-        }
-      }
-    }, 'image/jpeg');
   };
 
   const skipAngle = () => {
@@ -174,7 +139,7 @@ const MultiFaceCapture = ({ onComplete }) => {
         {!isCurrentCaptured ? (
           <>
             <button
-              onClick={capturePhoto}
+              onClick={handleCapture}
               disabled={!stream}
               className="flex-1 btn-medical-primary disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -205,8 +170,6 @@ const MultiFaceCapture = ({ onComplete }) => {
           </>
         )}
       </div>
-
-      <canvas ref={canvasRef} className="hidden" />
 
       {/* Info */}
       <div className="bg-medical-light border border-medical-primary/20 rounded-lg p-4">
