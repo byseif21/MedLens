@@ -60,31 +60,6 @@ export const getCurrentUser = () => {
 };
 
 /**
- * Check if user is authenticated
- * @returns {boolean}
- */
-export const isAuthenticated = () => {
-  return !!getAccessToken() && !!localStorage.getItem(STORAGE_KEYS.USER_ID);
-};
-
-/**
- * Check if current user is an admin
- * @returns {boolean}
- */
-export const isAdmin = () => {
-  const role = localStorage.getItem(STORAGE_KEYS.USER_ROLE);
-  return (role || '').toLowerCase() === 'admin';
-};
-
-/**
- * Get the user role
- * @returns {string}
- */
-export const getUserRole = () => {
-  return localStorage.getItem(STORAGE_KEYS.USER_ROLE) || 'user';
-};
-
-/**
  * Set the temporary viewing user (for recognizing others)
  * @param {string} userId
  * @param {string} userName
