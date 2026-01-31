@@ -187,114 +187,114 @@ const Navbar = () => {
 
       {/* Mobile menu */}
       {isMenuOpen && (
-        <div className="md:hidden border-t border-white/10">
-          <div className="px-2 pt-2 pb-3 space-y-1">
+        <div className="md:hidden border-t border-white/10 bg-black/40 backdrop-blur-md animate-fade-in">
+          <div className="p-2 grid grid-cols-3 gap-2">
             <Link
               to="/"
               onClick={() => setIsMenuOpen(false)}
-              className={`block px-3 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 ${
+              className={`flex flex-col items-center justify-center gap-1 p-2 rounded-lg text-xs transition-all duration-300 ${
                 isActive('/')
-                  ? 'glow-border-pink text-white'
+                  ? 'bg-white/10 text-white shadow-lg border border-white/10'
                   : 'text-gray-300 hover:text-white hover:bg-white/5'
               }`}
             >
-              <Home className="w-4 h-4" />
-              Home
+              <Home className="w-5 h-5" />
+              <span>Home</span>
             </Link>
 
             {isAdmin && (
               <Link
                 to="/admin"
                 onClick={() => setIsMenuOpen(false)}
-                className={`block px-3 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 ${
+                className={`flex flex-col items-center justify-center gap-1 p-2 rounded-lg text-xs transition-all duration-300 ${
                   isActive('/admin')
-                    ? 'glow-border-pink text-white'
+                    ? 'bg-white/10 text-white shadow-lg border border-white/10'
                     : 'text-gray-300 hover:text-white hover:bg-white/5'
                 }`}
               >
-                <Shield className="w-4 h-4" />
-                Admin
+                <Shield className="w-5 h-5" />
+                <span>Admin</span>
               </Link>
             )}
 
             <Link
               to="/recognize"
               onClick={() => setIsMenuOpen(false)}
-              className={`block px-3 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 ${
+              className={`flex flex-col items-center justify-center gap-1 p-2 rounded-lg text-xs transition-all duration-300 ${
                 isActive('/recognize')
-                  ? 'glow-border-pink text-white'
+                  ? 'bg-white/10 text-white shadow-lg border border-white/10'
                   : 'text-gray-300 hover:text-white hover:bg-white/5'
               }`}
             >
-              <ScanFace className="w-4 h-4" />
-              Recognize
+              <ScanFace className="w-5 h-5" />
+              <span>Recognize</span>
             </Link>
 
             {user && (
               <Link
                 to="/settings"
                 onClick={() => setIsMenuOpen(false)}
-                className={`block px-3 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 ${
+                className={`flex flex-col items-center justify-center gap-1 p-2 rounded-lg text-xs transition-all duration-300 ${
                   isActive('/settings')
-                    ? 'glow-border-pink text-white'
+                    ? 'bg-white/10 text-white shadow-lg border border-white/10'
                     : 'text-gray-300 hover:text-white hover:bg-white/5'
                 }`}
               >
-                <Settings className="w-4 h-4" />
-                Settings
+                <Settings className="w-5 h-5" />
+                <span>Settings</span>
               </Link>
             )}
+          </div>
 
-            {/* Mobile Auth Section */}
-            <div className="pt-4 border-t border-white/10 mt-4">
-              {user ? (
-                <>
-                  <Link
-                    to="/dashboard"
-                    onClick={() => setIsMenuOpen(false)}
-                    className="px-3 py-2 flex items-center space-x-3 hover:bg-white/5 rounded-lg"
-                  >
-                    <ProfileAvatar
-                      imageUrl={profileData?.profile_picture_url}
-                      userName={user.email}
-                      size="sm"
-                    />
-                    <span className="text-sm text-gray-400">{user.email}</span>
-                  </Link>
-                  <button
-                    onClick={() => {
-                      handleSignOut();
-                      setIsMenuOpen(false);
-                    }}
-                    className="w-full text-left px-3 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-white/5 flex items-center gap-2"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    Sign Out
-                  </button>
-                </>
-              ) : (
-                <>
-                  <Link
-                    to="/register"
-                    onClick={() => setIsMenuOpen(false)}
-                    className="block px-3 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-white/5 flex items-center gap-2"
-                  >
-                    <UserPlus className="w-4 h-4" />
-                    Register
-                  </Link>
-                  <button
-                    onClick={() => {
-                      handleSignIn();
-                      setIsMenuOpen(false);
-                    }}
-                    className="w-full neon-button mt-2 flex items-center justify-center gap-2"
-                  >
-                    <LogIn className="w-4 h-4" />
-                    Sign In
-                  </button>
-                </>
-              )}
-            </div>
+          {/* Mobile Auth Section */}
+          <div className="p-2 border-t border-white/10 bg-white/5">
+            {user ? (
+              <div className="grid grid-cols-2 gap-2">
+                <Link
+                  to="/dashboard"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="flex flex-col items-center justify-center gap-1 p-2 rounded-lg text-xs hover:bg-white/5 transition-colors text-center"
+                >
+                  <ProfileAvatar
+                    imageUrl={profileData?.profile_picture_url}
+                    userName={user.email}
+                    size="xs"
+                  />
+                  <span className="text-gray-200 truncate w-full">{user.email}</span>
+                </Link>
+                <button
+                  onClick={() => {
+                    handleSignOut();
+                    setIsMenuOpen(false);
+                  }}
+                  className="flex flex-col items-center justify-center gap-1 p-2 rounded-lg text-xs text-gray-300 hover:text-white hover:bg-white/5 transition-colors"
+                >
+                  <LogOut className="w-5 h-5" />
+                  <span>Sign Out</span>
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                <Link
+                  to="/register"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="flex flex-col items-center justify-center gap-1 p-2 rounded-lg text-xs bg-white/5 text-gray-300 hover:text-white hover:bg-white/10 border border-white/10 transition-all"
+                >
+                  <UserPlus className="w-5 h-5" />
+                  <span>Register</span>
+                </Link>
+                <button
+                  onClick={() => {
+                    handleSignIn();
+                    setIsMenuOpen(false);
+                  }}
+                  className="flex flex-col items-center justify-center gap-1 p-2 rounded-lg text-xs neon-button"
+                >
+                  <LogIn className="w-5 h-5" />
+                  <span>Sign In</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
