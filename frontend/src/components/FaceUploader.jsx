@@ -71,10 +71,10 @@ const FaceUploader = ({ onUpload, isLoading = false }) => {
             <img src={preview} alt="Preview" className="w-full h-auto object-contain max-h-96" />
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <button
               onClick={handleClear}
-              className="flex-1 btn-medical-secondary flex items-center justify-center gap-2"
+              className="w-full sm:flex-1 btn-medical-secondary flex items-center justify-center gap-2"
               disabled={isLoading}
             >
               <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -82,7 +82,7 @@ const FaceUploader = ({ onUpload, isLoading = false }) => {
             </button>
             <button
               onClick={handleUpload}
-              className="flex-1 btn-medical-primary flex items-center justify-center gap-2"
+              className="w-full sm:flex-1 btn-medical-primary flex items-center justify-center gap-2"
               disabled={isLoading}
             >
               {isLoading ? (

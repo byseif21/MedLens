@@ -122,87 +122,158 @@ const AdminDashboard = () => {
         </div>
 
         {/* Users Table */}
-        <div className="bg-white rounded-xl shadow-medical overflow-hidden">
+        <div className="bg-white rounded-xl shadow-medical">
           {loading ? (
             <div className="p-8 flex justify-center">
               <LoadingSpinner />
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead className="bg-medical-gray-100 text-medical-gray-600 uppercase text-sm font-semibold">
-                  <tr>
-                    <th className="p-4">Name</th>
-                    <th className="p-4">Email</th>
-                    <th className="p-4">Role</th>
-                    <th className="p-4">Created At</th>
-                    <th className="p-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-medical-gray-200">
-                  {users.length > 0 ? (
-                    users.map((user) => (
-                      <tr key={user.id} className="hover:bg-medical-gray-50 transition-colors">
-                        <td className="p-4 font-medium text-medical-dark">{user.name}</td>
-                        <td className="p-4 text-gray-600">{user.email}</td>
-                        <td className="p-4">
-                          {editingUser === user.id ? (
-                            <select
-                              defaultValue={user.role}
-                              onChange={(e) => handleUpdateRole(user.id, e.target.value)}
-                              className="text-sm border rounded p-1"
-                              autoFocus
-                              onBlur={() => setEditingUser(null)}
+            <>
+              {/* Desktop Table */}
+              <div className="max-md:hidden overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead className="bg-medical-gray-100 text-medical-gray-600 uppercase text-sm font-semibold">
+                    <tr>
+                      <th className="p-4">Name</th>
+                      <th className="p-4">Email</th>
+                      <th className="p-4">Role</th>
+                      <th className="p-4">Created At</th>
+                      <th className="p-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-medical-gray-200">
+                    {users.length > 0 ? (
+                      users.map((user) => (
+                        <tr key={user.id} className="hover:bg-medical-gray-50 transition-colors">
+                          <td className="p-4 font-medium text-medical-dark">{user.name}</td>
+                          <td className="p-4 text-gray-600">{user.email}</td>
+                          <td className="p-4">
+                            {editingUser === user.id ? (
+                              <select
+                                defaultValue={user.role}
+                                onChange={(e) => handleUpdateRole(user.id, e.target.value)}
+                                className="text-sm border rounded p-1"
+                                autoFocus
+                                onBlur={() => setEditingUser(null)}
+                              >
+                                <option value="user">User</option>
+                                <option value="doctor">Doctor</option>
+                                <option value="admin">Admin</option>
+                              </select>
+                            ) : (
+                              <span
+                                className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                  user.role === 'admin'
+                                    ? 'bg-purple-100 text-purple-700'
+                                    : user.role === 'doctor'
+                                      ? 'bg-blue-100 text-blue-700'
+                                      : 'bg-gray-100 text-gray-700'
+                                }`}
+                              >
+                                {user.role}
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-4 text-gray-500 text-sm">
+                            {user.created_at ? new Date(user.created_at).toLocaleDateString() : '-'}
+                          </td>
+                          <td className="p-4 text-right space-x-2">
+                            <button
+                              onClick={() => setEditingUser(user.id)}
+                              className="text-blue-600 hover:text-blue-800 text-sm font-medium inline-flex items-center gap-1"
                             >
-                              <option value="user">User</option>
-                              <option value="doctor">Doctor</option>
-                              <option value="admin">Admin</option>
-                            </select>
-                          ) : (
-                            <span
-                              className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                                user.role === 'admin'
-                                  ? 'bg-purple-100 text-purple-700'
-                                  : user.role === 'doctor'
-                                    ? 'bg-blue-100 text-blue-700'
-                                    : 'bg-gray-100 text-gray-700'
-                              }`}
+                              <Edit2 className="w-3 h-3" />
+                              Edit Role
+                            </button>
+                            <button
+                              onClick={() => handleDelete(user.id, user.name)}
+                              className="text-red-600 hover:text-red-800 text-sm font-medium inline-flex items-center gap-1"
                             >
-                              {user.role}
-                            </span>
-                          )}
+                              <Trash2 className="w-3 h-3" />
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="5" className="p-8 text-center text-gray-500">
+                          No users found.
                         </td>
-                        <td className="p-4 text-gray-500 text-sm">
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Cards */}
+              <div className="md:hidden space-y-4 p-4 bg-gray-50">
+                {users.length > 0 ? (
+                  users.map((user) => (
+                    <div
+                      key={user.id}
+                      className="bg-white p-4 rounded-lg shadow-sm border border-gray-100"
+                    >
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <h3 className="font-semibold text-medical-dark">{user.name}</h3>
+                          <p className="text-sm text-gray-500 break-all">{user.email}</p>
+                        </div>
+                        {editingUser === user.id ? (
+                          <select
+                            defaultValue={user.role}
+                            onChange={(e) => handleUpdateRole(user.id, e.target.value)}
+                            className="text-sm border rounded p-1"
+                            autoFocus
+                            onBlur={() => setEditingUser(null)}
+                          >
+                            <option value="user">User</option>
+                            <option value="doctor">Doctor</option>
+                            <option value="admin">Admin</option>
+                          </select>
+                        ) : (
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                              user.role === 'admin'
+                                ? 'bg-purple-100 text-purple-700'
+                                : user.role === 'doctor'
+                                  ? 'bg-blue-100 text-blue-700'
+                                  : 'bg-gray-100 text-gray-700'
+                            }`}
+                          >
+                            {user.role}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex justify-between items-center pt-3 border-t border-gray-100">
+                        <span className="text-xs text-gray-400">
                           {user.created_at ? new Date(user.created_at).toLocaleDateString() : '-'}
-                        </td>
-                        <td className="p-4 text-right space-x-2">
+                        </span>
+                        <div className="flex gap-3">
                           <button
                             onClick={() => setEditingUser(user.id)}
                             className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
                           >
-                            <Edit2 className="w-3 h-3" />
-                            Edit Role
+                            <Edit2 className="w-3.5 h-3.5" />
+                            Edit
                           </button>
                           <button
                             onClick={() => handleDelete(user.id, user.name)}
                             className="text-red-600 hover:text-red-800 text-sm font-medium flex items-center gap-1"
                           >
-                            <Trash2 className="w-3 h-3" />
+                            <Trash2 className="w-3.5 h-3.5" />
                             Delete
                           </button>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="5" className="p-8 text-center text-gray-500">
-                        No users found.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-8 text-center text-gray-500">No users found.</div>
+                )}
+              </div>
+            </>
           )}
         </div>
 
