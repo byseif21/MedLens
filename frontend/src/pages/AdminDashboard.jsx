@@ -130,7 +130,7 @@ const AdminDashboard = () => {
     <div className="min-h-screen bg-medical-light">
       <Navbar />
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 pt-24 pb-8">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-pink-100 rounded-lg">

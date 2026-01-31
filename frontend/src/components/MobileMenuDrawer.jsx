@@ -8,10 +8,7 @@ const MobileMenuDrawer = ({ isOpen, onClose, children, footer }) => {
       }`}
     >
       {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/20 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={onClose} />
 
       {/* Drawer Panel */}
       <div
@@ -32,9 +29,7 @@ const MobileMenuDrawer = ({ isOpen, onClose, children, footer }) => {
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto py-6 px-4 space-y-2">
-            {children}
-          </div>
+          <div className="flex-1 overflow-y-auto py-6 px-4 space-y-2">{children}</div>
 
           {/* Footer */}
           {footer && (
