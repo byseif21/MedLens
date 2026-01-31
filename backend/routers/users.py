@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from typing import List, Optional
+import re
 from services.storage_service import get_supabase_service
 from utils.config import get_config
 
@@ -59,6 +60,42 @@ async def search_users(
                 all_users[user['id']] = user
     except Exception as e:
         print(f"Email search error: {e}")
+
+    # Search by ID (case-insensitive)
+    # PostgREST doesn't easily support 'ilike' on UUID columns, so we use:
+    # 1. Exact match for full UUIDs
+    # 2. Range query (gte/lte) for partial UUIDs (prefix search)
+    try:
+        clean_query = query.replace('-', '').lower()
+        
+        # Only attempt ID search if query contains only hex characters and is valid length
+        if re.match(r'^[0-9a-f]+$', clean_query) and len(clean_query) <= 32:
+            
+            def to_uuid(hex_s):
+                """Helper to format 32-char hex into UUID string"""
+                return f"{hex_s[:8]}-{hex_s[8:12]}-{hex_s[12:16]}-{hex_s[16:20]}-{hex_s[20:]}"
+
+            # Strategy 1: Exact Match (Fastest)
+            if len(clean_query) == 32:
+                target_id = to_uuid(clean_query)
+                res = supabase.client.table('users').select('id, name, email').eq('id', target_id).execute()
+                if res.data:
+                    for u in res.data: all_users[u['id']] = u
+            
+            # Strategy 2: Prefix Search (Range Query)
+            else:
+                start_uuid = to_uuid(clean_query.ljust(32, '0'))
+                end_uuid = to_uuid(clean_query.ljust(32, 'f'))
+                
+                res = supabase.client.table('users').select('id, name, email')\
+                    .gte('id', start_uuid)\
+                    .lte('id', end_uuid)\
+                    .limit(50).execute()
+                if res.data:
+                    for u in res.data: all_users[u['id']] = u
+
+    except Exception as e:
+        print(f"ID search error: {e}")
     
     # Convert to list and exclude current user
     users_list = [user for user in all_users.values() if not current_user_id or user['id'] != current_user_id]
