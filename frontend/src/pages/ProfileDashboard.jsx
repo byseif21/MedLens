@@ -141,44 +141,59 @@ const ProfileDashboard = () => {
               {isAdmin && (
                 <Link
                   to="/admin"
-                  className="btn-medical-secondary text-sm px-3 py-2 sm:px-4 bg-pink-50 text-pink-600 border-pink-200 hover:bg-pink-100 flex items-center gap-2"
+                  className="btn-medical-secondary text-sm px-2 py-2 sm:px-4 bg-pink-50 text-pink-600 border-pink-200 hover:bg-pink-100 flex flex-col sm:flex-row items-center gap-1 sm:gap-2"
+                  title="Admin"
                 >
                   <Shield className="w-4 h-4" />
-                  <span className="hidden sm:inline">Admin Panel</span>
+                  <span className={isAdmin ? 'hidden' : 'hidden min-[400px]:inline text-[10px] sm:text-sm'}>
+                    Admin
+                  </span>
                 </Link>
               )}
               {isViewingOther && (
                 <a
                   href="/dashboard"
-                  className="btn-medical-secondary text-sm px-3 py-2 sm:px-4 flex items-center gap-2"
+                  className="btn-medical-secondary text-sm px-2 py-2 sm:px-4 flex flex-col sm:flex-row items-center gap-1 sm:gap-2"
+                  title="Profile"
                 >
                   <ArrowLeft className="w-4 h-4" />
-                  <span className="hidden sm:inline">My Profile</span>
+                  <span className={isAdmin ? 'hidden' : 'hidden min-[400px]:inline text-[10px] sm:text-sm'}>
+                    Profile
+                  </span>
                 </a>
               )}
               <Link
                 to="/recognize"
-                className="btn-medical-primary text-sm px-3 py-2 sm:px-4 flex items-center gap-2"
+                className="btn-medical-primary text-sm px-2 py-2 sm:px-4 flex flex-col sm:flex-row items-center gap-1 sm:gap-2"
+                title="Recognize"
               >
                 <ScanFace className="w-4 h-4" />
-                <span className="hidden sm:inline">Recognize Face</span>
+                <span className={isAdmin ? 'hidden' : 'hidden min-[400px]:inline text-[10px] sm:text-sm'}>
+                  Recognize
+                </span>
               </Link>
               {!isViewingOther && (
                 <Link
                   to="/settings"
-                  className="btn-medical-secondary text-sm px-3 py-2 sm:px-4 flex items-center gap-2"
+                  className="btn-medical-secondary text-sm px-2 py-2 sm:px-4 flex flex-col sm:flex-row items-center gap-1 sm:gap-2"
+                  title="Settings"
                 >
                   <Settings className="w-4 h-4" />
-                  <span className="hidden sm:inline">Settings</span>
+                  <span className={isAdmin ? 'hidden' : 'hidden min-[400px]:inline text-[10px] sm:text-sm'}>
+                    Settings
+                  </span>
                 </Link>
               )}
               {!isViewingOther && (
                 <button
                   onClick={handleLogout}
-                  className="btn-medical-secondary text-sm px-3 py-2 sm:px-4 flex items-center gap-2"
+                  className="btn-medical-secondary text-sm px-2 py-2 sm:px-4 flex flex-col sm:flex-row items-center gap-1 sm:gap-2"
+                  title="Logout"
                 >
                   <LogOut className="w-4 h-4" />
-                  <span className="hidden sm:inline">Logout</span>
+                  <span className={isAdmin ? 'hidden' : 'hidden min-[400px]:inline text-[10px] sm:text-sm'}>
+                    Logout
+                  </span>
                 </button>
               )}
             </div>
