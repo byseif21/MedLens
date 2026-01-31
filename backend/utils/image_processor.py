@@ -183,6 +183,25 @@ class ImageProcessor:
         height, width = image.shape[:2]
         return width, height
 
+    @staticmethod
+    def check_blur(image, threshold: float = 100.0) -> Tuple[bool, float]:
+        """
+        Check if image is blurry using Laplacian variance.
+        
+        Args:
+            image: numpy array (RGB)
+            threshold: Variance threshold (below this is considered blurry)
+            
+        Returns:
+            Tuple of (is_blurry, variance_score)
+        """
+        import cv2
+        # Convert to grayscale
+        gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+        # Calculate Laplacian variance
+        variance = cv2.Laplacian(gray, cv2.CV_64F).var()
+        return variance < threshold, variance
+
 
 # Convenience functions for direct use
 def validate_and_load_image(image_bytes: bytes) -> Any:

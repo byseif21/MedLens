@@ -3,7 +3,7 @@ Face recognition service for Smart Glass AI system.
 Handles face encoding extraction, storage, and matching.
 """
 
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 from datetime import datetime
 import json
 from pathlib import Path
@@ -48,6 +48,43 @@ class FaceRecognitionService:
         initial_data = FaceEncodingStorage(encodings=[], last_updated=datetime.utcnow())
         with open(self.encodings_file, 'w') as f:
             json.dump(initial_data.model_dump(mode='json'), f, indent=2, default=str)
+
+    def validate_face_quality(self, image, face_location) -> Tuple[bool, str]:
+        """
+        Validate face image quality (size, blur, etc.) to prevent simple spoofs.
+        
+        Args:
+            image: Numpy array of the full image
+            face_location: Tuple of (top, right, bottom, left)
+            
+        Returns:
+            Tuple of (is_valid, reason)
+        """
+        top, right, bottom, left = face_location
+        face_height = bottom - top
+        face_width = right - left
+        
+        # Check 1: Minimum Face Size (80x80px)
+        # Prevents long-distance spoofs or small phone screens
+        MIN_FACE_SIZE = 80
+        if face_height < MIN_FACE_SIZE or face_width < MIN_FACE_SIZE:
+            return False, f"Face too small ({face_width}x{face_height}px). Minimum {MIN_FACE_SIZE}x{MIN_FACE_SIZE}px required."
+
+        # Check 2: Blur Detection on the face crop
+        try:
+            from utils.image_processor import ImageProcessor
+            # Add some padding for context if possible, but keep it tight to the face
+            face_crop = image[top:bottom, left:right]
+            is_blurry, variance = ImageProcessor.check_blur(face_crop, threshold=100.0)
+            
+            if is_blurry:
+                return False, f"Face image too blurry (Score: {variance:.1f}). Please hold steady."
+        except Exception as e:
+            logger.warning(f"Blur check failed: {e}")
+            # Fail open if check fails, or log warning
+            pass
+            
+        return True, "Quality checks passed"
     
     def extract_encoding(self, image_bytes: bytes) -> FaceExtractionResult:
         """
@@ -95,6 +132,17 @@ class FaceRecognitionService:
                     error=f"Multiple faces detected ({face_count})",
                     face_count=face_count
                 )
+            
+            # Quality Check
+            is_valid, quality_reason = self.validate_face_quality(image, face_locations[0])
+            if not is_valid:
+                return FaceExtractionResult(
+                    success=False,
+                    encoding=None,
+                    error=f"Quality check failed: {quality_reason}",
+                    face_count=face_count
+                )
+
             face_encodings = fr.face_encodings(image, face_locations)
             if len(face_encodings) == 0:
                 return FaceExtractionResult(
