@@ -4,8 +4,8 @@ import { Phone, MapPin, Edit2, Trash2 } from 'lucide-react';
 const RelativeCard = ({ relative, onEdit, onDelete, isEditing }) => {
   return (
     <div className="medical-card hover:shadow-medical-hover transition-shadow">
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 sm:gap-0">
+        <div className="flex-1 w-full">
           <h3 className="font-semibold text-medical-dark text-lg">{relative.name}</h3>
           <p className="text-medical-primary text-sm font-medium mt-1">{relative.relation}</p>
           <div className="mt-3 space-y-1">
@@ -22,7 +22,7 @@ const RelativeCard = ({ relative, onEdit, onDelete, isEditing }) => {
           </div>
         </div>
         {isEditing && (
-          <div className="flex gap-2 ml-4">
+          <div className="flex gap-2 sm:ml-4 flex-shrink-0 self-end sm:self-start">
             <button
               onClick={() => onEdit(relative)}
               className="p-2 text-medical-primary hover:bg-medical-light rounded-lg transition-colors"

@@ -7,10 +7,10 @@ const ConnectionCard = ({ connection, type, onEdit, onRemove, showActions = fals
 
   return (
     <div className="medical-card hover:shadow-medical-hover transition-shadow">
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 sm:gap-0">
+        <div className="flex-1 w-full">
           {/* Header with name and type badge */}
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex flex-wrap items-center gap-2 mb-2">
             {isLinked ? (
               <Link
                 to={`/profile/${connection.connected_user?.id}`}
@@ -85,7 +85,7 @@ const ConnectionCard = ({ connection, type, onEdit, onRemove, showActions = fals
 
         {/* Action buttons */}
         {showActions && (
-          <div className="flex gap-2 ml-4">
+          <div className="flex gap-2 sm:ml-4 flex-shrink-0 self-end sm:self-start">
             {onEdit && (
               <button
                 onClick={() => onEdit(connection)}

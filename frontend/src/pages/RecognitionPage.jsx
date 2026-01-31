@@ -12,6 +12,7 @@ import {
   Camera,
   Upload,
   ChevronLeft,
+  RefreshCw,
 } from 'lucide-react';
 import FaceCapture from '../components/FaceCapture';
 import FaceUploader from '../components/FaceUploader';
@@ -91,18 +92,20 @@ const RecognitionPage = () => {
               {isAdmin && (
                 <Link
                   to="/admin"
-                  className="btn-medical-secondary text-sm px-4 py-2 bg-pink-50 text-pink-600 border-pink-200 hover:bg-pink-100 flex items-center gap-2"
+                  className="btn-medical-secondary text-sm px-3 sm:px-4 py-2 bg-pink-50 text-pink-600 border-pink-200 hover:bg-pink-100 flex items-center gap-2"
+                  title="Admin Panel"
                 >
-                  <Shield className="w-4 h-4" />
-                  Admin Panel
+                  <Shield className="w-5 h-5 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Admin Panel</span>
                 </Link>
               )}
               <Link
                 to="/dashboard"
-                className="btn-medical-secondary text-sm px-4 py-2 flex items-center gap-2"
+                className="btn-medical-secondary text-sm px-3 sm:px-4 py-2 flex items-center gap-2"
+                title="My Dashboard"
               >
-                <LayoutDashboard className="w-4 h-4" />
-                My Dashboard
+                <LayoutDashboard className="w-5 h-5 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">My Dashboard</span>
               </Link>
             </div>
           </div>
@@ -114,22 +117,26 @@ const RecognitionPage = () => {
           <div className="animate-fade-in">
             {/* Recognition Result */}
             <div className="medical-card mb-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-semibold text-green-600 flex items-center gap-2">
-                  <CheckCircle className="w-6 h-6" />
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4 sm:gap-0">
+                <h2 className="text-xl sm:text-2xl font-semibold text-green-600 flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6" />
                   Person Recognized
                 </h2>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                   {showViewProfile && canViewFullProfile && (
                     <button
                       onClick={() => handleViewProfile(recognizedPerson)}
-                      className="btn-medical-primary text-sm px-4 py-2 flex items-center gap-2"
+                      className="btn-medical-primary text-sm px-4 py-2 flex items-center justify-center gap-2"
                     >
                       View Full Profile
                       <ArrowRight className="w-4 h-4" />
                     </button>
                   )}
-                  <button onClick={handleReset} className="btn-medical-secondary text-sm px-4 py-2">
+                  <button
+                    onClick={handleReset}
+                    className="btn-medical-secondary text-sm px-4 py-2 flex items-center justify-center gap-2"
+                  >
+                    <RefreshCw className="w-4 h-4" />
                     Recognize Another
                   </button>
                 </div>
@@ -277,17 +284,17 @@ const RecognitionPage = () => {
                 <div className="space-y-4">
                   <button
                     onClick={() => setMode('capture')}
-                    className="w-full btn-medical-primary flex items-center justify-center gap-3"
+                    className="w-full btn-medical-primary flex items-center justify-center gap-2 sm:gap-3 py-3 sm:py-2 text-sm sm:text-base"
                   >
-                    <Camera className="w-6 h-6" />
+                    <Camera className="w-5 h-5 sm:w-6 sm:h-6" />
                     Capture with Smart Glass Camera
                   </button>
 
                   <button
                     onClick={() => setMode('upload')}
-                    className="w-full btn-medical-secondary flex items-center justify-center gap-3"
+                    className="w-full btn-medical-secondary flex items-center justify-center gap-2 sm:gap-3 py-3 sm:py-2 text-sm sm:text-base"
                   >
-                    <Upload className="w-6 h-6" />
+                    <Upload className="w-5 h-5 sm:w-6 sm:h-6" />
                     Upload Photo
                   </button>
                 </div>

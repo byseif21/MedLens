@@ -244,11 +244,11 @@ const Connections = ({ targetUserId }) => {
   return (
     <div className="medical-card">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
         <h2 className="text-2xl font-semibold">Family Connections</h2>
         <button
           onClick={() => setShowAddModal(true)}
-          className="btn-medical-primary text-sm px-4 py-2 flex items-center gap-2"
+          className="btn-medical-primary text-sm px-4 py-2 flex items-center gap-2 w-full sm:w-auto justify-center"
         >
           <UserPlus className="w-5 h-5" />
           Add Connection
@@ -291,7 +291,7 @@ const Connections = ({ targetUserId }) => {
                     Wants to connect as: {request.relationship}
                   </p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-shrink-0">
                   <button
                     onClick={() => handleAcceptRequest(request.id)}
                     className="px-3 py-1.5 bg-medical-primary text-white text-sm font-medium rounded-md hover:bg-medical-primary-dark transition-colors"
