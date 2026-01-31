@@ -137,48 +137,48 @@ const ProfileDashboard = () => {
                 )}
               </div>
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-2 sm:gap-3">
               {isAdmin && (
                 <Link
                   to="/admin"
-                  className="btn-medical-secondary text-sm px-4 py-2 bg-pink-50 text-pink-600 border-pink-200 hover:bg-pink-100 flex items-center gap-2"
+                  className="btn-medical-secondary text-sm px-3 py-2 sm:px-4 bg-pink-50 text-pink-600 border-pink-200 hover:bg-pink-100 flex items-center gap-2"
                 >
                   <Shield className="w-4 h-4" />
-                  Admin Panel
+                  <span className="hidden sm:inline">Admin Panel</span>
                 </Link>
               )}
               {isViewingOther && (
                 <a
                   href="/dashboard"
-                  className="btn-medical-secondary text-sm px-4 py-2 flex items-center gap-2"
+                  className="btn-medical-secondary text-sm px-3 py-2 sm:px-4 flex items-center gap-2"
                 >
                   <ArrowLeft className="w-4 h-4" />
-                  My Profile
+                  <span className="hidden sm:inline">My Profile</span>
                 </a>
               )}
               <Link
                 to="/recognize"
-                className="btn-medical-primary text-sm px-4 py-2 flex items-center gap-2"
+                className="btn-medical-primary text-sm px-3 py-2 sm:px-4 flex items-center gap-2"
               >
                 <ScanFace className="w-4 h-4" />
-                Recognize Face
+                <span className="hidden sm:inline">Recognize Face</span>
               </Link>
               {!isViewingOther && (
                 <Link
                   to="/settings"
-                  className="btn-medical-secondary text-sm px-4 py-2 flex items-center gap-2"
+                  className="btn-medical-secondary text-sm px-3 py-2 sm:px-4 flex items-center gap-2"
                 >
                   <Settings className="w-4 h-4" />
-                  Settings
+                  <span className="hidden sm:inline">Settings</span>
                 </Link>
               )}
               {!isViewingOther && (
                 <button
                   onClick={handleLogout}
-                  className="btn-medical-secondary text-sm px-4 py-2 flex items-center gap-2"
+                  className="btn-medical-secondary text-sm px-3 py-2 sm:px-4 flex items-center gap-2"
                 >
                   <LogOut className="w-4 h-4" />
-                  Logout
+                  <span className="hidden sm:inline">Logout</span>
                 </button>
               )}
             </div>

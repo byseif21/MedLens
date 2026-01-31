@@ -341,45 +341,49 @@ const SettingsPage = () => {
             <button
               type="button"
               onClick={() => setActiveSection('profile')}
-              className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium border ${
+              className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium border flex items-center gap-3 transition-colors ${
                 activeSection === 'profile'
                   ? 'bg-medical-primary text-white border-medical-primary'
                   : 'bg-white text-medical-gray-700 border-medical-gray-200 hover:bg-medical-gray-50'
               }`}
             >
+              <User className="w-5 h-5" />
               Profile Picture
             </button>
             <button
               type="button"
               onClick={() => setActiveSection('privacy')}
-              className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium border ${
+              className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium border flex items-center gap-3 transition-colors ${
                 activeSection === 'privacy'
                   ? 'bg-medical-primary text-white border-medical-primary'
                   : 'bg-white text-medical-gray-700 border-medical-gray-200 hover:bg-medical-gray-50'
               }`}
             >
+              <Shield className="w-5 h-5" />
               Privacy Settings
             </button>
             <button
               type="button"
               onClick={() => setActiveSection('device')}
-              className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium border ${
+              className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium border flex items-center gap-3 transition-colors ${
                 activeSection === 'device'
                   ? 'bg-medical-primary text-white border-medical-primary'
                   : 'bg-white text-medical-gray-700 border-medical-gray-200 hover:bg-medical-gray-50'
               }`}
             >
+              <ScanFace className="w-5 h-5" />
               Smart Glass Preferences
             </button>
             <button
               type="button"
               onClick={() => setActiveSection('security')}
-              className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium border ${
+              className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium border flex items-center gap-3 transition-colors ${
                 activeSection === 'security'
                   ? 'bg-medical-primary text-white border-medical-primary'
                   : 'bg-white text-medical-gray-700 border-medical-gray-200 hover:bg-medical-gray-50'
               }`}
             >
+              <Key className="w-5 h-5" />
               Security & Face ID
             </button>
           </aside>
