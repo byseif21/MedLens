@@ -80,6 +80,101 @@ const ProfileDashboard = () => {
     },
   ];
 
+  const desktopBtnBase =
+    'flex flex-col sm:flex-row items-center justify-center p-1 sm:px-2 sm:py-1.5 md:px-4 md:py-2 gap-0.5 sm:gap-1 md:gap-2 min-w-[50px] sm:min-w-0';
+  const mobileBtnBase = 'flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium';
+
+  const navigationItems = [
+    {
+      key: 'admin',
+      label: 'Admin',
+      icon: Shield,
+      to: '/admin',
+      condition: isAdmin,
+      desktopClass: `btn-medical-secondary bg-red-50 text-red-600 border-red-200 hover:bg-red-100 ${desktopBtnBase}`,
+      mobileClass: `${mobileBtnBase} text-red-600 bg-red-50 hover:bg-red-100 hover:text-red-700`,
+      separateDesktop: true,
+    },
+    {
+      key: 'profile',
+      label: 'Profile',
+      icon: ArrowLeft,
+      href: '/dashboard',
+      condition: isViewingOther,
+      desktopClass: `btn-medical-secondary ${desktopBtnBase}`,
+      mobileClass: `${mobileBtnBase} text-medical-gray-600 hover:bg-medical-gray-50 hover:text-medical-primary`,
+    },
+    {
+      key: 'recognize',
+      label: 'Recognize',
+      icon: ScanFace,
+      to: '/recognize',
+      condition: true,
+      desktopClass: `btn-medical-primary ${desktopBtnBase}`,
+      mobileClass: `${mobileBtnBase} text-medical-gray-600 hover:bg-medical-gray-50 hover:text-medical-primary`,
+    },
+    {
+      key: 'settings',
+      label: 'Settings',
+      icon: Settings,
+      to: '/settings',
+      condition: !isViewingOther,
+      desktopClass: `btn-medical-secondary ${desktopBtnBase}`,
+      mobileClass: `${mobileBtnBase} text-medical-gray-600 hover:bg-medical-gray-50 hover:text-medical-primary`,
+    },
+    {
+      key: 'logout',
+      label: 'Logout',
+      icon: LogOut,
+      onClick: handleLogout,
+      condition: !isViewingOther,
+      desktopClass: `btn-medical-secondary ${desktopBtnBase}`,
+      mobileClass: `w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-medical-gray-200 text-medical-gray-600 font-medium hover:bg-red-50 hover:text-red-600 hover:border-red-100 transition-all`,
+      isFooter: true,
+    },
+  ];
+
+  const renderNavItem = (item, isMobile = false) => {
+    const Icon = item.icon;
+    const className = isMobile ? item.mobileClass : item.desktopClass;
+    const onClick = isMobile
+      ? () => {
+          if (item.onClick) item.onClick();
+          setIsMenuOpen(false);
+        }
+      : item.onClick;
+
+    const content = (
+      <>
+        <Icon className={isMobile ? 'w-5 h-5' : 'w-4 h-4 sm:w-4 sm:h-4'} />
+        <span className={isMobile ? '' : 'text-sm md:text-base leading-none sm:leading-normal'}>
+          {item.label}
+        </span>
+      </>
+    );
+
+    if (item.href) {
+      return (
+        <a key={item.key} href={item.href} className={className} onClick={onClick}>
+          {content}
+        </a>
+      );
+    }
+
+    if (item.to) {
+      return (
+        <Link key={item.key} to={item.to} className={className} onClick={onClick}>
+          {content}
+        </Link>
+      );
+    }
+
+    return (
+      <button key={item.key} onClick={onClick} className={className}>
+        {content}
+      </button>
+    );
+  };
   useEffect(() => {
     if (activeTab === 'medical' && !canViewMedical) {
       setActiveTab('main');
@@ -149,58 +244,13 @@ const ProfileDashboard = () => {
             </div>
             {/* Desktop Navigation */}
             <div className="max-sm:hidden flex flex-col-reverse sm:flex-row sm:items-center gap-2 sm:gap-2 md:gap-3">
-              {isAdmin && (
-                <Link
-                  to="/admin"
-                  className="btn-medical-secondary bg-red-50 text-red-600 border-red-200 hover:bg-red-100 flex flex-col sm:flex-row items-center justify-center p-1 sm:px-2 sm:py-1.5 md:px-4 md:py-2 gap-0.5 sm:gap-1 md:gap-2 min-w-[50px] sm:min-w-0"
-                >
-                  <Shield className="w-4 h-4 sm:w-4 sm:h-4" />
-                  <span className="text-sm md:text-base leading-none sm:leading-normal">Admin</span>
-                </Link>
-              )}
+              {navigationItems
+                .filter((item) => item.condition && item.separateDesktop)
+                .map((item) => renderNavItem(item))}
               <div className="flex items-center gap-1 sm:gap-1.5 md:gap-3">
-                {isViewingOther && (
-                  <a
-                    href="/dashboard"
-                    className="btn-medical-secondary flex flex-col sm:flex-row items-center justify-center p-1 sm:px-2 sm:py-1.5 md:px-4 md:py-2 gap-0.5 sm:gap-1 md:gap-2 min-w-[50px] sm:min-w-0"
-                  >
-                    <ArrowLeft className="w-4 h-4 sm:w-4 sm:h-4" />
-                    <span className="text-sm md:text-base leading-none sm:leading-normal">
-                      Profile
-                    </span>
-                  </a>
-                )}
-                <Link
-                  to="/recognize"
-                  className="btn-medical-primary flex flex-col sm:flex-row items-center justify-center p-1 sm:px-2 sm:py-1.5 md:px-4 md:py-2 gap-0.5 sm:gap-1 md:gap-2 min-w-[50px] sm:min-w-0"
-                >
-                  <ScanFace className="w-4 h-4 sm:w-4 sm:h-4" />
-                  <span className="text-sm md:text-base leading-none sm:leading-normal">
-                    Recognize
-                  </span>
-                </Link>
-                {!isViewingOther && (
-                  <Link
-                    to="/settings"
-                    className="btn-medical-secondary flex flex-col sm:flex-row items-center justify-center p-1 sm:px-2 sm:py-1.5 md:px-4 md:py-2 gap-0.5 sm:gap-1 md:gap-2 min-w-[50px] sm:min-w-0"
-                  >
-                    <Settings className="w-4 h-4 sm:w-4 sm:h-4" />
-                    <span className="text-sm md:text-base leading-none sm:leading-normal">
-                      Settings
-                    </span>
-                  </Link>
-                )}
-                {!isViewingOther && (
-                  <button
-                    onClick={handleLogout}
-                    className="btn-medical-secondary flex flex-col sm:flex-row items-center justify-center p-1 sm:px-2 sm:py-1.5 md:px-4 md:py-2 gap-0.5 sm:gap-1 md:gap-2 min-w-[50px] sm:min-w-0"
-                  >
-                    <LogOut className="w-4 h-4 sm:w-4 sm:h-4" />
-                    <span className="text-sm md:text-base leading-none sm:leading-normal">
-                      Logout
-                    </span>
-                  </button>
-                )}
+                {navigationItems
+                  .filter((item) => item.condition && !item.separateDesktop)
+                  .map((item) => renderNavItem(item))}
               </div>
             </div>
 
@@ -222,62 +272,13 @@ const ProfileDashboard = () => {
       <MobileMenuDrawer
         isOpen={isMenuOpen}
         onClose={() => setIsMenuOpen(false)}
-        footer={
-          !isViewingOther && (
-            <button
-              onClick={() => {
-                handleLogout();
-                setIsMenuOpen(false);
-              }}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-medical-gray-200 text-medical-gray-600 font-medium hover:bg-red-50 hover:text-red-600 hover:border-red-100 transition-all"
-            >
-              <LogOut className="w-5 h-5" />
-              Logout
-            </button>
-          )
-        }
+        footer={navigationItems
+          .filter((item) => item.condition && item.isFooter)
+          .map((item) => renderNavItem(item, true))}
       >
-        {isAdmin && (
-          <Link
-            to="/admin"
-            onClick={() => setIsMenuOpen(false)}
-            className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-red-600 bg-red-50 hover:bg-red-100 hover:text-red-700"
-          >
-            <Shield className="w-5 h-5" />
-            Admin
-          </Link>
-        )}
-
-        {isViewingOther && (
-          <a
-            href="/dashboard"
-            onClick={() => setIsMenuOpen(false)}
-            className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-medical-gray-600 hover:bg-medical-gray-50 hover:text-medical-primary"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            Profile
-          </a>
-        )}
-
-        <Link
-          to="/recognize"
-          onClick={() => setIsMenuOpen(false)}
-          className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-medical-gray-600 hover:bg-medical-gray-50 hover:text-medical-primary"
-        >
-          <ScanFace className="w-5 h-5" />
-          Recognize
-        </Link>
-
-        {!isViewingOther && (
-          <Link
-            to="/settings"
-            onClick={() => setIsMenuOpen(false)}
-            className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-medical-gray-600 hover:bg-medical-gray-50 hover:text-medical-primary"
-          >
-            <Settings className="w-5 h-5" />
-            Settings
-          </Link>
-        )}
+        {navigationItems
+          .filter((item) => item.condition && !item.isFooter)
+          .map((item) => renderNavItem(item, true))}
       </MobileMenuDrawer>
 
       {/* Tabs (Desktop) */}
@@ -391,8 +392,13 @@ const ProfileDashboard = () => {
                   : 'text-medical-gray-500 hover:text-medical-gray-700'
               }`}
             >
-              <tab.icon className={`w-6 h-6 ${activeTab === tab.id ? 'fill-current' : ''}`} strokeWidth={activeTab === tab.id ? 2.5 : 2} />
-              <span className={`text-[10px] font-medium ${activeTab === tab.id ? 'font-bold' : ''}`}>
+              <tab.icon
+                className={`w-6 h-6 ${activeTab === tab.id ? 'fill-current' : ''}`}
+                strokeWidth={activeTab === tab.id ? 2.5 : 2}
+              />
+              <span
+                className={`text-[10px] font-medium ${activeTab === tab.id ? 'font-bold' : ''}`}
+              >
                 {tab.label === 'Emergency Contacts' ? 'Contacts' : tab.label}
               </span>
             </button>
