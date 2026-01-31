@@ -5,6 +5,60 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import { useNotifications } from '../hooks/useNotifications';
 import { getAdminUsers, deleteUserAdmin, updateUserAdmin } from '../services/adminApi';
 
+const UserRoleCell = ({ user, isEditing, onUpdate, onCancel }) => {
+  if (isEditing) {
+    return (
+      <select
+        defaultValue={user.role}
+        onChange={(e) => onUpdate(user.id, e.target.value)}
+        className="text-sm border rounded p-1"
+        autoFocus
+        onBlur={onCancel}
+      >
+        <option value="user">User</option>
+        <option value="doctor">Doctor</option>
+        <option value="admin">Admin</option>
+      </select>
+    );
+  }
+  return (
+    <span
+      className={`px-2 py-1 rounded-full text-xs font-semibold ${
+        user.role === 'admin'
+          ? 'bg-purple-100 text-purple-700'
+          : user.role === 'doctor'
+            ? 'bg-blue-100 text-blue-700'
+            : 'bg-gray-100 text-gray-700'
+      }`}
+    >
+      {user.role}
+    </span>
+  );
+};
+
+const UserActionButtons = ({ user, onEdit, onDelete, isMobile = false }) => (
+  <>
+    <button
+      onClick={() => onEdit(user.id)}
+      className={`text-blue-600 hover:text-blue-800 text-sm font-medium ${
+        isMobile ? 'flex' : 'inline-flex'
+      } items-center gap-1`}
+    >
+      <Edit2 className={isMobile ? 'w-3.5 h-3.5' : 'w-3 h-3'} />
+      {isMobile ? 'Edit' : 'Edit Role'}
+    </button>
+    <button
+      onClick={() => onDelete(user.id, user.name)}
+      className={`text-red-600 hover:text-red-800 text-sm font-medium ${
+        isMobile ? 'flex' : 'inline-flex'
+      } items-center gap-1`}
+    >
+      <Trash2 className={isMobile ? 'w-3.5 h-3.5' : 'w-3 h-3'} />
+      Delete
+    </button>
+  </>
+);
+
 const AdminDashboard = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -148,50 +202,22 @@ const AdminDashboard = () => {
                           <td className="p-4 font-medium text-medical-dark">{user.name}</td>
                           <td className="p-4 text-gray-600">{user.email}</td>
                           <td className="p-4">
-                            {editingUser === user.id ? (
-                              <select
-                                defaultValue={user.role}
-                                onChange={(e) => handleUpdateRole(user.id, e.target.value)}
-                                className="text-sm border rounded p-1"
-                                autoFocus
-                                onBlur={() => setEditingUser(null)}
-                              >
-                                <option value="user">User</option>
-                                <option value="doctor">Doctor</option>
-                                <option value="admin">Admin</option>
-                              </select>
-                            ) : (
-                              <span
-                                className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                                  user.role === 'admin'
-                                    ? 'bg-purple-100 text-purple-700'
-                                    : user.role === 'doctor'
-                                      ? 'bg-blue-100 text-blue-700'
-                                      : 'bg-gray-100 text-gray-700'
-                                }`}
-                              >
-                                {user.role}
-                              </span>
-                            )}
+                            <UserRoleCell
+                              user={user}
+                              isEditing={editingUser === user.id}
+                              onUpdate={handleUpdateRole}
+                              onCancel={() => setEditingUser(null)}
+                            />
                           </td>
                           <td className="p-4 text-gray-500 text-sm">
                             {user.created_at ? new Date(user.created_at).toLocaleDateString() : '-'}
                           </td>
                           <td className="p-4 text-right space-x-2">
-                            <button
-                              onClick={() => setEditingUser(user.id)}
-                              className="text-blue-600 hover:text-blue-800 text-sm font-medium inline-flex items-center gap-1"
-                            >
-                              <Edit2 className="w-3 h-3" />
-                              Edit Role
-                            </button>
-                            <button
-                              onClick={() => handleDelete(user.id, user.name)}
-                              className="text-red-600 hover:text-red-800 text-sm font-medium inline-flex items-center gap-1"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                              Delete
-                            </button>
+                            <UserActionButtons
+                              user={user}
+                              onEdit={setEditingUser}
+                              onDelete={handleDelete}
+                            />
                           </td>
                         </tr>
                       ))
@@ -219,31 +245,12 @@ const AdminDashboard = () => {
                           <h3 className="font-semibold text-medical-dark">{user.name}</h3>
                           <p className="text-sm text-gray-500 break-all">{user.email}</p>
                         </div>
-                        {editingUser === user.id ? (
-                          <select
-                            defaultValue={user.role}
-                            onChange={(e) => handleUpdateRole(user.id, e.target.value)}
-                            className="text-sm border rounded p-1"
-                            autoFocus
-                            onBlur={() => setEditingUser(null)}
-                          >
-                            <option value="user">User</option>
-                            <option value="doctor">Doctor</option>
-                            <option value="admin">Admin</option>
-                          </select>
-                        ) : (
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                              user.role === 'admin'
-                                ? 'bg-purple-100 text-purple-700'
-                                : user.role === 'doctor'
-                                  ? 'bg-blue-100 text-blue-700'
-                                  : 'bg-gray-100 text-gray-700'
-                            }`}
-                          >
-                            {user.role}
-                          </span>
-                        )}
+                        <UserRoleCell
+                          user={user}
+                          isEditing={editingUser === user.id}
+                          onUpdate={handleUpdateRole}
+                          onCancel={() => setEditingUser(null)}
+                        />
                       </div>
 
                       <div className="flex justify-between items-center pt-3 border-t border-gray-100">
@@ -251,20 +258,12 @@ const AdminDashboard = () => {
                           {user.created_at ? new Date(user.created_at).toLocaleDateString() : '-'}
                         </span>
                         <div className="flex gap-3">
-                          <button
-                            onClick={() => setEditingUser(user.id)}
-                            className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDelete(user.id, user.name)}
-                            className="text-red-600 hover:text-red-800 text-sm font-medium flex items-center gap-1"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            Delete
-                          </button>
+                          <UserActionButtons
+                            user={user}
+                            onEdit={setEditingUser}
+                            onDelete={handleDelete}
+                            isMobile={true}
+                          />
                         </div>
                       </div>
                     </div>
