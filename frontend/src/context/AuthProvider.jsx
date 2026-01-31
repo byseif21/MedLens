@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { AuthContext } from './AuthContext';
 import { getCurrentUser, setSession, clearSession } from '../services/auth';
 import { getProfile } from '../services/api';
+import { registerAuthErrorCallback } from '../services/axios';
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -36,6 +37,17 @@ export const AuthProvider = ({ children }) => {
     initAuth();
   }, [fetchUserProfile]);
 
+  const logout = useCallback(() => {
+    clearSession();
+    setUser(null);
+    // Optional: Navigate to login here if we had access to router,
+    // but usually better to let components handle navigation or use a protected route wrapper
+  }, []);
+
+  useEffect(() => {
+    registerAuthErrorCallback(logout);
+  }, [logout]);
+
   const login = useCallback(
     async (data) => {
       setSession(data);
@@ -59,13 +71,6 @@ export const AuthProvider = ({ children }) => {
     },
     [fetchUserProfile]
   );
-
-  const logout = useCallback(() => {
-    clearSession();
-    setUser(null);
-    // Optional: Navigate to login here if we had access to router,
-    // but usually better to let components handle navigation or use a protected route wrapper
-  }, []);
 
   const updateUser = useCallback((updates) => {
     setUser((prev) => {

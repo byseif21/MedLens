@@ -36,13 +36,24 @@ apiClient.interceptors.request.use(
 );
 
 // Response interceptor
+let authErrorCallback = null;
+
+export const registerAuthErrorCallback = (callback) => {
+  authErrorCallback = callback;
+};
+
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401 && !error.config?.skipAuthRedirect) {
       // Handle unauthorized
-      clearSession();
-      window.location.replace('/login');
+      if (authErrorCallback) {
+        authErrorCallback();
+      } else {
+        // fallback
+        clearSession();
+        window.location.replace('/login');
+      }
     }
     return Promise.reject(error);
   }
