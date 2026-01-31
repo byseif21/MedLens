@@ -88,24 +88,26 @@ const RecognitionPage = () => {
                 <p className="text-sm text-medical-gray-600">Smart Glass Recognition System</p>
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
               {isAdmin && (
                 <Link
                   to="/admin"
-                  className="btn-medical-secondary text-sm px-3 sm:px-4 py-2 bg-pink-50 text-pink-600 border-pink-200 hover:bg-pink-100 flex items-center gap-2"
-                  title="Admin Panel"
+                  className="btn-medical-secondary bg-pink-50 text-pink-600 border-pink-200 hover:bg-pink-100 flex flex-col sm:flex-row items-center justify-center p-1 sm:px-4 sm:py-2 gap-0.5 sm:gap-2 min-w-[50px] sm:min-w-0"
                 >
-                  <Shield className="w-5 h-5 sm:w-4 sm:h-4" />
-                  <span className="hidden sm:inline">Admin Panel</span>
+                  <Shield className="w-4 h-4 sm:w-4 sm:h-4" />
+                  <span className="text-[9px] sm:text-sm leading-none sm:leading-normal text-center">
+                    Admin Panel
+                  </span>
                 </Link>
               )}
               <Link
                 to="/dashboard"
-                className="btn-medical-secondary text-sm px-3 sm:px-4 py-2 flex items-center gap-2"
-                title="My Dashboard"
+                className="btn-medical-secondary flex flex-col sm:flex-row items-center justify-center p-1 sm:px-4 sm:py-2 gap-0.5 sm:gap-2 min-w-[50px] sm:min-w-0"
               >
-                <LayoutDashboard className="w-5 h-5 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">My Dashboard</span>
+                <LayoutDashboard className="w-4 h-4 sm:w-4 sm:h-4" />
+                <span className="text-[9px] sm:text-sm leading-none sm:leading-normal text-center">
+                  My Dashboard
+                </span>
               </Link>
             </div>
           </div>
