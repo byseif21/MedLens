@@ -1,16 +1,20 @@
 import axios from 'axios';
 import { getAccessToken, getCurrentUser, clearSession } from './auth';
 
-// Get API URL from environment variables
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const rawApiUrl = import.meta.env.VITE_API_URL;
+let API_ORIGIN;
+if (rawApiUrl && rawApiUrl.trim() !== '') {
+  API_ORIGIN = /^https?:\/\//i.test(rawApiUrl) ? rawApiUrl : `https://${rawApiUrl}`;
+} else {
+  API_ORIGIN = import.meta.env.DEV ? 'http://localhost:8000' : window.location.origin;
+}
 
-// Create axios instance
 const apiClient = axios.create({
-  baseURL: API_URL,
+  baseURL: API_ORIGIN,
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 30000, // 30 seconds
+  timeout: 30000,
 });
 
 // Request interceptor
