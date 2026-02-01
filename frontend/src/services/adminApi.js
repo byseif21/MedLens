@@ -14,7 +14,7 @@ export const getAdminUsers = async (page = 1, pageSize = 20, q = '', role = '') 
     if (q) params.append('q', q);
     if (role) params.append('role', role);
 
-    const response = await apiClient.get(`/api/users?${params.toString()}`);
+    const response = await apiClient.get(`/api/users/?${params.toString()}`);
     return {
       success: true,
       data: response.data,

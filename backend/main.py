@@ -15,6 +15,10 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# Trust Proxy Headers (for SSL termination)
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
+
 # Get configuration settings
 settings = get_config()
 

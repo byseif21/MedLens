@@ -24,10 +24,12 @@ class Config:
     MAX_IMAGE_SIZE_MB: int = int(os.getenv("MAX_IMAGE_SIZE_MB", "5"))
     
     # CORS Configuration
-    CORS_ORIGINS: List[str] = os.getenv(
-        "CORS_ORIGINS", 
-        "http://localhost:3000,http://localhost:5173"
-    ).split(",")
+    CORS_ORIGINS: List[str] = [
+        origin.strip() for origin in os.getenv(
+            "CORS_ORIGINS", 
+            "http://localhost:3000,http://localhost:5173"
+        ).split(",") if origin.strip()
+    ]
     
     # Server Configuration
     HOST: str = os.getenv("HOST", "0.0.0.0")
