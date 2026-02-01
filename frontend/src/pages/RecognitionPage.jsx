@@ -19,6 +19,7 @@ import FaceUploader from '../components/FaceUploader';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ProfileAvatar from '../components/ProfileAvatar';
 import { useAuth } from '../hooks/useAuth';
+import { useNotifications } from '../hooks/useNotifications';
 import { setViewingUser } from '../services/auth';
 import { recognizeFace } from '../services/api';
 import { computeAge } from '../utils/dateUtils';
@@ -31,6 +32,7 @@ const RecognitionPage = () => {
   const [showViewProfile, setShowViewProfile] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { notify } = useNotifications();
   const userRole = user?.role;
   const isAdmin = (userRole || '').toLowerCase() === 'admin';
   const canViewFullProfile = userRole === 'doctor' || isAdmin;
@@ -48,14 +50,40 @@ const RecognitionPage = () => {
 
       const result = await recognizeFace(formData);
 
-      if (result.success && result.data.match) {
-        setRecognizedPerson(result.data);
-        setShowViewProfile(canViewFullProfile);
+      if (result.success) {
+        if (result.data.match) {
+          setRecognizedPerson(result.data);
+          setShowViewProfile(canViewFullProfile);
+          notify({
+            type: 'success',
+            title: 'Match Found',
+            message: `Successfully recognized ${result.data.name}`,
+          });
+        } else {
+          // no match
+          setError('Face not recognized. Person may not be registered in the system.');
+          notify({
+            type: 'warning',
+            title: 'No Match Found',
+            message: result.data.message || 'Face not recognized.',
+          });
+        }
       } else {
-        setError('Face not recognized. Person may not be registered in the system.');
+        // validation error (blur, size, etc.) or API error
+        setError('Recognition failed. Please try again.');
+        notify({
+          type: 'error',
+          title: 'Recognition Failed',
+          message: result.error || 'An error occurred during recognition.',
+        });
       }
     } catch (err) {
       setError('An error occurred during recognition. Please try again.');
+      notify({
+        type: 'error',
+        title: 'System Error',
+        message: 'An unexpected error occurred.',
+      });
       console.error('Recognition error:', err);
     } finally {
       setLoading(false);

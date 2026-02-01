@@ -1,5 +1,17 @@
 import apiClient from './axios';
 
+const handleApiError = (error, defaultMessage) => {
+  return {
+    success: false,
+    error:
+      error.response?.data?.detail ||
+      error.response?.data?.error ||
+      error.message ||
+      defaultMessage,
+    status: error.response?.status,
+  };
+};
+
 /**
  * Face Login - Validate face and authenticate
  * @param {FormData} formData - Form data containing face image
@@ -17,14 +29,7 @@ export const loginWithFace = async (formData) => {
       data: response.data,
     };
   } catch (error) {
-    return {
-      success: false,
-      error:
-        error.response?.data?.detail ||
-        error.response?.data?.error ||
-        error.message ||
-        'Login failed',
-    };
+    return handleApiError(error, 'Login failed');
   }
 };
 
@@ -91,14 +96,7 @@ export const confirmFaceLogin = async ({ userId, password }) => {
       data: response.data,
     };
   } catch (error) {
-    return {
-      success: false,
-      error:
-        error.response?.data?.detail ||
-        error.response?.data?.error ||
-        error.message ||
-        'Login failed',
-    };
+    return handleApiError(error, 'Login failed');
   }
 };
 
@@ -309,10 +307,7 @@ export const recognizeFace = async (formData) => {
       data: response.data,
     };
   } catch (error) {
-    return {
-      success: false,
-      error: error.response?.data?.error || error.message || 'Recognition failed',
-    };
+    return handleApiError(error, 'Recognition failed');
   }
 };
 
