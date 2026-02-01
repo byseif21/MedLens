@@ -159,7 +159,7 @@ class FaceRecognitionService:
         user_data: Dict[str, Any]
     ) -> bool:
         """
-        Save face encoding to local JSON storage.
+        Save face encoding to Supabase database.
         
         Args:
             user_id: Unique user identifier
@@ -173,48 +173,26 @@ class FaceRecognitionService:
             FaceRecognitionError: If save operation fails
         """
         try:
-            with self._lock:
-                # Load existing encodings
-                storage = self._load_encodings_storage()
-                
-                # Create new encoding entry
-                new_encoding = FaceEncodingWithMetadata(
-                    user_id=user_id,
-                    encoding=encoding,
-                    name=user_data.get('name', ''),
-                    email=user_data.get('email', ''),
-                    timestamp=datetime.utcnow()
-                )
-                
-                # Check if user already exists (update instead of duplicate)
-                existing_index = None
-                for i, enc in enumerate(storage.encodings):
-                    if enc.user_id == user_id:
-                        existing_index = i
-                        break
-                
-                if existing_index is not None:
-                    # Update existing encoding
-                    storage.encodings[existing_index] = new_encoding
-                else:
-                    # Add new encoding
-                    storage.encodings.append(new_encoding)
-                
-                # Update last_updated timestamp
-                storage.last_updated = datetime.utcnow()
-                
-                # Save to file
-                with open(self.encodings_file, 'w') as f:
-                    json.dump(storage.model_dump(mode='json'), f, indent=2, default=str)
-                
-                return True
+            from services.storage_service import get_supabase_service
+            supabase = get_supabase_service()
+            
+            # Serialize encoding to JSON string
+            encoding_json = json.dumps(encoding)
+            
+            # Update user record in Supabase
+            response = supabase.client.table('users').update({
+                'face_encoding': encoding_json,
+                'face_updated_at': datetime.utcnow().isoformat()
+            }).eq('id', user_id).execute()
+            
+            return True
                 
         except Exception as e:
             raise FaceRecognitionError(f"Failed to save encoding: {str(e)}")
     
     def load_encodings(self) -> List[FaceEncodingWithMetadata]:
         """
-        Load all face encodings from local JSON storage.
+        Load all face encodings from Supabase database.
         
         Returns:
             List of FaceEncodingWithMetadata objects
@@ -223,24 +201,40 @@ class FaceRecognitionService:
             FaceRecognitionError: If load operation fails
         """
         try:
-            storage = self._load_encodings_storage()
-            return storage.encodings
+            from services.storage_service import get_supabase_service
+            supabase = get_supabase_service()
+            
+            # Fetch users with encodings
+            # We only need minimal fields for recognition
+            response = supabase.client.table('users').select(
+                'id, name, email, face_encoding, face_updated_at'
+            ).not_.is_('face_encoding', 'null').execute()
+            
+            encodings = []
+            for user in response.data:
+                try:
+                    # Parse JSON encoding
+                    if not user.get('face_encoding'):
+                        continue
+                        
+                    encoding_vector = json.loads(user['face_encoding'])
+                    
+                    # Create metadata object
+                    encodings.append(FaceEncodingWithMetadata(
+                        user_id=user['id'],
+                        encoding=encoding_vector,
+                        name=user.get('name', 'Unknown'),
+                        email=user.get('email', ''),
+                        timestamp=datetime.fromisoformat(user['face_updated_at'].replace('Z', '+00:00')) if user.get('face_updated_at') else datetime.utcnow()
+                    ))
+                except (json.JSONDecodeError, ValueError) as e:
+                    logger.warning(f"Skipping invalid encoding for user {user.get('id')}: {e}")
+                    continue
+            
+            return encodings
+            
         except Exception as e:
             raise FaceRecognitionError(f"Failed to load encodings: {str(e)}")
-    
-    def _load_encodings_storage(self) -> FaceEncodingStorage:
-        """
-        Load encodings storage from file.
-        
-        Returns:
-            FaceEncodingStorage object
-        """
-        if not self.encodings_file.exists():
-            self._initialize_encodings_file()
-        
-        with open(self.encodings_file, 'r') as f:
-            data = json.load(f)
-            return FaceEncodingStorage(**data)
     
     def find_match(self, encoding: List[float]) -> FaceMatch:
         """
@@ -352,14 +346,17 @@ class FaceRecognitionService:
     
     def get_encoding_count(self) -> int:
         """
-        Get the number of stored encodings.
+        Get the number of stored encodings in Supabase.
         
         Returns:
             Number of encodings
         """
         try:
-            storage = self._load_encodings_storage()
-            return len(storage.encodings)
+            from services.storage_service import get_supabase_service
+            supabase = get_supabase_service()
+            
+            response = supabase.client.table('users').select('id', count='exact').not_.is_('face_encoding', 'null').execute()
+            return response.count or 0
         except Exception:
             return 0
     
