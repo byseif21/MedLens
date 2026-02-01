@@ -10,7 +10,6 @@ RUN apt-get update && apt-get install -y \
     pkg-config \
     libjpeg-dev \
     zlib1g-dev \
-    libatlas-base-dev \
     libx11-6 \
     libgl1 \
     libxext6 \
