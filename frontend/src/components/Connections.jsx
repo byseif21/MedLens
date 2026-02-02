@@ -77,40 +77,34 @@ const Connections = ({ targetUserId }) => {
     }
   };
 
-  const handleAcceptRequest = async (requestId) => {
+  const processConnectionRequest = async (
+    requestId,
+    apiFunc,
+    errorMsg,
+    refreshConnections = false
+  ) => {
     try {
-      const result = await acceptConnectionRequest(requestId);
+      const result = await apiFunc(requestId);
       if (result.success) {
         // TODO: integrate with global notification box instead of local successMessage
-        // setSuccessMessage('Connection request accepted!');
-        await fetchConnections();
+        if (refreshConnections) {
+          await fetchConnections();
+        }
         await fetchPendingRequests();
-        // setTimeout(() => setSuccessMessage(null), 3000);
       } else {
-        setError(result.error || 'Failed to accept request');
+        setError(result.error || errorMsg);
       }
     } catch (err) {
-      console.error('Error accepting request:', err);
-      setError('Failed to accept request');
+      console.error(errorMsg, err);
+      setError(errorMsg);
     }
   };
 
-  const handleRejectRequest = async (requestId) => {
-    try {
-      const result = await rejectConnectionRequest(requestId);
-      if (result.success) {
-        // TODO: integrate with global notification box instead of local successMessage
-        // setSuccessMessage('Connection request rejected');
-        await fetchPendingRequests();
-        // setTimeout(() => setSuccessMessage(null), 3000);
-      } else {
-        setError(result.error || 'Failed to reject request');
-      }
-    } catch (err) {
-      console.error('Error rejecting request:', err);
-      setError('Failed to reject request');
-    }
-  };
+  const handleAcceptRequest = (requestId) =>
+    processConnectionRequest(requestId, acceptConnectionRequest, 'Failed to accept request', true);
+
+  const handleRejectRequest = (requestId) =>
+    processConnectionRequest(requestId, rejectConnectionRequest, 'Failed to reject request');
 
   const handleAddConnection = async (connectionData) => {
     setError(null);
