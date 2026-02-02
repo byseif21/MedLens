@@ -64,4 +64,4 @@ jobs:
 
       - name: Run backend health implementation test
         working-directory: backend
-        run: python test_health_endpoint.py
+        run: python tests/test_health_endpoint.py
