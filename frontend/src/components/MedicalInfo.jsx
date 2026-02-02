@@ -1,52 +1,37 @@
-import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { updateMedicalInfo } from '../services/api';
-import { useAuth } from '../hooks/useAuth';
 import LoadingSpinner from './LoadingSpinner';
+import { useMedicalInfo } from '../hooks/useMedicalInfo';
 
-const getFormDataFromMedicalProfile = (profile) => ({
-  health_history: profile?.medical_info?.health_history || '',
-  chronic_conditions: profile?.medical_info?.chronic_conditions || '',
-  allergies: profile?.medical_info?.allergies || '',
-  current_medications: profile?.medical_info?.current_medications || '',
-  previous_surgeries: profile?.medical_info?.previous_surgeries || '',
-  emergency_notes: profile?.medical_info?.emergency_notes || '',
-});
+const MedicalInfoField = ({ label, name, value, onChange, disabled, rows = 2, placeholder }) => (
+  <div>
+    <label className="label-medical">{label}</label>
+    <textarea
+      name={name}
+      value={value}
+      onChange={onChange}
+      disabled={disabled}
+      rows={rows}
+      className="input-medical disabled:bg-medical-gray-50 disabled:cursor-not-allowed resize-none"
+      placeholder={placeholder}
+    />
+  </div>
+);
+
+MedicalInfoField.propTypes = {
+  label: PropTypes.string.isRequired,
+  name: PropTypes.string.isRequired,
+  value: PropTypes.string.isRequired,
+  onChange: PropTypes.func.isRequired,
+  disabled: PropTypes.bool.isRequired,
+  rows: PropTypes.number,
+  placeholder: PropTypes.string,
+};
 
 const MedicalInfo = ({ profile, onUpdate, readOnly = false, targetUserId = null }) => {
-  const [isEditing, setIsEditing] = useState(false);
+  const { isEditing, setIsEditing, loading, formData, handleChange, handleSave, handleCancel } =
+    useMedicalInfo(profile, onUpdate, targetUserId);
+
   const canEdit = !readOnly;
-  const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState(getFormDataFromMedicalProfile(profile));
-  const { user } = useAuth();
-
-  useEffect(() => {
-    setFormData(getFormDataFromMedicalProfile(profile));
-  }, [profile]);
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSave = async () => {
-    setLoading(true);
-    const userId = targetUserId || user?.id;
-    const result = await updateMedicalInfo(userId, formData);
-
-    if (result.success) {
-      setIsEditing(false);
-      onUpdate({ silent: true });
-    } else {
-      // TODO: replace alert with GeneralModal (unified app modal) for error feedback
-      alert('Failed to update: ' + result.error);
-    }
-    setLoading(false);
-  };
-
-  const handleCancel = () => {
-    setFormData(getFormDataFromMedicalProfile(profile));
-    setIsEditing(false);
-  };
 
   if (loading) {
     return (
@@ -81,83 +66,61 @@ const MedicalInfo = ({ profile, onUpdate, readOnly = false, targetUserId = null 
       </div>
 
       <div className="space-y-6">
-        <div>
-          <label className="label-medical">Health History</label>
-          <textarea
-            name="health_history"
-            value={formData.health_history}
-            onChange={handleChange}
-            disabled={!isEditing}
-            rows={3}
-            className="input-medical disabled:bg-medical-gray-50 disabled:cursor-not-allowed resize-none"
-            placeholder="Brief medical history..."
-          />
-        </div>
+        <MedicalInfoField
+          label="Health History"
+          name="health_history"
+          value={formData.health_history}
+          onChange={handleChange}
+          disabled={!isEditing}
+          rows={3}
+          placeholder="Brief medical history..."
+        />
 
-        <div>
-          <label className="label-medical">Chronic Conditions</label>
-          <textarea
-            name="chronic_conditions"
-            value={formData.chronic_conditions}
-            onChange={handleChange}
-            disabled={!isEditing}
-            rows={2}
-            className="input-medical disabled:bg-medical-gray-50 disabled:cursor-not-allowed resize-none"
-            placeholder="List any chronic conditions..."
-          />
-        </div>
+        <MedicalInfoField
+          label="Chronic Conditions"
+          name="chronic_conditions"
+          value={formData.chronic_conditions}
+          onChange={handleChange}
+          disabled={!isEditing}
+          placeholder="List any chronic conditions..."
+        />
 
-        <div>
-          <label className="label-medical">Allergies</label>
-          <textarea
-            name="allergies"
-            value={formData.allergies}
-            onChange={handleChange}
-            disabled={!isEditing}
-            rows={2}
-            className="input-medical disabled:bg-medical-gray-50 disabled:cursor-not-allowed resize-none"
-            placeholder="List any allergies..."
-          />
-        </div>
+        <MedicalInfoField
+          label="Allergies"
+          name="allergies"
+          value={formData.allergies}
+          onChange={handleChange}
+          disabled={!isEditing}
+          placeholder="List any allergies..."
+        />
 
-        <div>
-          <label className="label-medical">Current Medications</label>
-          <textarea
-            name="current_medications"
-            value={formData.current_medications}
-            onChange={handleChange}
-            disabled={!isEditing}
-            rows={3}
-            className="input-medical disabled:bg-medical-gray-50 disabled:cursor-not-allowed resize-none"
-            placeholder="List current medications..."
-          />
-        </div>
+        <MedicalInfoField
+          label="Current Medications"
+          name="current_medications"
+          value={formData.current_medications}
+          onChange={handleChange}
+          disabled={!isEditing}
+          rows={3}
+          placeholder="List current medications..."
+        />
 
-        <div>
-          <label className="label-medical">Previous Surgeries</label>
-          <textarea
-            name="previous_surgeries"
-            value={formData.previous_surgeries}
-            onChange={handleChange}
-            disabled={!isEditing}
-            rows={2}
-            className="input-medical disabled:bg-medical-gray-50 disabled:cursor-not-allowed resize-none"
-            placeholder="List previous surgeries..."
-          />
-        </div>
+        <MedicalInfoField
+          label="Previous Surgeries"
+          name="previous_surgeries"
+          value={formData.previous_surgeries}
+          onChange={handleChange}
+          disabled={!isEditing}
+          placeholder="List previous surgeries..."
+        />
 
-        <div>
-          <label className="label-medical">Emergency Notes</label>
-          <textarea
-            name="emergency_notes"
-            value={formData.emergency_notes}
-            onChange={handleChange}
-            disabled={!isEditing}
-            rows={2}
-            className="input-medical disabled:bg-medical-gray-50 disabled:cursor-not-allowed resize-none"
-            placeholder="Important emergency information..."
-          />
-        </div>
+        <MedicalInfoField
+          label="Emergency Notes"
+          name="emergency_notes"
+          value={formData.emergency_notes}
+          onChange={handleChange}
+          disabled={!isEditing}
+          placeholder="Important emergency information..."
+        />
       </div>
     </div>
   );

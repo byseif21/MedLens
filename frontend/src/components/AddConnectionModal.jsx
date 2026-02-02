@@ -108,7 +108,7 @@ const AddConnectionModal = ({
     }
   };
 
-  const handleAddExternalContact = async (contactData) => {
+  const processExternalContact = async (operation, errorMsg) => {
     // Prevent duplicate submissions
     if (isSubmitting) {
       return;
@@ -117,35 +117,30 @@ const AddConnectionModal = ({
     setIsSubmitting(true);
 
     try {
-      await onAddConnection({
-        type: 'external',
-        ...contactData,
-      });
+      await operation();
     } catch (err) {
-      console.error('Error adding external contact:', err);
+      console.error(errorMsg, err);
       throw err; // Re-throw to let form handle it
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleUpdateExternalContact = async (contactData) => {
-    // Prevent duplicate submissions
-    if (isSubmitting) {
-      return;
-    }
+  const handleAddExternalContact = (contactData) =>
+    processExternalContact(
+      () =>
+        onAddConnection({
+          type: 'external',
+          ...contactData,
+        }),
+      'Error adding external contact:'
+    );
 
-    setIsSubmitting(true);
-
-    try {
-      await onUpdateConnection(editingContact.id, contactData, 'external');
-    } catch (err) {
-      console.error('Error updating external contact:', err);
-      throw err; // Re-throw to let form handle it
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const handleUpdateExternalContact = (contactData) =>
+    processExternalContact(
+      () => onUpdateConnection(editingContact.id, contactData, 'external'),
+      'Error updating external contact:'
+    );
 
   const handleClose = () => {
     if (!isSubmitting) {
