@@ -1,0 +1,88 @@
+import { useState } from 'react';
+import { updateMedicalInfo } from '../services/api';
+import { useAuth } from '../hooks/useAuth';
+
+const initialFormState = {
+  health_history: '',
+  chronic_conditions: '',
+  allergies: '',
+  current_medications: '',
+  previous_surgeries: '',
+  emergency_notes: '',
+};
+
+const getMedicalFormData = (medicalInfo) => {
+  if (!medicalInfo) return { ...initialFormState };
+
+  return {
+    health_history: medicalInfo.health_history || '',
+    chronic_conditions: medicalInfo.chronic_conditions || '',
+    allergies: medicalInfo.allergies || '',
+    current_medications: medicalInfo.current_medications || '',
+    previous_surgeries: medicalInfo.previous_surgeries || '',
+    emergency_notes: medicalInfo.emergency_notes || '',
+  };
+};
+
+const useMedicalFormData = (profile) => {
+  const [prevProfile, setPrevProfile] = useState(profile);
+  const [formData, setFormData] = useState(() => getMedicalFormData(profile?.medical_info));
+
+  if (profile !== prevProfile) {
+    setPrevProfile(profile);
+    if (profile?.medical_info) {
+      setFormData(getMedicalFormData(profile.medical_info));
+    }
+  }
+
+  const updateField = (name, value) => {
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const resetForm = () => {
+    setFormData(getMedicalFormData(profile?.medical_info));
+  };
+
+  return { formData, updateField, resetForm };
+};
+
+export const useMedicalInfo = (profile, onUpdate, targetUserId = null) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const { formData, updateField, resetForm } = useMedicalFormData(profile);
+  const { user } = useAuth();
+
+  const handleChange = (e) => {
+    updateField(e.target.name, e.target.value);
+  };
+
+  const handleSave = async () => {
+    setLoading(true);
+    const userId = targetUserId || user?.id;
+    const result = await updateMedicalInfo(userId, formData);
+
+    if (result.success) {
+      setIsEditing(false);
+      onUpdate({ silent: true });
+    } else {
+      // TODO: replace alert with GeneralModal (unified app modal) for error feedback
+      alert('Failed to update: ' + result.error);
+    }
+    setLoading(false);
+  };
+
+  const handleCancel = () => {
+    resetForm();
+    setIsEditing(false);
+  };
+
+  return {
+    isEditing,
+    setIsEditing,
+    loading,
+    formData,
+    handleChange,
+    handleSave,
+    handleCancel,
+  };
+};
