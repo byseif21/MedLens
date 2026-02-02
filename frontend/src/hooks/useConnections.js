@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from './useAuth';
 import {
   getConnections,
@@ -10,6 +10,119 @@ import {
   acceptConnectionRequest,
   rejectConnectionRequest,
 } from '../services/api';
+
+const handleFetchResult = (result, { setLinkedConnections, setExternalContacts, setError }) => {
+  if (result.success) {
+    setLinkedConnections(result.data.linked_connections || []);
+    setExternalContacts(result.data.external_contacts || []);
+  } else {
+    setError(result.error || 'Failed to load connections. Please try again.');
+  }
+};
+
+const handleOperationResult = async (
+  result,
+  { setError, setSuccessMessage, refreshers },
+  options
+) => {
+  if (!result.success) {
+    if (result.status === 404) {
+      setSuccessMessage('This connection no longer exists. It may have been removed.');
+      if (options.refreshConnections) await refreshers.fetchConnections();
+      return false;
+    }
+    setError(result.error || 'Operation failed');
+    return false;
+  }
+
+  if (options.successMsg) setSuccessMessage(options.successMsg);
+  if (options.refreshConnections) await refreshers.fetchConnections();
+  if (options.refreshPending) await refreshers.fetchPendingRequests();
+  return true;
+};
+
+const executeAction = async (context, actionFn, successMsg, refreshOptions = {}) => {
+  const { setError, setSuccessMessage, fetchConnections, fetchPendingRequests } = context;
+  setError(null);
+  try {
+    const result = await actionFn();
+    return await handleOperationResult(
+      result,
+      { setError, setSuccessMessage, refreshers: { fetchConnections, fetchPendingRequests } },
+      { successMsg, ...refreshOptions }
+    );
+  } catch (err) {
+    console.error('Operation error:', err);
+    setError('An unexpected error occurred. Please check your connection and try again.');
+    return false;
+  }
+};
+
+const createConnectionApiCall = (data) => {
+  if (data.type === 'linked') {
+    return createLinkedConnection({
+      connected_user_id: data.connected_user_id,
+      relationship: data.relationship,
+    });
+  }
+  return createExternalContact({
+    name: data.name,
+    phone: data.phone,
+    address: data.address,
+    relationship: data.relationship,
+  });
+};
+
+// Factory for creating action handlers
+const createConnectionActions = (context) => {
+  return {
+    addConnection: (data) =>
+      executeAction(
+        context,
+        () => createConnectionApiCall(data),
+        data.type === 'linked'
+          ? 'Connection request sent successfully! Waiting for approval.'
+          : 'Contact added successfully!',
+        { refreshConnections: true }
+      ),
+
+    updateContact: (contactId, data, type) =>
+      executeAction(
+        context,
+        () => updateConnection(contactId, data, type),
+        'Connection updated successfully!',
+        { refreshConnections: true }
+      ),
+
+    removeConnection: (id) =>
+      executeAction(
+        context,
+        () => deleteConnection(id),
+        'Connection removed successfully! Any pending requests have also been cleared.',
+        { refreshConnections: true }
+      ),
+
+    handleAcceptRequest: (requestId) =>
+      executeAction(context, () => acceptConnectionRequest(requestId), null, {
+        refreshConnections: true,
+        refreshPending: true,
+      }).then((success) => {
+        if (!success) context.setError('Failed to accept request');
+        return success;
+      }),
+
+    handleRejectRequest: (requestId) =>
+      executeAction(context, () => rejectConnectionRequest(requestId), null, {
+        refreshPending: true,
+      }).then((success) => {
+        if (!success) context.setError('Failed to reject request');
+        return success;
+      }),
+
+    clearSuccessMessage: () => context.setSuccessMessage(null),
+    clearError: () => context.setError(null),
+  };
+};
 
 export const useConnections = (targetUserId) => {
   const [loading, setLoading] = useState(false);
@@ -25,16 +138,9 @@ export const useConnections = (targetUserId) => {
   const fetchConnections = useCallback(async () => {
     setLoading(true);
     setError(null);
-
     try {
       const result = await getConnections(userId);
-
-      if (result.success) {
-        setLinkedConnections(result.data.linked_connections || []);
-        setExternalContacts(result.data.external_contacts || []);
-      } else {
-        setError(result.error || 'Failed to load connections. Please try again.');
-      }
+      handleFetchResult(result, { setLinkedConnections, setExternalContacts, setError });
     } catch (err) {
       console.error('Error fetching connections:', err);
       setError('An unexpected error occurred while loading connections. Please refresh the page.');
@@ -54,140 +160,21 @@ export const useConnections = (targetUserId) => {
     }
   }, []);
 
-  // Fetch connections on mount
   useEffect(() => {
     fetchConnections();
     fetchPendingRequests();
   }, [fetchConnections, fetchPendingRequests]);
 
-  const processConnectionRequest = async (
-    requestId,
-    apiFunc,
-    errorMsg,
-    refreshConnections = false
-  ) => {
-    try {
-      const result = await apiFunc(requestId);
-      if (result.success) {
-        if (refreshConnections) {
-          await fetchConnections();
-        }
-        await fetchPendingRequests();
-      } else {
-        setError(result.error || errorMsg);
-      }
-    } catch (err) {
-      console.error(errorMsg, err);
-      setError(errorMsg);
-    }
-  };
-
-  const handleAcceptRequest = (requestId) =>
-    processConnectionRequest(requestId, acceptConnectionRequest, 'Failed to accept request', true);
-
-  const handleRejectRequest = (requestId) =>
-    processConnectionRequest(requestId, rejectConnectionRequest, 'Failed to reject request');
-
-  const addConnection = async (connectionData) => {
-    setError(null);
-
-    try {
-      let result;
-
-      if (connectionData.type === 'linked') {
-        result = await createLinkedConnection({
-          connected_user_id: connectionData.connected_user_id,
-          relationship: connectionData.relationship,
-        });
-      } else {
-        result = await createExternalContact({
-          name: connectionData.name,
-          phone: connectionData.phone,
-          address: connectionData.address,
-          relationship: connectionData.relationship,
-        });
-      }
-
-      if (result.success) {
-        const message =
-          connectionData.type === 'linked'
-            ? 'Connection request sent successfully! Waiting for approval.'
-            : 'Contact added successfully!';
-
-        setSuccessMessage(message);
-        await fetchConnections();
-
-        // Return success so UI can close modal
-        return true;
-      } else {
-        setError(result.error || 'Failed to add connection. Please try again.');
-        throw new Error(result.error);
-      }
-    } catch (err) {
-      console.error('Error adding connection:', err);
-      if (!error) {
-        setError('An unexpected error occurred. Please check your connection and try again.');
-      }
-      return false;
-    }
-  };
-
-  const updateContact = async (contactId, updatedData, connectionType) => {
-    setError(null);
-
-    try {
-      const result = await updateConnection(contactId, updatedData, connectionType);
-
-      if (result.success) {
-        setSuccessMessage('Connection updated successfully!');
-        await fetchConnections();
-        return true;
-      } else {
-        if (result.status === 404) {
-          setSuccessMessage('This connection no longer exists. It may have been removed.');
-          await fetchConnections();
-        } else {
-          setError(result.error || 'Failed to update connection. Please try again.');
-          throw new Error(result.error);
-        }
-        return false;
-      }
-    } catch (err) {
-      console.error('Error updating connection:', err);
-      if (!error) {
-        setError('An unexpected error occurred. Please check your connection and try again.');
-      }
-      return false;
-    }
-  };
-
-  const removeConnection = async (connectionId) => {
-    setError(null);
-
-    try {
-      const result = await deleteConnection(connectionId);
-
-      if (result.success) {
-        setSuccessMessage(
-          'Connection removed successfully! Any pending requests have also been cleared.'
-        );
-        await fetchConnections();
-        return true;
-      } else {
-        setError(result.error || 'Failed to remove connection. Please try again.');
-        throw new Error(result.error);
-      }
-    } catch (err) {
-      console.error('Error removing connection:', err);
-      if (!error) {
-        setError('An unexpected error occurred. Please check your connection and try again.');
-      }
-      return false;
-    }
-  };
-
-  const clearSuccessMessage = () => setSuccessMessage(null);
-  const clearError = () => setError(null);
+  const actions = useMemo(
+    () =>
+      createConnectionActions({
+        setError,
+        setSuccessMessage,
+        fetchConnections,
+        fetchPendingRequests,
+      }),
+    [fetchConnections, fetchPendingRequests]
+  );
 
   return {
     loading,
@@ -198,13 +185,7 @@ export const useConnections = (targetUserId) => {
     successMessage,
     userId,
     fetchConnections,
-    handleAcceptRequest,
-    handleRejectRequest,
-    addConnection,
-    updateContact,
-    removeConnection,
-    clearSuccessMessage,
-    clearError,
+    ...actions,
     allConnectionsCount: linkedConnections.length + externalContacts.length,
   };
 };
