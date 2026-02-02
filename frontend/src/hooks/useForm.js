@@ -23,7 +23,7 @@ export const useForm = ({ initialValues, schema, onSubmit }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [prevInitialValues, setPrevInitialValues] = useState(initialValues);
 
-  if (initialValues && initialValues !== prevInitialValues) {
+  if (initialValues && JSON.stringify(initialValues) !== JSON.stringify(prevInitialValues)) {
     setPrevInitialValues(initialValues);
     setFormData(initialValues);
   }

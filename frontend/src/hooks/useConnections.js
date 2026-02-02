@@ -102,22 +102,21 @@ const createConnectionActions = (context) => {
         { refreshConnections: true }
       ),
 
-    handleAcceptRequest: (requestId) =>
-      executeAction(context, () => acceptConnectionRequest(requestId), null, {
-        refreshConnections: true,
-        refreshPending: true,
-      }).then((success) => {
-        if (!success) context.setError('Failed to accept request');
-        return success;
-      }),
+    acceptRequest: (requestId) =>
+      executeAction(
+        context,
+        () => acceptConnectionRequest(requestId),
+        'Connection request accepted successfully!',
+        { refreshConnections: true, refreshPending: true }
+      ),
 
-    handleRejectRequest: (requestId) =>
-      executeAction(context, () => rejectConnectionRequest(requestId), null, {
-        refreshPending: true,
-      }).then((success) => {
-        if (!success) context.setError('Failed to reject request');
-        return success;
-      }),
+    rejectRequest: (requestId) =>
+      executeAction(
+        context,
+        () => rejectConnectionRequest(requestId),
+        'Connection request rejected.',
+        { refreshPending: true }
+      ),
 
     clearSuccessMessage: () => context.setSuccessMessage(null),
     clearError: () => context.setError(null),
@@ -159,6 +158,15 @@ export const useConnections = (targetUserId) => {
       console.error('Error fetching pending requests:', err);
     }
   }, []);
+
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
 
   useEffect(() => {
     fetchConnections();

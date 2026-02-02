@@ -25,11 +25,14 @@ const getMedicalFormData = (medicalInfo) => {
 };
 
 const useMedicalFormData = (profile) => {
-  const [prevProfile, setPrevProfile] = useState(profile);
+  const [prevMedicalInfoStr, setPrevMedicalInfoStr] = useState(
+    JSON.stringify(profile?.medical_info)
+  );
   const [formData, setFormData] = useState(() => getMedicalFormData(profile?.medical_info));
 
-  if (profile !== prevProfile) {
-    setPrevProfile(profile);
+  const currentMedicalInfoStr = JSON.stringify(profile?.medical_info);
+  if (currentMedicalInfoStr !== prevMedicalInfoStr) {
+    setPrevMedicalInfoStr(currentMedicalInfoStr);
     if (profile?.medical_info) {
       setFormData(getMedicalFormData(profile.medical_info));
     }
