@@ -1,17 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import PropTypes from 'prop-types';
-import {
-  Menu,
-  Shield,
-  LogOut,
-  Settings,
-  ScanFace,
-  LayoutDashboard,
-  LogIn,
-  UserPlus,
-  Home,
-} from 'lucide-react';
+import { Menu, Shield, LogOut, Settings, ScanFace, LayoutDashboard, Home } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import MobileMenuDrawer from './MobileMenuDrawer';
 import ProfileAvatar from './ProfileAvatar';
@@ -61,21 +51,6 @@ const getNavigationItems = (user) => {
       show: !!user,
       position: 'user',
       mobileOnly: true,
-    },
-    // Auth Actions
-    {
-      path: '/login',
-      label: 'Login',
-      icon: LogIn,
-      show: !user,
-      position: 'auth',
-    },
-    {
-      path: '/register',
-      label: 'Register',
-      icon: UserPlus,
-      show: !user,
-      position: 'auth',
     },
   ];
 };
@@ -152,38 +127,6 @@ UserMenu.propTypes = {
   user: PropTypes.object.isRequired,
   items: PropTypes.array.isRequired,
   onLogout: PropTypes.func.isRequired,
-};
-
-const AuthButtons = ({ items, currentPath }) => (
-  <>
-    {items.map((item) => {
-      const baseStyles = 'px-4 py-2 rounded-lg text-sm font-medium transition-all';
-
-      const isRegister = item.path === '/register';
-      const registerStyles =
-        'bg-gradient-to-r from-medical-primary to-medical-secondary text-white shadow-lg shadow-medical-primary/25 hover:shadow-xl hover:shadow-medical-primary/30 hover:-translate-y-0.5';
-
-      const isActive = currentPath === item.path;
-      const normalStyles = isActive
-        ? 'text-medical-primary bg-medical-primary/5'
-        : 'text-gray-600 hover:text-medical-primary hover:bg-gray-50';
-
-      return (
-        <Link
-          key={item.path}
-          to={item.path}
-          className={`${baseStyles} ${isRegister ? registerStyles : normalStyles}`}
-        >
-          {item.label}
-        </Link>
-      );
-    })}
-  </>
-);
-
-AuthButtons.propTypes = {
-  items: PropTypes.array.isRequired,
-  currentPath: PropTypes.string.isRequired,
 };
 
 const MobileNavButton = ({ onClick }) => (
@@ -294,7 +237,6 @@ const Navbar = () => {
   const navigationItems = getNavigationItems(user);
   const mainNavItems = navigationItems.filter((item) => item.position === 'main' && item.show);
   const userNavItems = navigationItems.filter((item) => item.position === 'user' && item.show);
-  const authNavItems = navigationItems.filter((item) => item.position === 'auth' && item.show);
   const mobileNavItems = navigationItems.filter((item) => item.show);
 
   return (
@@ -313,11 +255,7 @@ const Navbar = () => {
               <DesktopNavLinks items={mainNavItems} currentPath={location.pathname} />
 
               <div className="flex items-center gap-3 pl-6 border-l border-gray-200">
-                {user ? (
-                  <UserMenu user={user} items={userNavItems} onLogout={handleLogout} />
-                ) : (
-                  <AuthButtons items={authNavItems} />
-                )}
+                {user && <UserMenu user={user} items={userNavItems} onLogout={handleLogout} />}
               </div>
             </div>
 
