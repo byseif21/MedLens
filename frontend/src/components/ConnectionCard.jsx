@@ -59,37 +59,38 @@ ConnectionActions.propTypes = {
   isLinked: PropTypes.bool.isRequired,
 };
 
-const ConnectionDetails = ({ connection, isLinked }) => (
-  <div className="space-y-1">
-    {isLinked && connection.connected_user?.email && (
-      <p className="text-medical-gray-600 text-sm flex items-center gap-2">
-        <Mail className="w-4 h-4" />
-        {connection.connected_user.email}
-      </p>
-    )}
+const ContactItem = ({ icon: Icon, text }) => {
+  if (!text) return null;
+  return (
+    <p className="text-medical-gray-600 text-sm flex items-center gap-2">
+      <Icon className="w-4 h-4" />
+      {text}
+    </p>
+  );
+};
 
-    {isLinked && connection.connected_user?.phone && (
-      <p className="text-medical-gray-600 text-sm flex items-center gap-2">
-        <Phone className="w-4 h-4" />
-        {connection.connected_user.phone}
-      </p>
-    )}
+ContactItem.propTypes = {
+  icon: PropTypes.elementType.isRequired,
+  text: PropTypes.string,
+};
 
-    {!isLinked && connection.phone && (
-      <p className="text-medical-gray-600 text-sm flex items-center gap-2">
-        <Phone className="w-4 h-4" />
-        {connection.phone}
-      </p>
-    )}
+const ConnectionDetails = ({ connection, isLinked }) => {
+  if (isLinked) {
+    return (
+      <div className="space-y-1">
+        <ContactItem icon={Mail} text={connection.connected_user?.email} />
+        <ContactItem icon={Phone} text={connection.connected_user?.phone} />
+      </div>
+    );
+  }
 
-    {!isLinked && connection.address && (
-      <p className="text-medical-gray-600 text-sm flex items-center gap-2">
-        <MapPin className="w-4 h-4" />
-        {connection.address}
-      </p>
-    )}
-  </div>
-);
+  return (
+    <div className="space-y-1">
+      <ContactItem icon={Phone} text={connection.phone} />
+      <ContactItem icon={MapPin} text={connection.address} />
+    </div>
+  );
+};
 
 ConnectionDetails.propTypes = {
   connection: PropTypes.object.isRequired,
