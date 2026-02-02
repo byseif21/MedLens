@@ -6,7 +6,7 @@ This script verifies that the health check endpoint implementation is correct.
 import sys
 import os
 
-sys.path.insert(0, os.path.dirname(__file__))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 print("Testing Health Check Endpoint Implementation...")
 print("=" * 60)
