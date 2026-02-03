@@ -136,9 +136,9 @@ class FaceRecognitionService:
 
         face_encodings = fr_module.face_encodings(image, face_locations)
         if not face_encodings:
-             return FaceExtractionResult(
-                 success=False, encoding=None, error="Failed to extract face encoding", face_count=face_count
-             )
+            return FaceExtractionResult(
+                success=False, encoding=None, error="Failed to extract face encoding", face_count=face_count
+            )
              
         return FaceExtractionResult(
             success=True, encoding=face_encodings[0].tolist(), 
