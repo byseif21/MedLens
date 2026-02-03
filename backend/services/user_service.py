@@ -3,8 +3,11 @@ import json
 from fastapi import UploadFile, HTTPException
 from services.storage_service import get_supabase_service
 from services.face_service import get_face_service, FaceRecognitionError, collect_face_images, upload_face_images
-from services.security import hash_password
+from services.security import hash_password, verify_password
+from services.profile_picture_service import get_profile_picture_url, ProfilePictureError
+from services.contact_service import get_emergency_contacts
 from utils.validation import normalize_email, sanitize_text, validate_password, validate_phone, ValidationError
+from utils.privacy import apply_privacy_settings
 
 from models.user import RegistrationRequest
 
@@ -146,3 +149,154 @@ def delete_user_fully(user_id: str) -> bool:
         return True
     except Exception as e:
         raise Exception(f"Database deletion failed: {str(e)}")
+
+async def get_complete_user_profile(
+    user_id: str,
+    current_user_id: Optional[str],
+    role: str
+) -> Dict[str, Any]:
+    """
+    Get complete user profile including medical info, relatives, and profile picture URL.
+    Applies privacy settings based on viewer's role and identity.
+    """
+    supabase = get_supabase_service()
+    
+    # Get user basic info
+    user_response = supabase.client.table('users').select(
+        'id, name, email, phone, date_of_birth, gender, nationality, id_number, face_updated_at, '
+        'is_name_public, is_id_number_public, is_phone_public, is_email_public, is_dob_public, '
+        'is_gender_public, is_nationality_public'
+    ).eq('id', user_id).execute()
+    
+    if not user_response.data:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user = user_response.data[0]
+
+    # Get profile picture URL
+    profile_picture_url = None
+    try:
+        profile_picture_url = get_profile_picture_url(user_id, supabase)
+    except ProfilePictureError as e:
+        print(f"Warning: Failed to retrieve profile picture for user {user_id}: {str(e)}")
+    
+    user['profile_picture_url'] = profile_picture_url
+    
+    is_self = current_user_id == user_id
+    can_view_full = is_self or role in ["doctor", "admin"]
+
+    if can_view_full:
+        response_payload = {
+            **user,
+            "profile_picture_url": profile_picture_url
+        }
+        medical_response = supabase.client.table('medical_info').select('*').eq('user_id', user_id).execute()
+        medical_info = medical_response.data[0] if medical_response.data else {}
+        emergency_contacts = get_emergency_contacts(supabase.client, user_id)
+
+        response_payload["medical_info"] = medical_info
+        response_payload["emergency_contacts"] = emergency_contacts
+    else:
+        response_payload = apply_privacy_settings(user, role)
+
+    return response_payload
+
+async def update_user_privacy(user_id: str, update_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Update user's privacy settings."""
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No data provided for update")
+    
+    supabase = get_supabase_service()
+    response = supabase.client.table('users').update(update_data).eq('id', user_id).execute()
+    
+    if not response.data:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return response.data[0]
+
+async def update_user_main_info(user_id: str, update_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Update user's main information."""
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No data provided for update")
+    
+    supabase = get_supabase_service()
+    response = supabase.client.table('users').update(update_data).eq('id', user_id).execute()
+    
+    if not response.data:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return response.data[0]
+
+async def update_user_medical_info(user_id: str, update_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Update or insert user's medical information."""
+    if len(update_data) <= 1:  # Only user_id or empty
+        raise HTTPException(status_code=400, detail="No data provided for update")
+    
+    supabase = get_supabase_service()
+    existing = supabase.client.table('medical_info').select('id').eq('user_id', user_id).execute()
+    
+    if existing.data:
+        response = supabase.client.table('medical_info').update(update_data).eq('user_id', user_id).execute()
+    else:
+        response = supabase.client.table('medical_info').insert(update_data).execute()
+    
+    return response.data[0] if response.data else {}
+
+async def update_user_relatives(user_id: str, relatives_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Update user's relatives by replacing existing ones."""
+    supabase = get_supabase_service()
+    
+    # Delete existing relatives
+    supabase.client.table('relatives').delete().eq('user_id', user_id).execute()
+    
+    # Insert new relatives
+    if relatives_data:
+        response = supabase.client.table('relatives').insert(relatives_data).execute()
+        return response.data
+    
+    return []
+
+async def update_user_face_enrollment(
+    user_id: str,
+    password: str,
+    face_images: Dict[str, bytes]
+) -> None:
+    """Update user's face enrollment with password verification."""
+    supabase = get_supabase_service()
+    face_service = get_face_service()
+
+    # Get current user data including password hash
+    user_response = supabase.client.table('users').select('password_hash').eq('id', user_id).execute()
+    if not user_response.data:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user = user_response.data[0]
+    stored_hash = user.get('password_hash')
+
+    # Verify password
+    if not stored_hash or not verify_password(password, stored_hash):
+         raise HTTPException(status_code=403, detail="Invalid password")
+    
+    # Delegate enrollment to service
+    try:
+        await face_service.enroll_user(user_id, face_images, supabase)
+    except FaceRecognitionError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+async def verify_and_delete_account(user_id: str, password: str) -> None:
+    """Verify password and delete account."""
+    supabase = get_supabase_service()
+    
+    # Get current user to verify password
+    response = supabase.client.table('users').select('password_hash').eq('id', user_id).execute()
+    
+    if not response.data:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user = response.data[0]
+    
+    # Verify password
+    if not verify_password(password, user['password_hash']):
+        raise HTTPException(status_code=400, detail="Invalid password")
+        
+    delete_user_fully(user_id)
