@@ -84,7 +84,6 @@ class SupabaseService:
     def save_user(
         self,
         user_data: UserCreate,
-        image_url: Optional[str] = None,
         extra_data: Optional[Dict[str, Any]] = None
     ) -> UserResponse:
         """
@@ -92,7 +91,6 @@ class SupabaseService:
         
         Args:
             user_data: User information to save
-            image_url: Optional URL to user's face image
             extra_data: Optional dictionary of additional fields (e.g., password_hash, dob)
             
         Returns:
@@ -103,7 +101,7 @@ class SupabaseService:
         """
         try:
             self._ensure_user_not_exists(user_data.email)
-            user_dict = self._prepare_user_dict(user_data, image_url, extra_data)
+            user_dict = self._prepare_user_dict(user_data, extra_data)
             user_record = self._insert_user_record(user_dict)
             return self._map_to_user_response(user_record)
             
@@ -121,7 +119,6 @@ class SupabaseService:
     def _prepare_user_dict(
         self, 
         user_data: UserCreate, 
-        image_url: Optional[str],
         extra_data: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """Prepare user dictionary for database insertion."""
