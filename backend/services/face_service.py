@@ -94,7 +94,7 @@ class FaceRecognitionService:
         Extract face encoding from image bytes.
         """
         if fr is None:
-             return FaceExtractionResult(
+            return FaceExtractionResult(
                 success=False, encoding=None, 
                 error="Missing dependencies: face_recognition", face_count=0
             )
@@ -129,10 +129,10 @@ class FaceRecognitionService:
         # Quality Check
         is_valid, quality_reason = self.validate_face_quality(image, face_locations[0])
         if not is_valid:
-             return FaceExtractionResult(
-                 success=False, encoding=None, 
-                 error=f"Quality check failed: {quality_reason}", face_count=face_count
-             )
+            return FaceExtractionResult(
+                success=False, encoding=None, 
+                error=f"Quality check failed: {quality_reason}", face_count=face_count
+            )
 
         face_encodings = fr_module.face_encodings(image, face_locations)
         if not face_encodings:
@@ -271,7 +271,7 @@ class FaceRecognitionService:
         
         if not extraction_result.success or extraction_result.encoding is None:
             if extraction_result.error and "No face detected" not in extraction_result.error:
-                 raise FaceRecognitionError(extraction_result.error)
+                raise FaceRecognitionError(extraction_result.error)
             return FaceMatch(matched=False, user_id=None, confidence=0.0, distance=None)
 
         return self.find_match(extraction_result.encoding)

@@ -203,7 +203,7 @@ class ImageProcessor:
             Tuple of (is_blurry, variance_score)
         """
         if cv2 is None:
-            return False, float('inf') # Fail open
+            return False, float('inf')  # Fail open
 
         # Convert to grayscale
         gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
