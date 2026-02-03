@@ -58,10 +58,6 @@ async def register_user(
         if existing.data:
             raise HTTPException(status_code=409, detail="User with this email already exists")
         
-        # TODO: prevent duplicate face registration by checking for existing face ID
-        # Idea: compute avg_encoding first, then use face_service.find_match(avg_encoding.tolist())
-        # matched?, return 409: "A user with this face already exists"
-        
         # Hash password
         password_hash = hash_password(password)
         
@@ -78,11 +74,16 @@ async def register_user(
             avg_encoding = face_service.process_face_images(face_images)
         except FaceRecognitionError as e:
             raise HTTPException(status_code=400, detail=str(e))
+
+        # Check for duplicate face registration
+        match_result = face_service.find_match(avg_encoding)
+        if match_result.matched:
+             raise HTTPException(
+                 status_code=409, 
+                 detail="This face is already registered to another user."
+             )
         
         face_encoding_json = json.dumps(avg_encoding)
-        
-        # TODO: after computing avg_encoding, verify it is unique before creating the user record
-        # if face_service.find_match indicates a match, abort insert and inform client with a clear message
         
         # Create user in database
         user_data = {

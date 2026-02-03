@@ -434,3 +434,54 @@ class ConnectionService:
             return await self._delete_external_contact(external_check.data[0], user_id)
 
         raise HTTPException(status_code=404, detail="Connection not found")
+
+    def get_connection_statuses(self, current_user_id: str, target_user_ids: List[str]) -> Dict[str, str]:
+        """
+        Check connection statuses between current user and a list of target users.
+        Returns a dictionary mapping target_user_id -> status string.
+        Statuses: "connected", "pending_sent", "pending_received", "none"
+        """
+        if not current_user_id or not target_user_ids:
+            return {}
+            
+        user_statuses = {}
+        try:
+            # 1. Check existing connections
+            connections = (
+                self.supabase.client.table('user_connections')
+                .select('connected_user_id')
+                .eq('user_id', current_user_id)
+                .in_('connected_user_id', target_user_ids)
+                .execute()
+            )
+            for conn in connections.data or []:
+                user_statuses[conn['connected_user_id']] = "connected"
+
+            # 2. Check sent requests (pending)
+            sent_requests = (
+                self.supabase.client.table('connection_requests')
+                .select('receiver_id')
+                .eq('sender_id', current_user_id)
+                .in_('receiver_id', target_user_ids)
+                .eq('status', 'pending')
+                .execute()
+            )
+            for req in sent_requests.data or []:
+                user_statuses[req['receiver_id']] = "pending_sent"
+
+            # 3. Check received requests (pending)
+            received_requests = (
+                self.supabase.client.table('connection_requests')
+                .select('sender_id')
+                .eq('receiver_id', current_user_id)
+                .in_('sender_id', target_user_ids)
+                .eq('status', 'pending')
+                .execute()
+            )
+            for req in received_requests.data or []:
+                user_statuses.setdefault(req['sender_id'], "pending_received")
+                
+        except Exception as e:
+            print(f"Error checking connection statuses: {e}")
+            
+        return user_statuses
