@@ -97,6 +97,13 @@ const RecognitionPage = () => {
     if (targetId) {
       setViewingUser(targetId, person.name);
       navigate(`/profile/${targetId}`);
+    } else {
+      notify({
+        type: 'error',
+        title: 'Unable to View Profile',
+        message: 'Cannot open profile because no identifier is available for this person.',
+      });
+      console.warn('handleViewProfile: missing id/user_id for person', person);
     }
   };
 
