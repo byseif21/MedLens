@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Header, Depends
+from fastapi import APIRouter, HTTPException, Depends
 from typing import List, Optional, Annotated
 from services.connection_service import ConnectionService
 from dependencies import get_current_user
