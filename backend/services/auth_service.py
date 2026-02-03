@@ -64,26 +64,6 @@ class AuthService:
     async def _get_user_for_face_login(self, user_id: str) -> Dict[str, Any]:
         return await self._get_user_by_id(user_id, 'id, name, email, phone, id_number')
 
-    def _match_face_from_image(self, image_data: bytes):
-        """Extract encoding and find matching user"""
-        # Extract face encoding from uploaded image
-        result = self.face_service.extract_encoding(image_data)
-        
-        if not result.success or result.encoding is None:
-            error_msg = result.error or "No face detected in the image"
-            raise HTTPException(status_code=400, detail=error_msg)
-        
-        # Use face service to find match
-        match_result = self.face_service.find_match(result.encoding)
-        
-        if not match_result.matched or match_result.user_id is None:
-            raise HTTPException(
-                status_code=404, 
-                detail="Face not recognized. Please try again or use email login."
-            )
-            
-        return match_result
-
     def _get_safe_profile_picture_url(self, user_id: str) -> Optional[str]:
         """Safely get profile picture URL ignoring errors"""
         try:
@@ -92,7 +72,17 @@ class AuthService:
             return None
 
     async def login_with_face(self, image_data: bytes) -> Dict[str, Any]:
-        match_result = self._match_face_from_image(image_data)
+        try:
+            match_result = self.face_service.identify_user(image_data)
+        except Exception as e:
+            # Handle specific face recognition errors (e.g., image processing issues)
+            raise HTTPException(status_code=400, detail=str(e))
+        
+        if not match_result.matched or not match_result.user_id:
+            raise HTTPException(
+                status_code=404, 
+                detail="Face not recognized. Please try again or use email login."
+            )
         
         # Get user details from database
         user = await self._get_user_for_face_login(match_result.user_id)

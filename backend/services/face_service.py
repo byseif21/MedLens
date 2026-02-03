@@ -255,6 +255,25 @@ class FaceRecognitionService:
             logger.error(f"Face matching calculation failed: {e}")
             raise FaceRecognitionError(f"Face matching failed: {str(e)}")
 
+    def identify_user(self, image_bytes: bytes) -> FaceMatch:
+        """
+        High-level method to process an image and identify the user.
+        Combines extraction and matching.
+        """
+        extraction_result = self.extract_encoding(image_bytes)
+        
+        if not extraction_result.success or extraction_result.encoding is None:
+            # Propagate error as a non-match but with error info if needed
+            # For now, we return a non-match.
+            # Ideally we might want to raise an exception or return a result with error.
+            # But FaceMatch doesn't have error field. 
+            # We can raise FaceRecognitionError if extraction failed due to error.
+            if extraction_result.error and "No face detected" not in extraction_result.error:
+                 raise FaceRecognitionError(extraction_result.error)
+            return FaceMatch(matched=False, user_id=None, confidence=0.0, distance=None)
+
+        return self.find_match(extraction_result.encoding)
+
     async def enroll_user(self, user_id: str, images: Dict[str, bytes], supabase) -> None:
         """
         Full enrollment process: process images, save encoding, and upload images.
