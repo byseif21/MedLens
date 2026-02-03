@@ -316,11 +316,13 @@ class SupabaseService:
             except ValueError:
                 # Not a valid UUID, treat as regular search string
                 pass
-            
+
+            # Sanitize query string to prevent injection in PostgREST syntax
+            safe_query = query_str.replace(',', '').replace('(', '').replace(')', '')     
             if is_uuid:
-                or_condition = f"id.eq.{normalized_uuid},name.ilike.%{query_str}%,email.ilike.%{query_str}%"
+                or_condition = f"id.eq.{normalized_uuid},name.ilike.%{safe_query}%,email.ilike.%{safe_query}%"
             else:
-                or_condition = f"name.ilike.%{query_str}%,email.ilike.%{query_str}%"
+                or_condition = f"name.ilike.%{safe_query}%,email.ilike.%{safe_query}%"
             query_obj = query_obj.or_(or_condition)
         
         if role:
