@@ -23,6 +23,17 @@ class RegistrationFormData:
     image_up: Optional[UploadFile] = File(None)
     image_down: Optional[UploadFile] = File(None)
 
+    def to_image_dict(self) -> dict:
+        """Extract face images into a dictionary."""
+        return {
+            'image': self.image,
+            'image_front': self.image_front,
+            'image_left': self.image_left,
+            'image_right': self.image_right,
+            'image_up': self.image_up,
+            'image_down': self.image_down
+        }
+
 @router.post("/register")
 async def register_user(form_data: RegistrationFormData = Depends()):
     """
@@ -42,14 +53,7 @@ async def register_user(form_data: RegistrationFormData = Depends()):
     )
     
     # Collect images
-    face_images = {
-        'image': form_data.image,
-        'image_front': form_data.image_front,
-        'image_left': form_data.image_left,
-        'image_right': form_data.image_right,
-        'image_up': form_data.image_up,
-        'image_down': form_data.image_down
-    }
+    face_images = form_data.to_image_dict()
 
     # Delegate business logic to user_service
     return await register_new_user(request, face_images)

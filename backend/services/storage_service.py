@@ -125,9 +125,7 @@ class SupabaseService:
         user_dict = {
             "name": user_data.name,
             "email": user_data.email,
-            "phone": user_data.phone,
-            "created_at": datetime.utcnow().isoformat(),
-            "updated_at": datetime.utcnow().isoformat()
+            "phone": user_data.phone
         }
         
         if extra_data:
