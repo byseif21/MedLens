@@ -186,7 +186,7 @@ class ConnectionService:
             # Only include if user has a phone number
             if link.connected_user.phone:
                 contacts.append({
-                    "id": None, # No 'relatives' table ID for linked users
+                    "id": link.connected_user.id, # Use connected user ID for linked users
                     "name": link.connected_user.name,
                     "relation": link.relationship,
                     "phone": link.connected_user.phone,
