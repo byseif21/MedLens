@@ -62,6 +62,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install fastapi uvicorn[standard] python-multipart Pillow supabase python-dotenv numpy opencv-python email-validator
 
+      - name: Check for unused imports
+        working-directory: backend
+        run: python scripts/find_unused.py
+
       - name: Run backend health implementation test
         working-directory: backend
         run: python tests/test_health_endpoint.py
