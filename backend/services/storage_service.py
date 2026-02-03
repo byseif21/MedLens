@@ -129,7 +129,6 @@ class SupabaseService:
             "name": user_data.name,
             "email": user_data.email,
             "phone": user_data.phone,
-            "image_url": image_url,
             "created_at": datetime.utcnow().isoformat(),
             "updated_at": datetime.utcnow().isoformat()
         }
