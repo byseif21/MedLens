@@ -200,7 +200,7 @@ async def update_relatives(user_id: str, data: RelativesUpdate, current_user: di
         result = await update_user_relatives(user_id, relatives_data)
         
         if not result:
-             return {
+            return {
                 "message": "All relatives removed",
                 "data": []
             }

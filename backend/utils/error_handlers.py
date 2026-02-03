@@ -23,7 +23,6 @@ class service_guard:
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         if exc_val:
             _handle_exception(exc_val, self.error_message)
-            return False # Should not be reached as _handle_exception raises
         return False
 
     def __call__(self, func):

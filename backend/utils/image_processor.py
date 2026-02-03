@@ -125,8 +125,8 @@ class ImageProcessor:
             Resized numpy array
         """
         if np is None or cv2 is None:
-             # should not happen if image was loaded, but for safety
-             return image
+            # should not happen if image was loaded, but for safety
+            return image
              
         height, width = image.shape[:2]
         

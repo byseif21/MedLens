@@ -58,10 +58,10 @@ class ConnectionService:
         if not phone:
             return False
         try:
-             validate_phone(phone)
-             return True
+            validate_phone(phone)
+            return True
         except ValidationError:
-             return False
+            return False
 
     def _validate_name(self, name: Optional[str]):
         if name is not None and len(name.strip()) < 2:
