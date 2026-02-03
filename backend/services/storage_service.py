@@ -328,6 +328,7 @@ class SupabaseService:
                 normalized_uuid = str(uuid_obj)
                 is_uuid = True
             except ValueError:
+                # Not a valid UUID, treat as regular search string
                 pass
             
             if is_uuid:

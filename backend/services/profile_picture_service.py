@@ -63,6 +63,7 @@ def _construct_timestamped_url(supabase_service, image_path: str, created_at: st
         dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
         timestamp = int(dt.timestamp())
     except ValueError:
+        # Fallback to 0 if date format is invalid
         pass
         
     base_url = supabase_service.get_storage_public_url(image_path)

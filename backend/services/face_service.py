@@ -48,6 +48,11 @@ class FaceRecognitionService:
         self.tolerance = config.FACE_RECOGNITION_TOLERANCE
         self._lock = threading.Lock()  # For thread-safe operations
 
+    @property
+    def _are_dependencies_available(self) -> bool:
+        """Check if all required dependencies (face_recognition, numpy, PIL) are available."""
+        return fr is not None and np is not None and Image is not None
+
     def validate_face_quality(self, image, face_location) -> Tuple[bool, str]:
         """
         Validate face image quality (size, blur, etc.) to prevent simple spoofs.
@@ -408,10 +413,7 @@ class FaceRecognitionService:
             Optional[bytes]: Cropped image bytes or None
         """
         try:
-            from PIL import Image
-            import io
-            
-            if fr is None or np is None:
+            if not self._are_dependencies_available:
                 return None
 
             image = fr.load_image_file(io.BytesIO(image_bytes))
