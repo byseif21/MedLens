@@ -10,7 +10,7 @@ try:
 except Exception:
     EmailType = str
 from datetime import datetime
-from utils.validation import sanitize_text, normalize_email, validate_phone
+from utils.validation import sanitize_text, normalize_email, validate_phone, validate_password
 
 class UserBase(BaseModel):
     """Base user model with common fields."""
@@ -50,7 +50,7 @@ class RegistrationRequest(BaseModel):
     """Model for registration request data (excluding image file)."""
     name: str = Field(..., min_length=1, max_length=255)
     email: EmailType
-    password: str = Field(..., min_length=6)
+    password: str = Field(..., min_length=8)
     phone: Optional[str] = Field(None, max_length=50)
     date_of_birth: Optional[str] = None
     gender: Optional[str] = None
@@ -64,6 +64,10 @@ class RegistrationRequest(BaseModel):
     @field_validator('email')
     def validate_email_field(cls, v):
         return normalize_email(v)
+
+    @field_validator('password')
+    def validate_password_field(cls, v):
+        return validate_password(v)
 
     @field_validator('phone')
     def validate_phone_field(cls, v):

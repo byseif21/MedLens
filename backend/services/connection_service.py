@@ -518,9 +518,10 @@ class ConnectionService:
             # 2. Check sent requests (pending)
             sent_config = RelationshipQueryConfig('connection_requests', 'sender_id', 'receiver_id', 'pending')
             for uid in self._batch_fetch_relationships(sent_config, current_user_id, target_user_ids):
-                user_statuses[uid] = "pending_sent"
+                user_statuses.setdefault(uid, "pending_sent")
 
             # 3. Check received requests (pending)
+            # Priority: connected > pending_sent > pending_received
             recv_config = RelationshipQueryConfig('connection_requests', 'receiver_id', 'sender_id', 'pending')
             for uid in self._batch_fetch_relationships(recv_config, current_user_id, target_user_ids):
                 user_statuses.setdefault(uid, "pending_received")
