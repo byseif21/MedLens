@@ -283,7 +283,7 @@ async def update_user_face_enrollment(
 
     # Verify password
     if not stored_hash or not verify_password(password, stored_hash):
-         raise HTTPException(status_code=403, detail="Invalid password")
+        raise HTTPException(status_code=403, detail="Invalid password")
     
     # Delegate enrollment to service
     try:

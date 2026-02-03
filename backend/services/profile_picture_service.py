@@ -63,7 +63,8 @@ def _construct_timestamped_url(supabase_service, image_path: str, created_at: st
         dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
         timestamp = int(dt.timestamp())
     except ValueError:
-        # Fallback to 0 if date format is invalid
+        # Fallback to 0 if date format is invalid.
+        # This is safe because a timestamp of 0 will just result in a non-busted cache URL.
         pass
         
     base_url = supabase_service.get_storage_public_url(image_path)

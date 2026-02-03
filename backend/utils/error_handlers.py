@@ -1,17 +1,17 @@
 from fastapi import HTTPException
 from functools import wraps
 
-class service_guard:
+class ServiceGuard:
     """
     Unified error handler for service operations.
     Can be used as both a decorator and a context manager.
     
     Usage as decorator:
-        @service_guard("Custom error message")
+        @ServiceGuard("Custom error message")
         async def my_method(): ...
         
     Usage as context manager:
-        async with service_guard("Custom error message"):
+        async with ServiceGuard("Custom error message"):
             await service.method()
     """
     def __init__(self, error_message: str = "Operation failed"):
