@@ -107,12 +107,18 @@ async def create_external_contact(
 @router.get("/", response_model=GetConnectionsResponse)
 async def get_all_connections(
     current_user_id: UserDep,
-    service: ServiceDep
+    service: ServiceDep,
+    user_id: Optional[str] = None
 ):
     """
     Get all connections (linked and external).
+    
+    - **user_id**: Optional ID to fetch connections for a specific user (admin/viewing mode).
+                   If not provided, fetches connections for the current authenticated user.
     """
-    return await service.get_all_connections(current_user_id)
+    target_id = user_id if user_id else current_user_id
+    # TODO: Add permission check if target_id != current_user_id (e.g., only admin or self can view)
+    return await service.get_all_connections(target_id)
 
 @router.put("/linked/{connection_id}", response_model=UpdateConnectionResponse)
 async def update_linked_connection(

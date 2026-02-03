@@ -362,7 +362,8 @@ export const searchUsers = async (query, currentUserId = null) => {
  */
 export const getConnections = async (userId) => {
   try {
-    const response = await apiClient.get(`/api/connections/${userId}`);
+    const url = userId ? `/api/connections/?user_id=${userId}` : '/api/connections/';
+    const response = await apiClient.get(url);
     return {
       success: true,
       data: response.data,
