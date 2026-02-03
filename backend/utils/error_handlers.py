@@ -23,7 +23,6 @@ class ServiceGuard:
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         if exc_val:
             _handle_exception(exc_val, self.error_message)
-        return False
 
     def __call__(self, func):
         @wraps(func)

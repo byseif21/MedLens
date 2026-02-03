@@ -125,8 +125,7 @@ class ImageProcessor:
             Resized numpy array
         """
         if np is None or cv2 is None:
-            # should not happen if image was loaded, but for safety
-            return image
+            raise ImageProcessingError("Image resizing requires numpy and opencv")
              
         height, width = image.shape[:2]
         
