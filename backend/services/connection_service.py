@@ -215,8 +215,7 @@ class ConnectionService:
             raise HTTPException(status_code=409, detail="Connection already exists between these users")
 
     def _verify_connected_user_exists(self, connected_user_id: str):
-        user_check = self.supabase.client.table('users').select('id').eq('id', connected_user_id).execute()
-        if not user_check.data:
+        if not self.supabase.get_user(connected_user_id):
             raise HTTPException(status_code=404, detail="Connected user not found")
 
     @service_guard("Failed to create connection")

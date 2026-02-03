@@ -159,10 +159,10 @@ class FaceRecognitionService:
             encoding_json = json.dumps(encoding)
             
             # Update user record in Supabase
-            response = supabase.client.table('users').update({
+            supabase.update_user(user_id, {
                 'face_encoding': encoding_json,
                 'face_updated_at': datetime.utcnow().isoformat()
-            }).eq('id', user_id).execute()
+            })
             
             return True
                 
@@ -185,12 +185,10 @@ class FaceRecognitionService:
             
             # Fetch users with encodings
             # We only need minimal fields for recognition
-            response = supabase.client.table('users').select(
-                'id, name, email, face_encoding, face_updated_at'
-            ).not_.is_('face_encoding', 'null').execute()
+            users = supabase.get_users_with_encodings()
             
             encodings = []
-            for user in response.data:
+            for user in users:
                 try:
                     # Parse JSON encoding
                     if not user.get('face_encoding'):
@@ -328,8 +326,7 @@ class FaceRecognitionService:
             from services.storage_service import get_supabase_service
             supabase = get_supabase_service()
             
-            response = supabase.client.table('users').select('id', count='exact').not_.is_('face_encoding', 'null').execute()
-            return response.count or 0
+            return supabase.get_encoding_count()
         except Exception:
             return 0
     
@@ -381,9 +378,9 @@ class FaceRecognitionService:
             supabase = get_supabase_service()
             
             # Set face_encoding to NULL
-            response = supabase.client.table('users').update({
+            supabase.update_user(user_id, {
                 'face_encoding': None
-            }).eq('id', user_id).execute()
+            })
             
             return True
                 

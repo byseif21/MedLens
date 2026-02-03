@@ -20,16 +20,16 @@ def migrate_encodings():
     print("Starting encoding migration...")
     
     # Get all users with face encodings
-    response = supabase.client.table('users').select('id, name, email, face_encoding').not_.is_('face_encoding', 'null').execute()
+    users = supabase.get_users_with_encodings()
     
-    if not response.data:
+    if not users:
         print("No users with face encodings found.")
         return
     
     success_count = 0
     error_count = 0
     
-    for user in response.data:
+    for user in users:
         try:
             # Parse the face encoding JSON
             encoding = json.loads(user['face_encoding'])

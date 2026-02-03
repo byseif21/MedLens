@@ -41,19 +41,19 @@ class AuthService:
 
     async def _get_user_by_id(self, user_id: str, fields: str = "*") -> Dict[str, Any]:
         """Fetch user by ID with specified fields"""
-        response = self.supabase.client.table('users').select(fields).eq('id', user_id).execute()
-        if not response.data or len(response.data) == 0:
+        # Note: We fetch full profile to avoid direct DB access, ignoring requested fields for now
+        # as the overhead is minimal for single user fetch.
+        user = self.supabase.get_full_user_profile(user_id)
+        if not user:
             raise HTTPException(status_code=404, detail="User not found")
-        return response.data[0]
+        return user
 
     async def login(self, credentials: LoginRequest) -> Dict[str, Any]:
         # Get user by email
-        response = self.supabase.client.table('users').select('*').eq('email', credentials.email).execute()
+        user = self.supabase.get_user_with_password(credentials.email)
         
-        if not response.data or len(response.data) == 0:
+        if not user:
             raise HTTPException(status_code=401, detail="Invalid email or password")
-        
-        user = response.data[0]
         
         # Verify password
         if not verify_password(credentials.password, user['password_hash']):
@@ -109,15 +109,13 @@ class AuthService:
 
     async def change_password(self, user_id: str, payload: ChangePasswordRequest) -> Dict[str, str]:
         # Get current user to verify password
-        response = self.supabase.client.table('users').select('password_hash').eq('id', user_id).execute()
+        current_hash = self.supabase.get_user_password_hash(user_id)
         
-        if not response.data or len(response.data) == 0:
+        if not current_hash:
             raise HTTPException(status_code=404, detail="User not found")
         
-        user = response.data[0]
-        
         # Verify current password
-        if not verify_password(payload.current_password, user['password_hash']):
+        if not verify_password(payload.current_password, current_hash):
             raise HTTPException(status_code=400, detail="Invalid current password")
             
         # Hash new password

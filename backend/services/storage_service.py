@@ -158,6 +158,38 @@ class SupabaseService:
             registered_at=datetime.fromisoformat(user_record['created_at'].replace('Z', '+00:00'))
         )
     
+    def _fetch_user_record(self, column: str, value: str, select: str = '*') -> Optional[Dict[str, Any]]:
+        """
+        Internal helper to fetch a single user record by a specific column.
+        
+        Args:
+            column: Column to filter by (e.g., 'id', 'email')
+            value: Value to match
+            select: Columns to select (default: '*')
+            
+        Returns:
+            User record dict or None
+        """
+        response = self.client.table('users').select(select).eq(column, value).execute()
+        if not response.data or len(response.data) == 0:
+            return None
+        return response.data[0]
+
+    def _get_user_response(self, column: str, value: str, error_context: str) -> Optional[UserResponse]:
+        """Helper to fetch user and map to response with error handling."""
+        try:
+            user_record = self._fetch_user_record(column, value)
+            return self._map_to_user_response(user_record) if user_record else None
+        except Exception as e:
+            raise SupabaseError(f"{error_context}: {str(e)}")
+
+    def _get_user_dict(self, column: str, value: str, error_context: str, select: str = '*') -> Optional[Dict[str, Any]]:
+        """Helper to fetch user dict with error handling."""
+        try:
+            return self._fetch_user_record(column, value, select)
+        except Exception as e:
+            raise SupabaseError(f"{error_context}: {str(e)}")
+
     def get_user(self, user_id: str) -> Optional[UserResponse]:
         """
         Retrieve user data by ID from Supabase.
@@ -171,17 +203,7 @@ class SupabaseService:
         Raises:
             SupabaseError: If retrieval operation fails
         """
-        try:
-            response = self.client.table('users').select('*').eq('id', user_id).execute()
-            
-            if not response.data or len(response.data) == 0:
-                return None
-            
-            user_record = response.data[0]
-            return self._map_to_user_response(user_record)
-            
-        except Exception as e:
-            raise SupabaseError(f"Failed to retrieve user: {str(e)}")
+        return self._get_user_response('id', user_id, "Failed to retrieve user")
 
     def update_user(self, user_id: str, updates: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """
@@ -207,6 +229,149 @@ class SupabaseService:
             return response.data[0]
         except Exception as e:
             raise SupabaseError(f"Failed to update user: {str(e)}")
+
+    def delete_user(self, user_id: str) -> bool:
+        """
+        Delete a user from the database.
+        
+        Args:
+            user_id: Unique user identifier
+            
+        Returns:
+            True if deletion was successful
+            
+        Raises:
+            SupabaseError: If deletion operation fails
+        """
+        try:
+            self.client.table('users').delete().eq('id', user_id).execute()
+            return True
+        except Exception as e:
+            raise SupabaseError(f"Failed to delete user: {str(e)}")
+
+    def get_user_by_email(self, email: str) -> Optional[UserResponse]:
+        """
+        Retrieve user data by email from Supabase.
+        
+        Args:
+            email: User's email address
+            
+        Returns:
+            UserResponse if user found, None otherwise
+            
+        Raises:
+            SupabaseError: If retrieval operation fails
+        """
+        return self._get_user_response('email', email, "Failed to retrieve user by email")
+
+    def get_user_with_password(self, email: str) -> Optional[Dict[str, Any]]:
+        """
+        Retrieve user record including password hash by email.
+        
+        Returns:
+            User dictionary or None
+        """
+        return self._get_user_dict('email', email, "Failed to retrieve user with password")
+
+    def get_user_password_hash(self, user_id: str) -> Optional[str]:
+        """
+        Retrieve just the password hash for a user.
+        
+        Returns:
+            Password hash string or None
+        """
+        try:
+            record = self._get_user_dict('id', user_id, "Failed to retrieve password hash", select='password_hash')
+            return record.get('password_hash') if record else None
+        except Exception as e:
+            # Re-raise as is since _get_user_dict already wraps it, 
+            # but for signature consistency we can just let it propagate or wrap again if needed.
+            # Actually _get_user_dict raises SupabaseError, so we can just return logic.
+            # Wait, get_user_password_hash needs to extract the field.
+            # Let's handle the extraction here safely.
+            raise e
+
+    def get_users_with_encodings(self) -> List[Dict[str, Any]]:
+        """
+        Retrieve all users that have face encodings.
+        
+        Returns:
+            List of user records with encodings
+        """
+        try:
+            response = self.client.table('users').select(
+                'id, name, email, face_encoding, face_updated_at'
+            ).not_.is_('face_encoding', 'null').execute()
+            return response.data or []
+        except Exception as e:
+            raise SupabaseError(f"Failed to retrieve user encodings: {str(e)}")
+
+    def get_encoding_count(self) -> int:
+        """
+        Get count of users with face encodings.
+        
+        Returns:
+            Count of users with encodings
+        """
+        try:
+            response = self.client.table('users').select('id', count='exact').not_.is_('face_encoding', 'null').execute()
+            return response.count or 0
+        except Exception as e:
+            raise SupabaseError(f"Failed to get encoding count: {str(e)}")
+
+    def _build_search_query(self, query_obj, query_str: str, role: Optional[str], exclude_id: Optional[str]):
+        """Helper to build search query filters."""
+        if query_str:
+            # Check if query is a valid UUID
+            is_uuid = False
+            try:
+                uuid_obj = uuid.UUID(query_str)
+                normalized_uuid = str(uuid_obj)
+                is_uuid = True
+            except ValueError:
+                pass
+            
+            if is_uuid:
+                or_condition = f"id.eq.{normalized_uuid},name.ilike.%{query_str}%,email.ilike.%{query_str}%"
+            else:
+                or_condition = f"name.ilike.%{query_str}%,email.ilike.%{query_str}%"
+            query_obj = query_obj.or_(or_condition)
+        
+        if role:
+            query_obj = query_obj.eq('role', role)
+        if exclude_id:
+            query_obj = query_obj.neq('id', exclude_id)
+            
+        return query_obj.order('created_at', desc=True)
+
+    def search_users(self, query_str: str, role: Optional[str] = None, exclude_id: Optional[str] = None, 
+                     page: int = 1, page_size: int = 20) -> Dict[str, Any]:
+        """
+        Search users with pagination.
+        
+        Returns:
+            Dict with "users" list and "total" count
+        """
+        try:
+            query = self.client.table('users').select('*', count='exact')
+            query = self._build_search_query(query, query_str, role, exclude_id)
+            
+            query = query.range((page - 1) * page_size, page * page_size - 1)
+            
+            result = query.execute()
+            return {"users": result.data or [], "total": result.count or 0}
+        except Exception as e:
+            raise SupabaseError(f"Failed to search users: {str(e)}")
+
+    def get_full_user_profile(self, user_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Retrieve complete user profile data (raw record).
+        
+        Returns:
+            User dictionary or None
+        """
+        return self._get_user_dict('id', user_id, "Failed to retrieve full profile")
+
     
     def save_face_encoding(
         self,

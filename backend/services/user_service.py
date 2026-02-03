@@ -38,11 +38,9 @@ def _validate_registration(supabase, request: RegistrationRequest):
     except ValidationError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    # Check existence using storage service logic if possible, but here we do it explicitly
-    # to throw specific 409 error before processing face data (which is expensive)
-    # actually, storage_service.save_user also checks this, but we want to fail fast.
-    existing = supabase.client.table('users').select('id').eq('email', request.email).execute()
-    if existing.data:
+    # Check existence using storage service
+    existing = supabase.get_user_by_email(request.email)
+    if existing:
         raise HTTPException(status_code=409, detail="User with this email already exists")
 
 async def _process_face_data(
@@ -158,8 +156,7 @@ def delete_user_fully(user_id: str) -> bool:
     # 3. Delete user from database
     # This will cascade delete related records (medical_info, relatives, etc.)
     try:
-        delete_response = supabase.client.table('users').delete().eq('id', user_id).execute()
-        # Note: Supabase delete might return empty data if successful but we can check if error occurred
+        supabase.delete_user(user_id)
         return True
     except Exception as e:
         raise Exception(f"Database deletion failed: {str(e)}")
@@ -176,16 +173,10 @@ async def get_complete_user_profile(
     supabase = get_supabase_service()
     
     # Get user basic info
-    user_response = supabase.client.table('users').select(
-        'id, name, email, phone, date_of_birth, gender, nationality, id_number, face_updated_at, '
-        'is_name_public, is_id_number_public, is_phone_public, is_email_public, is_dob_public, '
-        'is_gender_public, is_nationality_public'
-    ).eq('id', user_id).execute()
+    user = supabase.get_full_user_profile(user_id)
     
-    if not user_response.data:
+    if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    
-    user = user_response.data[0]
 
     # Get profile picture URL
     profile_picture_url = None
@@ -280,12 +271,11 @@ async def update_user_face_enrollment(
     face_service = get_face_service()
 
     # Get current user data including password hash
-    user_response = supabase.client.table('users').select('password_hash').eq('id', user_id).execute()
-    if not user_response.data:
+    user_hash = supabase.get_user_password_hash(user_id)
+    if not user_hash:
         raise HTTPException(status_code=404, detail="User not found")
     
-    user = user_response.data[0]
-    stored_hash = user.get('password_hash')
+    stored_hash = user_hash
 
     # Verify password
     if not stored_hash or not verify_password(password, stored_hash):
@@ -302,15 +292,13 @@ async def verify_and_delete_account(user_id: str, password: str) -> None:
     supabase = get_supabase_service()
     
     # Get current user to verify password
-    response = supabase.client.table('users').select('password_hash').eq('id', user_id).execute()
+    password_hash = supabase.get_user_password_hash(user_id)
     
-    if not response.data:
+    if not password_hash:
         raise HTTPException(status_code=404, detail="User not found")
     
-    user = response.data[0]
-    
     # Verify password
-    if not verify_password(password, user['password_hash']):
+    if not verify_password(password, password_hash):
         raise HTTPException(status_code=400, detail="Invalid password")
         
     delete_user_fully(user_id)
