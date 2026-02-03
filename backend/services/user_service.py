@@ -7,6 +7,7 @@ from services.security import hash_password, verify_password
 from services.profile_picture_service import get_profile_picture_url, ProfilePictureError
 from utils.validation import normalize_email, sanitize_text, validate_password, validate_phone, ValidationError
 from utils.privacy import apply_privacy_settings
+from services.connection_service import ConnectionService
 
 from models.user import RegistrationRequest, UserCreate
 
@@ -160,7 +161,6 @@ def delete_user_fully(user_id: str) -> bool:
     except Exception as e:
         raise Exception(f"Database deletion failed: {str(e)}")
 
-from services.connection_service import ConnectionService
 
 async def get_complete_user_profile(
     user_id: str,

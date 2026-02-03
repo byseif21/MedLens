@@ -8,6 +8,13 @@ from typing import Tuple, Optional, Any
 from PIL import Image
 from .config import config
 
+try:
+    import numpy as np
+    import cv2
+except ImportError:
+    np = None
+    cv2 = None
+
 
 class ImageProcessingError(Exception):
     """Custom exception for image processing errors."""
@@ -89,11 +96,8 @@ class ImageProcessor:
         Raises:
             ImageProcessingError: If image cannot be loaded
         """
-        try:
-            import numpy as np
-            import cv2
-        except ImportError as dep_err:
-            raise ImageProcessingError(f"Image decoding requires numpy and opencv; {dep_err}")
+        if np is None or cv2 is None:
+            raise ImageProcessingError("Image decoding requires numpy and opencv")
 
         try:
             nparr = np.frombuffer(image_bytes, np.uint8)
@@ -120,8 +124,10 @@ class ImageProcessor:
         Returns:
             Resized numpy array
         """
-        import numpy as np
-        import cv2
+        if np is None or cv2 is None:
+             # should not happen if image was loaded, but for safety
+             return image
+             
         height, width = image.shape[:2]
         
         # Only resize if image exceeds max dimension
@@ -196,7 +202,9 @@ class ImageProcessor:
         Returns:
             Tuple of (is_blurry, variance_score)
         """
-        import cv2
+        if cv2 is None:
+            return False, float('inf') # Fail open
+
         # Convert to grayscale
         gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
         # Calculate Laplacian variance

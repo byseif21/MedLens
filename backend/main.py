@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 from utils.config import get_config
-from routers import registration, recognition
+from routers import registration, recognition, auth, profile, users, connections, admin
 import logging
 
 # Configure logging
@@ -16,7 +17,6 @@ app = FastAPI(
 )
 
 # Trust Proxy Headers (for SSL termination)
-from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
 # Get configuration settings

@@ -6,10 +6,22 @@ Handles face encoding extraction, storage, and matching.
 from typing import List, Optional, Dict, Any, Tuple
 from datetime import datetime
 import json
-from pathlib import Path
+import io
 import threading
 from fastapi import UploadFile
 import logging
+
+try:
+    import face_recognition as fr
+    import numpy as np
+except ImportError:
+    fr = None
+    np = None
+
+try:
+    from PIL import Image
+except ImportError:
+    Image = None
 
 from models.face_encoding import (
     FaceExtractionResult,
@@ -18,6 +30,8 @@ from models.face_encoding import (
     FaceEncodingStorage
 )
 from utils.config import config
+from utils.image_processor import ImageProcessor, ImageProcessingError
+from services.storage_service import get_supabase_service
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +72,6 @@ class FaceRecognitionService:
 
         # Check 2: Blur Detection on the face crop
         try:
-            from utils.image_processor import ImageProcessor
             # Add some padding for context if possible, but keep it tight to the face
             face_crop = image[top:bottom, left:right]
             is_blurry, variance = ImageProcessor.check_blur(face_crop, threshold=100.0)
@@ -76,13 +89,10 @@ class FaceRecognitionService:
         """
         Extract face encoding from image bytes.
         """
-        try:
-            from utils.image_processor import ImageProcessor, ImageProcessingError
-            import face_recognition as fr
-        except ImportError as e:
-            return FaceExtractionResult(
+        if fr is None:
+             return FaceExtractionResult(
                 success=False, encoding=None, 
-                error=f"Missing dependencies: {str(e)}", face_count=0
+                error="Missing dependencies: face_recognition", face_count=0
             )
 
         try:
@@ -98,8 +108,8 @@ class FaceRecognitionService:
                 success=False, encoding=None, error="Internal processing error", face_count=0
             )
 
-    def _detect_and_encode(self, image, fr) -> FaceExtractionResult:
-        face_locations = fr.face_locations(image)
+    def _detect_and_encode(self, image, fr_module) -> FaceExtractionResult:
+        face_locations = fr_module.face_locations(image)
         face_count = len(face_locations)
         
         if face_count == 0:
@@ -120,7 +130,7 @@ class FaceRecognitionService:
                  error=f"Quality check failed: {quality_reason}", face_count=face_count
              )
 
-        face_encodings = fr.face_encodings(image, face_locations)
+        face_encodings = fr_module.face_encodings(image, face_locations)
         if not face_encodings:
              return FaceExtractionResult(
                  success=False, encoding=None, error="Failed to extract face encoding", face_count=face_count
@@ -152,7 +162,6 @@ class FaceRecognitionService:
             FaceRecognitionError: If save operation fails
         """
         try:
-            from services.storage_service import get_supabase_service
             supabase = get_supabase_service()
             
             # Serialize encoding to JSON string
@@ -180,7 +189,6 @@ class FaceRecognitionService:
             FaceRecognitionError: If load operation fails
         """
         try:
-            from services.storage_service import get_supabase_service
             supabase = get_supabase_service()
             
             # Fetch users with encodings
@@ -217,10 +225,7 @@ class FaceRecognitionService:
         """
         Find matching face in stored encodings.
         """
-        try:
-            import face_recognition as fr
-            import numpy as np
-        except ImportError:
+        if fr is None or np is None:
             return FaceMatch(matched=False, user_id=None, confidence=None, distance=None)
 
         stored_encodings = self.load_encodings()
@@ -261,11 +266,6 @@ class FaceRecognitionService:
         extraction_result = self.extract_encoding(image_bytes)
         
         if not extraction_result.success or extraction_result.encoding is None:
-            # Propagate error as a non-match but with error info if needed
-            # For now, we return a non-match.
-            # Ideally we might want to raise an exception or return a result with error.
-            # But FaceMatch doesn't have error field. 
-            # We can raise FaceRecognitionError if extraction failed due to error.
             if extraction_result.error and "No face detected" not in extraction_result.error:
                  raise FaceRecognitionError(extraction_result.error)
             return FaceMatch(matched=False, user_id=None, confidence=0.0, distance=None)
@@ -284,9 +284,6 @@ class FaceRecognitionService:
         self.save_encoding(user_id, avg_encoding, {})
 
         # 3. Upload images to storage
-        # We call the standalone function or logic here. 
-        # Ideally, we move the upload logic into this class or keep using the helper.
-        # Since upload_face_images is outside, we call it.
         upload_face_images(supabase, user_id, images)
 
 
@@ -303,8 +300,8 @@ class FaceRecognitionService:
             float: Euclidean distance (0.0 to 1.0+)
         """
         try:
-            import face_recognition as fr
-            import numpy as np
+            if fr is None or np is None:
+                return 1.0
             
             # Convert to numpy arrays if needed
             e1 = np.array(encoding1) if not isinstance(encoding1, np.ndarray) else encoding1
@@ -323,7 +320,6 @@ class FaceRecognitionService:
             Number of encodings
         """
         try:
-            from services.storage_service import get_supabase_service
             supabase = get_supabase_service()
             
             return supabase.get_encoding_count()
@@ -363,7 +359,9 @@ class FaceRecognitionService:
                 raise FaceRecognitionError(f"Face processing failed: {error_msg}")
             
             # Average the encodings
-            import numpy as np
+            if np is None:
+                raise FaceRecognitionError("Numpy not available for encoding averaging")
+
             avg_encoding = np.mean(encodings, axis=0)
             return avg_encoding.tolist()
             
@@ -384,7 +382,6 @@ class FaceRecognitionService:
             True if deletion successful, False if user not found
         """
         try:
-            from services.storage_service import get_supabase_service
             supabase = get_supabase_service()
             
             # Set face_encoding to NULL
@@ -412,10 +409,11 @@ class FaceRecognitionService:
             Optional[bytes]: Cropped image bytes or None
         """
         try:
-            import face_recognition as fr
             from PIL import Image
             import io
-            import numpy as np
+            
+            if fr is None or np is None:
+                return None
 
             image = fr.load_image_file(io.BytesIO(image_bytes))
             face_locations = fr.face_locations(image)
@@ -483,13 +481,8 @@ def upload_face_images(supabase, user_id: str, images: Dict[str, bytes]) -> None
             )
             
             # Upsert image record
-            # Delete existing first to ensure clean state
-            supabase.client.table('face_images').delete().eq('user_id', user_id).eq('image_type', angle).execute()
-            supabase.client.table('face_images').insert({
-                "user_id": user_id,
-                "image_url": file_path,
-                "image_type": angle
-            }).execute()
+            supabase.update_face_image_metadata(user_id, angle, file_path)
+
         except Exception as e:
             logger.warning(f"Failed to upload {angle} image: {str(e)}")
 
