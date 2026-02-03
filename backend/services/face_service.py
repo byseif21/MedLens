@@ -270,8 +270,8 @@ class FaceRecognitionService:
         extraction_result = self.extract_encoding(image_bytes)
         
         if not extraction_result.success or extraction_result.encoding is None:
-            if extraction_result.error and "No face detected" not in extraction_result.error:
-                raise FaceRecognitionError(extraction_result.error)
+            if extraction_result.error:
+                 raise FaceRecognitionError(extraction_result.error)
             return FaceMatch(matched=False, user_id=None, confidence=0.0, distance=None)
 
         return self.find_match(extraction_result.encoding)
