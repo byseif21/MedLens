@@ -31,6 +31,7 @@ class AuthService:
         token = self.create_access_token({"sub": user['id'], "email": user['email'], "role": role})
         
         return {
+            "id": user['id'],
             "user_id": user['id'],
             "name": user['name'],
             "email": user['email'],
@@ -89,6 +90,7 @@ class AuthService:
         profile_picture_url = self._get_safe_profile_picture_url(user['id'])
         
         return {
+            "id": user['id'],
             "user_id": user['id'],
             "name": user['name'],
             "email": user['email'],

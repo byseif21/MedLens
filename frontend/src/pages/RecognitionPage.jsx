@@ -92,9 +92,12 @@ const RecognitionPage = () => {
 
   const handleViewProfile = (person) => {
     // Store recognized person's ID and navigate to their dashboard
-    const currentUserId = user?.id;
-    setViewingUser(person.user_id || currentUserId, person.name);
-    navigate(`/profile/${person.user_id || currentUserId}`);
+    const targetId = person.id || person.user_id;
+
+    if (targetId) {
+      setViewingUser(targetId, person.name);
+      navigate(`/profile/${targetId}`);
+    }
   };
 
   const handleReset = () => {

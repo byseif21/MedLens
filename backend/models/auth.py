@@ -18,6 +18,7 @@ class LoginRequest(BaseModel):
         return normalize_email(v)
 
 class LoginResponse(BaseModel):
+    id: str
     user_id: str
     name: str
     email: str

@@ -13,6 +13,7 @@ def apply_privacy_settings(user: Dict[str, Any], current_user_role: str = "user"
 
     if not can_view_basic:
         return {
+            "id": user.get('id'),
             "user_id": user.get('id'),
             "name": "Private Account",
             "profile_picture_url": None,
@@ -31,6 +32,7 @@ def apply_privacy_settings(user: Dict[str, Any], current_user_role: str = "user"
         return user.get(field_key, default_public)
 
     return {
+        "id": user.get('id'),
         "user_id": user.get('id'),
         "name": user.get('name'),
         "profile_picture_url": user.get('profile_picture_url'),
