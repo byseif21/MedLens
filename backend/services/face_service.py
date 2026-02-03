@@ -330,6 +330,16 @@ class FaceRecognitionService:
         except Exception:
             return 0
     
+    def _process_single_image(self, image_data: bytes) -> Tuple[Optional[List[float]], Optional[str]]:
+        """
+        Helper to process a single image.
+        Returns: (encoding, error_message)
+        """
+        result = self.extract_encoding(image_data)
+        if result.success and result.encoding is not None:
+            return result.encoding, None
+        return None, result.error
+
     def process_face_images(self, images: Dict[str, bytes]) -> List[float]:
         """
         Process multiple face images, extract encodings, and calculate average.
@@ -342,11 +352,11 @@ class FaceRecognitionService:
         
         try:
             for angle, image_data in images.items():
-                result = self.extract_encoding(image_data)
-                if result.success and result.encoding is not None:
-                    encodings.append(result.encoding)
-                elif result.error:
-                    errors.append(f"{angle}: {result.error}")
+                encoding, error = self._process_single_image(image_data)
+                if encoding:
+                    encodings.append(encoding)
+                elif error:
+                    errors.append(f"{angle}: {error}")
             
             if not encodings:
                 error_msg = "; ".join(errors) if errors else "No face detected in any of the images"

@@ -90,11 +90,12 @@ class ImageProcessor:
             ImageProcessingError: If image cannot be loaded
         """
         try:
-            try:
-                import numpy as np
-                import cv2
-            except Exception as dep_err:
-                raise ImageProcessingError(f"Image decoding requires numpy and opencv; {dep_err}")
+            import numpy as np
+            import cv2
+        except ImportError as dep_err:
+            raise ImageProcessingError(f"Image decoding requires numpy and opencv; {dep_err}")
+
+        try:
             nparr = np.frombuffer(image_bytes, np.uint8)
             image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
             if image is None:

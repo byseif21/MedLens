@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from services.search_service import get_users_paginated
 from models.user import UserSearchFilters
 from dependencies import get_current_user
+from services.user_service import delete_user_fully
 from utils.config import get_config
 
 router = APIRouter(prefix="/api/users", tags=["admin"])
@@ -103,7 +104,6 @@ async def delete_user_admin(
             raise HTTPException(status_code=404, detail="User not found")
             
         # full cleanup
-        from services.user_service import delete_user_fully
         delete_user_fully(user_id)
         
         return {"message": "User deleted successfully"}
