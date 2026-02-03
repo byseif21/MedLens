@@ -5,7 +5,6 @@ from services.storage_service import get_supabase_service
 from services.face_service import get_face_service, FaceRecognitionError, collect_face_images, upload_face_images
 from services.security import hash_password, verify_password
 from services.profile_picture_service import get_profile_picture_url, ProfilePictureError
-from services.contact_service import get_emergency_contacts
 from utils.validation import normalize_email, sanitize_text, validate_password, validate_phone, ValidationError
 from utils.privacy import apply_privacy_settings
 
@@ -161,6 +160,8 @@ def delete_user_fully(user_id: str) -> bool:
     except Exception as e:
         raise Exception(f"Database deletion failed: {str(e)}")
 
+from services.connection_service import ConnectionService
+
 async def get_complete_user_profile(
     user_id: str,
     current_user_id: Optional[str],
@@ -197,7 +198,10 @@ async def get_complete_user_profile(
         }
         medical_response = supabase.client.table('medical_info').select('*').eq('user_id', user_id).execute()
         medical_info = medical_response.data[0] if medical_response.data else {}
-        emergency_contacts = get_emergency_contacts(supabase.client, user_id)
+        
+        # Use ConnectionService for contacts
+        connection_service = ConnectionService()
+        emergency_contacts = connection_service.get_emergency_contacts(user_id)
 
         response_payload["medical_info"] = medical_info
         response_payload["emergency_contacts"] = emergency_contacts

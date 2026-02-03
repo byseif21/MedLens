@@ -171,6 +171,64 @@ class ConnectionService:
             request_id=new_req.data[0]['id']
         )
 
+    def get_emergency_contacts(self, user_id: str) -> List[Dict[str, Any]]:
+        """
+        Fetch all emergency contacts for a user, combining:
+        1. External contacts (from relatives table)
+        2. Linked connections who have a phone number (from user_connections join users)
+        
+        Returns a unified list of contact dictionaries.
+        """
+        contacts = []
+        
+        # 1. External contacts
+        external = self._fetch_external_contacts(user_id)
+        for ext in external:
+            contacts.append({
+                "id": ext.id,
+                "name": ext.name,
+                "relation": ext.relationship,
+                "phone": ext.phone,
+                "address": ext.address,
+                "type": "external"
+            })
+            
+        # 2. Linked connections
+        linked = self._fetch_linked_connections(user_id)
+        for link in linked:
+            # Only include if user has a phone number
+            if link.connected_user.phone:
+                contacts.append({
+                    "id": None, # No 'relatives' table ID for linked users
+                    "name": link.connected_user.name,
+                    "relation": link.relationship,
+                    "phone": link.connected_user.phone,
+                    "address": None, # Linked users don't have an address in this context
+                    "type": "linked"
+                })
+                
+        return contacts
+
+    @service_guard("Failed to replace relatives")
+    async def replace_user_relatives(self, user_id: str, relatives_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Replace all external contacts (relatives) for a user.
+        Used by profile update features.
+        """
+        # Delete existing relatives
+        self.supabase.client.table('relatives').delete().eq('user_id', user_id).execute()
+        
+        # Insert new relatives
+        if relatives_data:
+            # Ensure user_id is set
+            for relative in relatives_data:
+                relative['user_id'] = user_id
+                
+            response = self.supabase.client.table('relatives').insert(relatives_data).execute()
+            return response.data or []
+        
+        return []
+
     @service_guard("Failed to fetch pending requests")
     async def get_pending_requests(self, user_id: str) -> List[Dict[str, Any]]:
         # Keeping return type as List[Dict] for now to avoid complexity in mapping nested user object to model inside service

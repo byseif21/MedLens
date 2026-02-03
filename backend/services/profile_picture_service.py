@@ -112,17 +112,8 @@ def save_profile_picture(user_id: str, image_bytes: bytes, supabase_service: 'Su
             {"content-type": "image/jpeg"}
         )
         
-        # Update database record (delete old, insert new)
-        supabase_service.client.table('face_images').delete() \
-            .eq('user_id', user_id) \
-            .eq('image_type', 'avatar') \
-            .execute()
-            
-        supabase_service.client.table('face_images').insert({
-            "user_id": user_id,
-            "image_url": file_path,
-            "image_type": "avatar"
-        }).execute()
+        # Update database record via storage service
+        supabase_service.update_face_image_metadata(user_id, 'avatar', file_path)
         
         return supabase_service.get_storage_public_url(file_path)
         

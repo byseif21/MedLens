@@ -443,28 +443,39 @@ class SupabaseService:
     def get_face_image_metadata(self, user_id: str, image_type: str) -> Optional[Dict[str, Any]]:
         """
         Get metadata for a specific face image type.
-        
-        Args:
-            user_id: User identifier
-            image_type: Type of image (e.g., 'avatar', 'front')
-            
-        Returns:
-            Dictionary with image metadata or None if not found
         """
         try:
-            response = self.client.table('face_images') \
-                .select('image_url, created_at') \
+            result = self.client.table('face_images') \
+                .select('*') \
                 .eq('user_id', user_id) \
                 .eq('image_type', image_type) \
                 .order('created_at', desc=True) \
                 .limit(1) \
                 .execute()
-            
-            if response.data and len(response.data) > 0:
-                return response.data[0]
-            return None
+                
+            return result.data[0] if result.data else None
         except Exception as e:
-            return None
+            raise SupabaseError(f"Failed to get face image metadata: {str(e)}")
+
+    def update_face_image_metadata(self, user_id: str, image_type: str, image_path: str) -> None:
+        """
+        Update face image metadata. Deletes old record and inserts new one.
+        """
+        try:
+            # Delete old record
+            self.client.table('face_images').delete() \
+                .eq('user_id', user_id) \
+                .eq('image_type', image_type) \
+                .execute()
+                
+            # Insert new record
+            self.client.table('face_images').insert({
+                "user_id": user_id,
+                "image_url": image_path,
+                "image_type": image_type
+            }).execute()
+        except Exception as e:
+            raise SupabaseError(f"Failed to update face image metadata: {str(e)}")
 
     def get_storage_public_url(self, path: str) -> str:
         """Get public URL for a file in the face-images bucket."""
