@@ -472,7 +472,7 @@ class SupabaseService:
             return True
         except Exception as e:
             # Log but don't fail if file doesn't exist
-            print(f"Warning: Failed to delete file {bucket}/{path}: {str(e)}")
+            logger.warning(f"Failed to delete file {bucket}/{path}: {str(e)}")
             return False
 
     def get_storage_public_url(self, path: str) -> str:
