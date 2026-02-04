@@ -1,7 +1,5 @@
-from fastapi import APIRouter, Form, Depends
-from typing import Optional
+from fastapi import APIRouter, Depends
 from services.user_service import register_new_user
-from models.user import RegistrationRequest
 from dependencies import FaceUploads, RegistrationFormData
 
 router = APIRouter(prefix="/api", tags=["registration"])

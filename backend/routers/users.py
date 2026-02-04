@@ -1,5 +1,4 @@
 from fastapi import APIRouter, HTTPException, Query, Depends
-from typing import List
 from services.storage_service import get_supabase_service
 from models.user import UserSearchFilters, UserSearchResult, UserSearchResponse
 from services.connection_service import ConnectionService

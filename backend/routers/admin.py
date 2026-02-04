@@ -1,5 +1,4 @@
-from fastapi import APIRouter, HTTPException, Query, Depends
-from typing import List, Optional
+from fastapi import APIRouter, HTTPException, Depends
 from models.user import UserSearchFilters
 from models.admin import (
     UserListParams,
