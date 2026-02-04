@@ -43,6 +43,10 @@ def _handle_exception(e: Exception, error_message: str):
     if isinstance(e, HTTPException):
         raise e
     
+    # Log the original exception with traceback to preserve context for debugging
+    import logging
+    logging.exception(e)
+    
     # Keep original error message if it's already descriptive enough, otherwise prepend context
     detail = str(e)
     if error_message and error_message not in detail:

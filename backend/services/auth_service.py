@@ -45,13 +45,22 @@ class AuthService:
         }
 
     async def _get_user_by_id(self, user_id: str, fields: str = "*") -> Dict[str, Any]:
-        """Fetch user by ID with specified fields"""
-        # Note: We fetch full profile to avoid direct DB access, ignoring requested fields for now
-        # as the overhead is minimal for single user fetch.
+        """Fetch user by ID, optionally filtering returned fields"""
+        # Note: We fetch the full profile from storage and then apply in-memory field filtering.
+        # This avoids adding new DB queries while still honoring the requested fields contract.
         user = self.supabase.get_full_user_profile(user_id)
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
-        return user
+            
+        if fields == "*" or not fields:
+            return user
+            
+        # Support comma-separated field list, e.g. "id, name, email"
+        requested_fields = [f.strip() for f in fields.split(",") if f.strip()]
+        if not requested_fields:
+            return user
+            
+        return {key: value for key, value in user.items() if key in requested_fields}
 
     async def login(self, credentials: LoginRequest) -> Dict[str, Any]:
         # Get user by email
