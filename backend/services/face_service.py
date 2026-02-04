@@ -533,3 +533,6 @@ def get_face_service() -> FaceRecognitionService:
     if _face_service_instance is None:
         _face_service_instance = FaceRecognitionService()
     return _face_service_instance
+
+# Export static method for backward compatibility and easier usage
+collect_face_images = FaceRecognitionService.collect_face_images

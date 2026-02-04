@@ -47,7 +47,7 @@ async def _process_face_data(
     face_images_dict: Dict[str, UploadFile]
 ) -> Tuple[List[float], Dict[str, bytes]]:
     """Collect images, generate encoding, and check for face duplicates."""
-    face_images = await collect_face_images(face_images_dict)
+    face_images = await face_service.collect_face_images(face_images_dict)
     
     if not face_images:
         raise HTTPException(status_code=400, detail="At least one face image is required")

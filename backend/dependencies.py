@@ -1,11 +1,33 @@
-from fastapi import HTTPException, Depends
+from fastapi import HTTPException, Depends, UploadFile, File
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from typing import Dict, Any
+from typing import Dict, Any, Optional
+from dataclasses import dataclass
 import jwt
 from utils.config import get_config
 
 settings = get_config()
 security = HTTPBearer()
+
+@dataclass
+class FaceUploads:
+    """Dependency class to group face image uploads."""
+    image: Optional[UploadFile] = File(None)
+    image_front: Optional[UploadFile] = File(None)
+    image_left: Optional[UploadFile] = File(None)
+    image_right: Optional[UploadFile] = File(None)
+    image_up: Optional[UploadFile] = File(None)
+    image_down: Optional[UploadFile] = File(None)
+
+    def to_dict(self) -> Dict[str, Optional[UploadFile]]:
+        """Extract face images into a dictionary."""
+        return {
+            'image': self.image,
+            'image_front': self.image_front,
+            'image_left': self.image_left,
+            'image_right': self.image_right,
+            'image_up': self.image_up,
+            'image_down': self.image_down
+        }
 
 def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Dict[str, Any]:
     """

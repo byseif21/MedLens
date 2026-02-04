@@ -13,9 +13,8 @@ from services.user_service import (
     update_user_face_enrollment,
     verify_and_delete_account
 )
-from dependencies import get_current_user, verify_user_access
+from dependencies import get_current_user, verify_user_access, FaceUploads
 from utils.validation import sanitize_text, validate_phone
-from dataclasses import dataclass
 
 router = APIRouter(prefix="/api/profile", tags=["profile"])
 
@@ -79,16 +78,6 @@ class Relative(BaseModel):
 
 class RelativesUpdate(BaseModel):
     relatives: List[Relative]
-
-@dataclass
-class FaceUploads:
-    """Dependency class to group face image uploads."""
-    image: Optional[UploadFile] = File(None)
-    image_front: Optional[UploadFile] = File(None)
-    image_left: Optional[UploadFile] = File(None)
-    image_right: Optional[UploadFile] = File(None)
-    image_up: Optional[UploadFile] = File(None)
-    image_down: Optional[UploadFile] = File(None)
 
 @router.get("/{user_id}")
 async def get_profile(user_id: str, current_user: dict = Depends(get_current_user)):
@@ -231,14 +220,7 @@ async def update_face_enrollment(
         verify_user_access(current_user, user_id)
 
         # Collect face images
-        face_images = await collect_face_images({
-            'image': uploads.image,
-            'image_front': uploads.image_front,
-            'image_left': uploads.image_left,
-            'image_right': uploads.image_right,
-            'image_up': uploads.image_up,
-            'image_down': uploads.image_down
-        })
+        face_images = await collect_face_images(uploads.to_dict())
         
         if not face_images:
             raise HTTPException(status_code=400, detail="At least one face image is required")
