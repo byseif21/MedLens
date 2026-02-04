@@ -2,7 +2,7 @@
 User data models for Smart Glass AI system.
 """
 
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel, Field, field_validator
 try:
     import email_validator  # noqa: F401
@@ -114,3 +114,13 @@ class UserSearchFilters(BaseModel):
     exclude_id: Optional[str] = None
     page: int = 1
     page_size: int = 20
+
+
+class UserSearchResult(BaseModel):
+    id: str
+    name: str
+    email: str
+    connection_status: str = "none" # "none", "connected", "pending_sent", "pending_received"
+
+class UserSearchResponse(BaseModel):
+    users: List[UserSearchResult]

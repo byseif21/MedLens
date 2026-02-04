@@ -1,8 +1,12 @@
 from fastapi import APIRouter, HTTPException, Query, Depends
-from pydantic import BaseModel
 from typing import List, Optional
-from dataclasses import dataclass
 from models.user import UserSearchFilters
+from models.admin import (
+    UserListParams,
+    UserAdminView,
+    AdminUserListResponse,
+    UserUpdateRequest
+)
 from dependencies import get_current_admin_user
 from services.user_service import delete_user_fully
 from services.storage_service import get_supabase_service
@@ -10,34 +14,6 @@ from utils.config import get_config
 
 router = APIRouter(prefix="/api/admin/users", tags=["admin"])
 settings = get_config()
-
-# --- Admin Models ---
-
-@dataclass
-class UserListParams:
-    page: int = Query(1, ge=1)
-    page_size: int = Query(20, ge=1, le=100)
-    q: Optional[str] = Query(None, description="Search by name or email")
-    role: Optional[str] = Query(None, description="Filter by role")
-
-class UserAdminView(BaseModel):
-    id: str
-    name: str
-    email: str
-    role: str
-    created_at: Optional[str] = None
-    last_login: Optional[str] = None
-
-class AdminUserListResponse(BaseModel):
-    users: List[UserAdminView]
-    total: int
-    page: int
-    page_size: int
-
-class UserUpdateRequest(BaseModel):
-    name: Optional[str] = None
-    role: Optional[str] = None
-
 # --- Admin Endpoints ---
 
 @router.get("/", response_model=AdminUserListResponse)

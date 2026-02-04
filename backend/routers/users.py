@@ -1,23 +1,13 @@
 from fastapi import APIRouter, HTTPException, Query, Depends
-from pydantic import BaseModel
 from typing import List
 from services.storage_service import get_supabase_service
-from models.user import UserSearchFilters
+from models.user import UserSearchFilters, UserSearchResult, UserSearchResponse
 from services.connection_service import ConnectionService
 from utils.config import get_config
 from dependencies import get_current_user
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 settings = get_config()
-
-class UserSearchResult(BaseModel):
-    id: str
-    name: str
-    email: str
-    connection_status: str = "none" # "none", "connected", "pending_sent", "pending_received"
-
-class UserSearchResponse(BaseModel):
-    users: List[UserSearchResult]
 
 @router.get("/search", response_model=UserSearchResponse)
 async def search_users(

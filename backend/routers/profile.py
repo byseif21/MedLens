@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
 from fastapi.concurrency import run_in_threadpool
-from pydantic import BaseModel, field_validator
 from typing import List, Optional, Dict, Any
 from services.storage_service import get_supabase_service
 from services.profile_picture_service import save_profile_picture
@@ -15,70 +14,15 @@ from services.user_service import (
     verify_and_delete_account
 )
 from dependencies import get_current_user, verify_user_access, FaceUploads
-from utils.validation import sanitize_text, validate_phone
+from models.profile import (
+    DeleteAccountRequest,
+    PrivacySettingsUpdate,
+    MainInfoUpdate,
+    MedicalInfoUpdate,
+    RelativesUpdate
+)
 
 router = APIRouter(prefix="/api/profile", tags=["profile"])
-
-class DeleteAccountRequest(BaseModel):
-    password: str
-
-class PrivacySettingsUpdate(BaseModel):
-    is_name_public: Optional[bool] = None
-    is_id_number_public: Optional[bool] = None
-    is_phone_public: Optional[bool] = None
-    is_email_public: Optional[bool] = None
-    is_dob_public: Optional[bool] = None
-    is_gender_public: Optional[bool] = None
-    is_nationality_public: Optional[bool] = None
-
-class MainInfoUpdate(BaseModel):
-    name: Optional[str] = None
-    phone: Optional[str] = None
-    date_of_birth: Optional[str] = None
-    nationality: Optional[str] = None
-    gender: Optional[str] = None
-    id_number: Optional[str] = None
-
-    @field_validator('name', 'date_of_birth', 'nationality', 'gender', 'id_number')
-    def validate_text_fields(cls, v):
-        return sanitize_text(v)
-
-    @field_validator('phone')
-    def validate_phone_field(cls, v):
-        return validate_phone(v)
-
-class MedicalInfoUpdate(BaseModel):
-    health_history: Optional[str] = None
-    chronic_conditions: Optional[str] = None
-    allergies: Optional[str] = None
-    current_medications: Optional[str] = None
-    previous_surgeries: Optional[str] = None
-    emergency_notes: Optional[str] = None
-    
-    @field_validator('*')
-    def validate_text_fields(cls, v):
-        # We can sanitize all text fields here
-        if isinstance(v, str):
-            return sanitize_text(v)
-        return v
-
-class Relative(BaseModel):
-    id: Optional[int] = None
-    name: str
-    relation: str
-    phone: str
-    address: Optional[str] = None
-
-    @field_validator('name', 'relation', 'address')
-    def validate_text_fields(cls, v):
-        return sanitize_text(v)
-
-    @field_validator('phone')
-    def validate_phone_field(cls, v):
-        return validate_phone(v)
-
-class RelativesUpdate(BaseModel):
-    relatives: List[Relative]
 
 @router.get("/{user_id}")
 async def get_profile(user_id: str, current_user: dict = Depends(get_current_user)):
