@@ -17,7 +17,8 @@ CREATE TABLE users (
     face_encoding TEXT, -- Store face encoding as JSON string
     face_updated_at TIMESTAMP WITH TIME ZONE, -- Timestamp when face ID was last updated
     role VARCHAR(20) NOT NULL DEFAULT 'user', -- User role: 'user', 'doctor', 'admin'
-    
+    is_active BOOLEAN DEFAULT TRUE, -- Account status
+
     -- Privacy Settings
     is_name_public BOOLEAN DEFAULT TRUE,
     is_id_number_public BOOLEAN DEFAULT FALSE,
@@ -27,6 +28,7 @@ CREATE TABLE users (
     is_gender_public BOOLEAN DEFAULT TRUE,
     is_nationality_public BOOLEAN DEFAULT FALSE,
 
+    last_login TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

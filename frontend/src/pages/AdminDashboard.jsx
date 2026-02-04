@@ -1,9 +1,28 @@
 import { useState, useEffect } from 'react';
-import { Search, Edit2, Trash2, ChevronLeft, ChevronRight, Shield } from 'lucide-react';
+import {
+  Search,
+  Edit2,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  Shield,
+  Ban,
+  CheckCircle,
+} from 'lucide-react';
 import Navbar from '../components/Navbar';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useNotifications } from '../hooks/useNotifications';
 import { getAdminUsers, deleteUserAdmin, updateUserAdmin } from '../services/adminApi';
+
+const UserStatusCell = ({ isActive }) => (
+  <span
+    className={`px-2 py-1 rounded-full text-xs font-semibold ${
+      isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+    }`}
+  >
+    {isActive ? 'Active' : 'Inactive'}
+  </span>
+);
 
 const UserRoleCell = ({ user, isEditing, onUpdate, onCancel }) => {
   if (isEditing) {
@@ -36,25 +55,46 @@ const UserRoleCell = ({ user, isEditing, onUpdate, onCancel }) => {
   );
 };
 
-const UserActionButtons = ({ user, onEdit, onDelete, isMobile = false }) => (
+const UserActionButtons = ({ user, onEdit, onDelete, onToggleStatus }) => (
   <>
     <button
       onClick={() => onEdit(user.id)}
-      className={`text-blue-600 hover:text-blue-800 text-sm font-medium ${
-        isMobile ? 'flex' : 'inline-flex'
-      } items-center gap-1`}
+      className="text-blue-600 hover:text-blue-800 text-sm font-medium inline-flex items-center gap-1"
+      title="Edit Role"
     >
-      <Edit2 className={isMobile ? 'w-3.5 h-3.5' : 'w-3 h-3'} />
-      {isMobile ? 'Edit' : 'Edit Role'}
+      <Edit2 className="w-5 h-5 max-[460px]:w-4 max-[460px]:h-4" />
+      <span className="max-[460px]:hidden">Edit Role</span>
     </button>
+
+    <button
+      onClick={() => onToggleStatus(user.id, !user.is_active, user.name)}
+      className={`${
+        user.is_active
+          ? 'text-orange-600 hover:text-orange-800'
+          : 'text-green-600 hover:text-green-800'
+      } text-sm font-medium inline-flex items-center gap-1`}
+      title={user.is_active ? 'Ban User' : 'Unban User'}
+    >
+      {user.is_active ? (
+        <>
+          <Ban className="w-5 h-5 max-[460px]:w-4 max-[460px]:h-4" />
+          <span className="max-[460px]:hidden">Ban User</span>
+        </>
+      ) : (
+        <>
+          <CheckCircle className="w-5 h-5 max-[460px]:w-4 max-[460px]:h-4" />
+          <span className="max-[460px]:hidden">Unban User</span>
+        </>
+      )}
+    </button>
+
     <button
       onClick={() => onDelete(user.id, user.name)}
-      className={`text-red-600 hover:text-red-800 text-sm font-medium ${
-        isMobile ? 'flex' : 'inline-flex'
-      } items-center gap-1`}
+      className="text-red-600 hover:text-red-800 text-sm font-medium inline-flex items-center gap-1"
+      title="Delete User"
     >
-      <Trash2 className={isMobile ? 'w-3.5 h-3.5' : 'w-3 h-3'} />
-      Delete
+      <Trash2 className="w-5 h-5 max-[460px]:w-4 max-[460px]:h-4" />
+      <span className="max-[460px]:hidden">Delete</span>
     </button>
   </>
 );
@@ -126,6 +166,21 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleToggleStatus = async (userId, newStatus, userName) => {
+    const action = newStatus ? 'activate' : 'ban';
+    if (!window.confirm(`Are you sure you want to ${action} user "${userName}"?`)) {
+      return;
+    }
+
+    const result = await updateUserAdmin(userId, { is_active: newStatus });
+    if (result.success) {
+      notify({ type: 'success', title: 'Success', message: `User ${action}d successfully` });
+      fetchUsers(); // Refresh list
+    } else {
+      notify({ type: 'error', title: 'Error', message: result.error });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-medical-light">
       <Navbar />
@@ -191,6 +246,8 @@ const AdminDashboard = () => {
                       <th className="p-4">Name</th>
                       <th className="p-4">Email</th>
                       <th className="p-4">Role</th>
+                      <th className="p-4">Status</th>
+                      <th className="p-4">Last Login</th>
                       <th className="p-4">Created At</th>
                       <th className="p-4 text-right">Actions</th>
                     </tr>
@@ -200,7 +257,7 @@ const AdminDashboard = () => {
                       users.map((user) => (
                         <tr key={user.id} className="hover:bg-medical-gray-50 transition-colors">
                           <td className="p-4 font-medium text-medical-dark">{user.name}</td>
-                          <td className="p-4 text-gray-600">{user.email}</td>
+                          <td className="p-4 text-gray-600 break-all">{user.email}</td>
                           <td className="p-4">
                             <UserRoleCell
                               user={user}
@@ -209,15 +266,31 @@ const AdminDashboard = () => {
                               onCancel={() => setEditingUser(null)}
                             />
                           </td>
+                          <td className="p-4">
+                            <UserStatusCell isActive={user.is_active} />
+                          </td>
+                          <td className="p-4 text-gray-500 text-sm">
+                            {user.last_login
+                              ? new Date(user.last_login).toLocaleDateString() +
+                                ' ' +
+                                new Date(user.last_login).toLocaleTimeString([], {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })
+                              : 'Never'}
+                          </td>
                           <td className="p-4 text-gray-500 text-sm">
                             {user.created_at ? new Date(user.created_at).toLocaleDateString() : '-'}
                           </td>
-                          <td className="p-4 text-right space-x-2">
-                            <UserActionButtons
-                              user={user}
-                              onEdit={setEditingUser}
-                              onDelete={handleDelete}
-                            />
+                          <td className="p-4 text-right">
+                            <div className="flex justify-end gap-2 flex-wrap">
+                              <UserActionButtons
+                                user={user}
+                                onEdit={setEditingUser}
+                                onDelete={handleDelete}
+                                onToggleStatus={handleToggleStatus}
+                              />
+                            </div>
                           </td>
                         </tr>
                       ))
@@ -253,16 +326,26 @@ const AdminDashboard = () => {
                         />
                       </div>
 
+                      <div className="mb-3 flex justify-between items-center">
+                        <UserStatusCell isActive={user.is_active} />
+                        <span className="text-xs text-gray-500">
+                          Last:{' '}
+                          {user.last_login
+                            ? new Date(user.last_login).toLocaleDateString()
+                            : 'Never'}
+                        </span>
+                      </div>
+
                       <div className="flex justify-between items-center pt-3 border-t border-gray-100">
                         <span className="text-xs text-gray-400">
                           {user.created_at ? new Date(user.created_at).toLocaleDateString() : '-'}
                         </span>
-                        <div className="flex gap-3">
+                        <div className="flex gap-3 flex-wrap justify-end">
                           <UserActionButtons
                             user={user}
                             onEdit={setEditingUser}
                             onDelete={handleDelete}
-                            isMobile={true}
+                            onToggleStatus={handleToggleStatus}
                           />
                         </div>
                       </div>

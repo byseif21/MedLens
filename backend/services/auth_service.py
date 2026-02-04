@@ -25,10 +25,21 @@ class AuthService:
         encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
         return encoded_jwt
 
+    def _update_last_login(self, user_id: str):
+        """Update last_login timestamp for the user"""
+        try:
+            self.supabase.update_user(user_id, {
+                "last_login": datetime.utcnow().isoformat()
+            })
+        except Exception as e:
+            # Log error but don't fail login if timestamp update fails
+            print(f"Failed to update last_login for user {user_id}: {str(e)}")
+
     def _generate_auth_response(self, user: Dict[str, Any], message: str = "Login successful") -> Dict[str, Any]:
         """Generate standard authentication response with token"""
         role = user.get('role') or 'user'
         token = self.create_access_token({"sub": user['id'], "email": user['email'], "role": role})
+        self._update_last_login(user['id'])
 
         # NOTE: Both "id" and "user_id" are returned intentionally.
         # - "id" is the canonical field name for new clients.
@@ -68,6 +79,10 @@ class AuthService:
         
         if not user:
             raise HTTPException(status_code=401, detail="Invalid email or password")
+
+        # Check if user is active
+        if not user.get('is_active', True):
+             raise HTTPException(status_code=403, detail="Account is disabled. Please contact support.")
         
         # Verify password
         if not verify_password(credentials.password, user['password_hash']):
@@ -76,7 +91,7 @@ class AuthService:
         return self._generate_auth_response(user)
 
     async def _get_user_for_face_login(self, user_id: str) -> Dict[str, Any]:
-        return await self._get_user_by_id(user_id, 'id, name, email, phone, id_number')
+        return await self._get_user_by_id(user_id, 'id, name, email, phone, id_number, is_active')
 
     def _get_safe_profile_picture_url(self, user_id: str) -> Optional[str]:
         """Safely get profile picture URL ignoring errors"""
@@ -100,6 +115,11 @@ class AuthService:
         
         # Get user details from database
         user = await self._get_user_for_face_login(match_result.user_id)
+
+        # Check if user is active
+        if not user.get('is_active', True):
+             raise HTTPException(status_code=403, detail="Account is disabled. Please contact support.")
+
         profile_picture_url = self._get_safe_profile_picture_url(user['id'])
         
         return {
@@ -116,6 +136,10 @@ class AuthService:
 
     async def confirm_face_login(self, payload: FaceLoginConfirmRequest) -> Dict[str, Any]:
         user = await self._get_user_by_id(payload.user_id)
+
+        # Check if user is active
+        if not user.get('is_active', True):
+             raise HTTPException(status_code=403, detail="Account is disabled. Please contact support.")
 
         if not verify_password(payload.password, user['password_hash']):
             raise HTTPException(status_code=401, detail="Invalid password")

@@ -43,6 +43,8 @@ class MigrationManager:
         status = {
             "user_connections_table": False,
             "relatives_is_external_column": False,
+            "users_last_login_column": False,
+            "users_is_active_column": False,
             "migrations_needed": False
         }
         
@@ -52,11 +54,21 @@ class MigrationManager:
         # Check if relatives.is_external column exists
         if self._check_table_exists("relatives"):
             status["relatives_is_external_column"] = self._check_column_exists("relatives", "is_external")
+
+        # Check if users.last_login column exists
+        if self._check_table_exists("users"):
+            status["users_last_login_column"] = self._check_column_exists("users", "last_login")
+
+        # Check if users.is_active column exists
+        if self._check_table_exists("users"):
+            status["users_is_active_column"] = self._check_column_exists("users", "is_active")
         
         # Determine if migrations are needed
         status["migrations_needed"] = not (
             status["user_connections_table"] and 
-            status["relatives_is_external_column"]
+            status["relatives_is_external_column"] and
+            status["users_last_login_column"] and
+            status["users_is_active_column"]
         )
         
         return status
@@ -68,7 +80,7 @@ class MigrationManager:
 ║                         DATABASE MIGRATION REQUIRED                          ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 
-Your database schema needs to be updated for the Enhanced Connections feature.
+Your database schema needs to be updated.
 
 RECOMMENDED: Use the Complete Schema File
 ────────────────────────────────────────────────────
@@ -86,6 +98,8 @@ WHAT'S MISSING:
 ────────────────────────────────────────────────────
 ✓ 'user_connections' table for linked connections
 ✓ 'is_external' column in 'relatives' table
+✓ 'last_login' column in 'users' table
+✓ 'is_active' column in 'users' table
 ✓ UNIQUE constraint on face_images(user_id, image_type)
 ✓ Performance indexes
 ✓ Row Level Security policies
@@ -94,8 +108,14 @@ After applying the schema, restart your backend server.
 
 ╚══════════════════════════════════════════════════════════════════════════════╝
 """
-        # Append the unique constraint SQL to instructions
+        # Append specific SQL commands
         instructions += """
+-- Add 'last_login' column if missing:
+ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login TIMESTAMP WITH TIME ZONE;
+
+-- Add 'is_active' column if missing:
+ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
+
 -- Add this SQL to ensure data integrity:
 ALTER TABLE face_images 
 ADD CONSTRAINT unique_user_image_type UNIQUE (user_id, image_type);
@@ -131,6 +151,12 @@ UPDATE users SET is_nationality_public = true WHERE is_nationality_public IS NUL
         
         if not status["relatives_is_external_column"]:
             logger.warning("✗ Missing column: relatives.is_external")
+
+        if not status["users_last_login_column"]:
+            logger.warning("✗ Missing column: users.last_login")
+
+        if not status["users_is_active_column"]:
+            logger.warning("✗ Missing column: users.is_active")
         
         # Print instructions
         print(self.get_migration_instructions())
