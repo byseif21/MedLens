@@ -45,7 +45,7 @@ def validate_password(password: str, min_length: int = 8) -> str:
     """
     Validates a password.
     - Checks minimum length
-    - Checks for at least one number and one letter (optional but good practice)
+    - Checks for at least one number and one letter
     """
     if not password:
         raise ValidationError("Password is required")
@@ -53,8 +53,7 @@ def validate_password(password: str, min_length: int = 8) -> str:
     if len(password) < min_length:
         raise ValidationError(f"Password must be at least {min_length} characters long")
     
-    # Check for complexity (at least one digit and one letter)
-    # This is a basic rule, can be expanded based on requirements
+    # Complexity checks
     if not any(char.isdigit() for char in password):
         raise ValidationError("Password must contain at least one number")
         

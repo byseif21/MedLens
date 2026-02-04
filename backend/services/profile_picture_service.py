@@ -4,7 +4,6 @@ Handles retrieval of front-facing face images for profile display.
 """
 
 from typing import Optional, TYPE_CHECKING
-from supabase import Client
 from datetime import datetime
 import logging
 from services.face_service import get_face_service
@@ -43,39 +42,38 @@ def get_profile_picture_url(user_id: str, supabase_service: 'SupabaseService') -
         avatar_data = supabase_service.get_face_image_metadata(user_id, 'avatar')
         
         if avatar_data:
-            image_path = avatar_data['image_url']
-            created_at = avatar_data['created_at']
-            timestamp = 0
-            try:
-                dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
-                timestamp = int(dt.timestamp())
-            except ValueError:
-                pass
-                
-            base_url = supabase_service.get_storage_public_url(image_path)
-            return f"{base_url}?t={timestamp}"
+            return _construct_timestamped_url(supabase_service, avatar_data['image_url'], avatar_data['created_at'])
 
         # Fallback to 'front' image
         front_data = supabase_service.get_face_image_metadata(user_id, 'front')
         
         if front_data:
-            image_path = front_data['image_url']
-            created_at = front_data['created_at']
-            timestamp = 0
-            try:
-                dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
-                timestamp = int(dt.timestamp())
-            except ValueError:
-                pass
-            
-            base_url = supabase_service.get_storage_public_url(image_path)
-            return f"{base_url}?t={timestamp}"
+            return _construct_timestamped_url(supabase_service, front_data['image_url'], front_data['created_at'])
         
         return None
         
     except Exception as e:
         logger.error(f"Error getting profile picture for user {user_id}: {str(e)}")
         return None
+
+def _construct_timestamped_url(supabase_service, image_path: str, created_at: str) -> str:
+    """Helper to append timestamp to image URL for cache busting."""
+    timestamp = 0
+    try:
+        dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+        timestamp = int(dt.timestamp())
+    except ValueError:
+        # Fallback to current time if date format is invalid to preserve cache busting.
+        logger.warning(
+            "Failed to parse created_at timestamp '%s' for image '%s'; "
+            "falling back to current-time-based cache-busted URL.",
+            created_at,
+            image_path,
+        )
+        timestamp = int(datetime.now().timestamp())
+        
+    base_url = supabase_service.get_storage_public_url(image_path)
+    return f"{base_url}?t={timestamp}"
 
 
 def save_profile_picture(user_id: str, image_bytes: bytes, supabase_service: 'SupabaseService') -> str:
@@ -105,32 +103,17 @@ def save_profile_picture(user_id: str, image_bytes: bytes, supabase_service: 'Su
 
         file_path = f"{user_id}/avatar.jpg"
         
-        # Always try to remove the file first.
-        # This avoids "Duplicate" errors and doesn't rely on flaky 'upsert' behavior
-        try:
-            supabase_service.client.storage.from_('face-images').remove([file_path])
-        except Exception:
-            # Ignore errors
-            pass
-
-        # upload the new file
-        supabase_service.client.storage.from_('face-images').upload(
-            file_path,
-            image_bytes,
-            {"content-type": "image/jpeg"}
+        # upload the new file with upsert=True to handle overwrite atomically
+        supabase_service.upload_file(
+            bucket='face-images',
+            path=file_path,
+            file_data=image_bytes,
+            content_type="image/jpeg",
+            upsert=True
         )
         
-        # Update database record (delete old, insert new)
-        supabase_service.client.table('face_images').delete() \
-            .eq('user_id', user_id) \
-            .eq('image_type', 'avatar') \
-            .execute()
-            
-        supabase_service.client.table('face_images').insert({
-            "user_id": user_id,
-            "image_url": file_path,
-            "image_type": "avatar"
-        }).execute()
+        # Update database record via storage service
+        supabase_service.update_face_image_metadata(user_id, 'avatar', file_path)
         
         return supabase_service.get_storage_public_url(file_path)
         

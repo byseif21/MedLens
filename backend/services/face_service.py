@@ -6,18 +6,31 @@ Handles face encoding extraction, storage, and matching.
 from typing import List, Optional, Dict, Any, Tuple
 from datetime import datetime
 import json
-from pathlib import Path
+import io
 import threading
 from fastapi import UploadFile
 import logging
 
+try:
+    import face_recognition as fr
+    import numpy as np
+except ImportError:
+    fr = None
+    np = None
+
+try:
+    from PIL import Image
+except ImportError:
+    Image = None
+
 from models.face_encoding import (
     FaceExtractionResult,
     FaceMatch,
-    FaceEncodingWithMetadata,
-    FaceEncodingStorage
+    FaceEncodingWithMetadata
 )
 from utils.config import config
+from utils.image_processor import ImageProcessor, ImageProcessingError
+from services.storage_service import get_supabase_service
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +47,11 @@ class FaceRecognitionService:
         """Initialize the face recognition service."""
         self.tolerance = config.FACE_RECOGNITION_TOLERANCE
         self._lock = threading.Lock()  # For thread-safe operations
+
+    @property
+    def _are_dependencies_available(self) -> bool:
+        """Check if all required dependencies (face_recognition, numpy, PIL) are available."""
+        return fr is not None and np is not None and Image is not None
 
     def validate_face_quality(self, image, face_location) -> Tuple[bool, str]:
         """
@@ -58,7 +76,6 @@ class FaceRecognitionService:
 
         # Check 2: Blur Detection on the face crop
         try:
-            from utils.image_processor import ImageProcessor
             # Add some padding for context if possible, but keep it tight to the face
             face_crop = image[top:bottom, left:right]
             is_blurry, variance = ImageProcessor.check_blur(face_crop, threshold=100.0)
@@ -75,88 +92,65 @@ class FaceRecognitionService:
     def extract_encoding(self, image_bytes: bytes) -> FaceExtractionResult:
         """
         Extract face encoding from image bytes.
-        
-        Args:
-            image_bytes: Raw image bytes
-            
-        Returns:
-            FaceExtractionResult with encoding or error information
         """
-        try:
-            try:
-                from utils.image_processor import ImageProcessor, ImageProcessingError
-            except Exception as import_err:
-                return FaceExtractionResult(
-                    success=False,
-                    encoding=None,
-                    error=f"Image processing dependencies not available: {str(import_err)}",
-                    face_count=0
-                )
-            image = ImageProcessor.preprocess_image(image_bytes)
-            try:
-                import face_recognition as fr
-            except ImportError:
-                return FaceExtractionResult(
-                    success=False,
-                    encoding=None,
-                    error="face_recognition not installed",
-                    face_count=0
-                )
-            face_locations = fr.face_locations(image)
-            face_count = len(face_locations)
-            if face_count == 0:
-                return FaceExtractionResult(
-                    success=False,
-                    encoding=None,
-                    error="No face detected in image",
-                    face_count=0
-                )
-            if face_count > 1:
-                return FaceExtractionResult(
-                    success=False,
-                    encoding=None,
-                    error=f"Multiple faces detected ({face_count})",
-                    face_count=face_count
-                )
-            
-            # Quality Check
-            is_valid, quality_reason = self.validate_face_quality(image, face_locations[0])
-            if not is_valid:
-                return FaceExtractionResult(
-                    success=False,
-                    encoding=None,
-                    error=f"Quality check failed: {quality_reason}",
-                    face_count=face_count
-                )
-
-            face_encodings = fr.face_encodings(image, face_locations)
-            if len(face_encodings) == 0:
-                return FaceExtractionResult(
-                    success=False,
-                    encoding=None,
-                    error="Failed to extract face encoding",
-                    face_count=face_count
-                )
-            encoding = face_encodings[0].tolist()
+        if fr is None:
             return FaceExtractionResult(
-                success=True,
-                encoding=encoding,
-                error=None,
-                face_count=1
+                success=False, encoding=None, 
+                error="Missing dependencies: face_recognition", face_count=0
             )
+
+        try:
+            image = ImageProcessor.preprocess_image(image_bytes)
+            return self._detect_and_encode(image, fr)
         except ImageProcessingError as e:
             return FaceExtractionResult(
-                success=False,
-                encoding=None,
-                error=str(e),
-                face_count=0
+                success=False, encoding=None, error=str(e), face_count=0
             )
-    
+        except Exception as e:
+            logger.error(f"Encoding extraction failed: {e}")
+            return FaceExtractionResult(
+                success=False, encoding=None, error="Internal processing error", face_count=0
+            )
+
+    def _detect_and_encode(self, image, fr_module) -> FaceExtractionResult:
+        face_locations = fr_module.face_locations(image)
+        face_count = len(face_locations)
+        
+        if face_count == 0:
+            return FaceExtractionResult(
+                success=False, encoding=None, error="No face detected in image", face_count=0
+            )
+        if face_count > 1:
+            return FaceExtractionResult(
+                success=False, encoding=None, 
+                error=f"Multiple faces detected ({face_count})", face_count=face_count
+            )
+            
+        # Quality Check
+        is_valid, quality_reason = self.validate_face_quality(image, face_locations[0])
+        if not is_valid:
+            return FaceExtractionResult(
+                success=False, encoding=None, 
+                error=f"Quality check failed: {quality_reason}", face_count=face_count
+            )
+
+        face_encodings = fr_module.face_encodings(image, face_locations)
+        if not face_encodings:
+            return FaceExtractionResult(
+                success=False, encoding=None, error="Failed to extract face encoding", face_count=face_count
+            )
+             
+        return FaceExtractionResult(
+            success=True, encoding=face_encodings[0].tolist(), 
+            error=None, face_count=1
+        )
+
     def save_encoding(
         self,
         user_id: str,
         encoding: List[float],
-        user_data: Dict[str, Any]
+        user_data: Dict[str, Any],
+        supabase_service: Optional[Any] = None
     ) -> bool:
         """
         Save face encoding to Supabase database.
@@ -165,6 +159,7 @@ class FaceRecognitionService:
             user_id: Unique user identifier
             encoding: Face encoding vector
             user_data: Dictionary containing name and email
+            supabase_service: Optional SupabaseService instance to reuse
             
         Returns:
             True if save successful
@@ -173,17 +168,16 @@ class FaceRecognitionService:
             FaceRecognitionError: If save operation fails
         """
         try:
-            from services.storage_service import get_supabase_service
-            supabase = get_supabase_service()
+            supabase = supabase_service or get_supabase_service()
             
             # Serialize encoding to JSON string
             encoding_json = json.dumps(encoding)
             
             # Update user record in Supabase
-            response = supabase.client.table('users').update({
+            supabase.update_user(user_id, {
                 'face_encoding': encoding_json,
                 'face_updated_at': datetime.utcnow().isoformat()
-            }).eq('id', user_id).execute()
+            })
             
             return True
                 
@@ -201,17 +195,14 @@ class FaceRecognitionService:
             FaceRecognitionError: If load operation fails
         """
         try:
-            from services.storage_service import get_supabase_service
             supabase = get_supabase_service()
             
             # Fetch users with encodings
             # We only need minimal fields for recognition
-            response = supabase.client.table('users').select(
-                'id, name, email, face_encoding, face_updated_at'
-            ).not_.is_('face_encoding', 'null').execute()
+            users = supabase.get_users_with_encodings()
             
             encodings = []
-            for user in response.data:
+            for user in users:
                 try:
                     # Parse JSON encoding
                     if not user.get('face_encoding'):
@@ -239,85 +230,68 @@ class FaceRecognitionService:
     def find_match(self, encoding: List[float]) -> FaceMatch:
         """
         Find matching face in stored encodings.
-        
-        Args:
-            encoding: Face encoding vector to match
-            
-        Returns:
-            FaceMatch object with match result
         """
+        if fr is None or np is None:
+            return FaceMatch(matched=False, user_id=None, confidence=None, distance=None)
+
+        stored_encodings = self.load_encodings()
+        if not stored_encodings:
+            return FaceMatch(matched=False, user_id=None, confidence=None, distance=None)
+
+        # Prepare data
         try:
-            try:
-                import face_recognition as fr
-            except ImportError:
-                return FaceMatch(
-                    matched=False,
-                    user_id=None,
-                    confidence=None,
-                    distance=None
-                )
-            # Load all stored encodings
-            stored_encodings = self.load_encodings()
-            
-            if not stored_encodings:
-                return FaceMatch(
-                    matched=False,
-                    user_id=None,
-                    confidence=None,
-                    distance=None
-                )
-            
-            # Convert encoding to numpy array
-            import numpy as np
             encoding_array = np.array(encoding)
-            
-            # Prepare arrays for comparison
             known_encodings = [np.array(enc.encoding) for enc in stored_encodings]
-            
-            # Compare faces
-            matches = fr.compare_faces(
-                known_encodings,
-                encoding_array,
-                tolerance=self.tolerance
-            )
-            
-            # Calculate face distances
+
+            # Calculate distances (vectorized operation is faster)
             face_distances = fr.face_distance(known_encodings, encoding_array)
             
             # Find best match
-            best_match_index = None
-            best_distance = float('inf')
-            
-            # Find the absolute best match first (ignoring tolerance for now)
-            for i, distance in enumerate(face_distances):
-                if distance < best_distance:
-                    best_distance = distance
-                    best_match_index = i
-            
-            # Check if the best match is within tolerance
-            if best_match_index is not None and best_distance <= self.tolerance:
-                matched_encoding = stored_encodings[best_match_index]
-                # Confidence = 1 - distance (Linear confidence)
-                confidence = max(0.0, min(1.0, 1.0 - best_distance))
-                
-                return FaceMatch(
-                    matched=True,
-                    user_id=matched_encoding.user_id,
-                    confidence=confidence,
-                    distance=float(best_distance)
-                )
-            else:
-                # Return the best candidate even if not matched, but marked as matched=False
-                # This helps debugging or "near match" logic if needed
-                return FaceMatch(
-                    matched=False,
-                    user_id=stored_encodings[best_match_index].user_id if best_match_index is not None else None,
-                    confidence=max(0.0, min(1.0, 1.0 - best_distance)) if best_distance != float('inf') else 0.0,
-                    distance=float(best_distance) if best_distance != float('inf') else None
-                )
-                
+            best_match_index = np.argmin(face_distances)
+            best_distance = face_distances[best_match_index]
+
+            # Determine if it's a match
+            is_match = best_distance <= self.tolerance
+            confidence = max(0.0, min(1.0, 1.0 - best_distance))
+
+            return FaceMatch(
+                matched=bool(is_match),
+                user_id=stored_encodings[best_match_index].user_id,
+                confidence=float(confidence),
+                distance=float(best_distance)
+            )
         except Exception as e:
+            logger.error(f"Face matching calculation failed: {e}")
             raise FaceRecognitionError(f"Face matching failed: {str(e)}")
+
+    def identify_user(self, image_bytes: bytes) -> FaceMatch:
+        """
+        High-level method to process an image and identify the user.
+        Combines extraction and matching.
+        """
+        extraction_result = self.extract_encoding(image_bytes)
+        
+        if not extraction_result.success or extraction_result.encoding is None:
+            if extraction_result.error:
+                 raise FaceRecognitionError(extraction_result.error)
+            return FaceMatch(matched=False, user_id=None, confidence=0.0, distance=None)
+
+        return self.find_match(extraction_result.encoding)
+
+    async def enroll_user(self, user_id: str, images: Dict[str, bytes], supabase) -> None:
+        """
+        Full enrollment process: process images, save encoding, and upload images.
+        """
+        # 1. Process images to get average encoding
+        avg_encoding = self.process_face_images(images)
+
+        # 2. Save encoding to DB
+        # This updates the users table with the new encoding
+        self.save_encoding(user_id, avg_encoding, {}, supabase_service=supabase)
+
+        # 3. Upload images to storage
+        self.upload_face_images(supabase, user_id, images)
+
 
     def compare_faces(self, encoding1: List[float], encoding2: List[float]) -> float:
         """
@@ -332,8 +306,8 @@ class FaceRecognitionService:
             float: Euclidean distance (0.0 to 1.0+)
         """
         try:
-            import face_recognition as fr
-            import numpy as np
+            if fr is None or np is None:
+                return 1.0
             
             # Convert to numpy arrays if needed
             e1 = np.array(encoding1) if not isinstance(encoding1, np.ndarray) else encoding1
@@ -352,46 +326,48 @@ class FaceRecognitionService:
             Number of encodings
         """
         try:
-            from services.storage_service import get_supabase_service
             supabase = get_supabase_service()
             
-            response = supabase.client.table('users').select('id', count='exact').not_.is_('face_encoding', 'null').execute()
-            return response.count or 0
+            return supabase.get_encoding_count()
         except Exception:
             return 0
     
+    def _process_single_image(self, image_data: bytes) -> Tuple[Optional[List[float]], Optional[str]]:
+        """
+        Helper to process a single image.
+        Returns: (encoding, error_message)
+        """
+        result = self.extract_encoding(image_data)
+        if result.success and result.encoding is not None:
+            return result.encoding, None
+        return None, result.error
+
     def process_face_images(self, images: Dict[str, bytes]) -> List[float]:
         """
         Process multiple face images, extract encodings, and calculate average.
-        
-        Args:
-            images: Dictionary of angle -> image bytes
-            
-        Returns:
-            List[float]: Average face encoding
-            
-        Raises:
-            FaceRecognitionError: If processing fails or no faces detected
         """
-        try:
-            if not images:
-                raise FaceRecognitionError("No images provided")
+        if not images:
+            raise FaceRecognitionError("No images provided")
 
-            encodings = []
-            errors = []
+        encodings = []
+        errors = []
+        
+        try:
             for angle, image_data in images.items():
-                result = self.extract_encoding(image_data)
-                if result.success and result.encoding is not None:
-                    encodings.append(result.encoding)
-                elif result.error:
-                    errors.append(f"{angle}: {result.error}")
+                encoding, error = self._process_single_image(image_data)
+                if encoding:
+                    encodings.append(encoding)
+                elif error:
+                    errors.append(f"{angle}: {error}")
             
             if not encodings:
                 error_msg = "; ".join(errors) if errors else "No face detected in any of the images"
                 raise FaceRecognitionError(f"Face processing failed: {error_msg}")
             
             # Average the encodings
-            import numpy as np
+            if np is None:
+                raise FaceRecognitionError("Numpy not available for encoding averaging")
+
             avg_encoding = np.mean(encodings, axis=0)
             return avg_encoding.tolist()
             
@@ -412,13 +388,12 @@ class FaceRecognitionService:
             True if deletion successful, False if user not found
         """
         try:
-            from services.storage_service import get_supabase_service
             supabase = get_supabase_service()
             
             # Set face_encoding to NULL
-            response = supabase.client.table('users').update({
+            supabase.update_user(user_id, {
                 'face_encoding': None
-            }).eq('id', user_id).execute()
+            })
             
             return True
                 
@@ -440,10 +415,8 @@ class FaceRecognitionService:
             Optional[bytes]: Cropped image bytes or None
         """
         try:
-            import face_recognition as fr
-            from PIL import Image
-            import io
-            import numpy as np
+            if not self._are_dependencies_available:
+                return None
 
             image = fr.load_image_file(io.BytesIO(image_bytes))
             face_locations = fr.face_locations(image)
@@ -482,83 +455,68 @@ class FaceRecognitionService:
             return None
 
 
-def upload_face_images(supabase, user_id: str, images: Dict[str, bytes]) -> None:
-    """
-    Upload face images to Supabase storage and update database records.
-    Automatically crops faces before uploading to ensure only face data is stored.
-    
-    Args:
-        supabase: Supabase service/client
-        user_id: User identifier
-        images: Dictionary of angle -> image bytes
-    """
-    face_service = get_face_service()
-    
-    for angle, image_data in images.items():
-        try:
-            # Attempt to crop the face to store only the face region
-            cropped_data = face_service.crop_face(image_data)
-            
-            # cropped data if successful, otherwise fallback to original
-            data_to_upload = cropped_data if cropped_data else image_data
-            
-            file_path = f"{user_id}/{angle}.jpg"
-            # Upload to storage (upsert=True to overwrite)
-            supabase.client.storage.from_('face-images').upload(
-                file_path,
-                data_to_upload,
-                {"content-type": "image/jpeg", "upsert": "true"}
-            )
-            
-            # Upsert image record
-            # Delete existing first to ensure clean state
-            supabase.client.table('face_images').delete().eq('user_id', user_id).eq('image_type', angle).execute()
-            supabase.client.table('face_images').insert({
-                "user_id": user_id,
-                "image_url": file_path,
-                "image_type": angle
-            }).execute()
-        except Exception as e:
-            logger.warning(f"Failed to upload {angle} image: {str(e)}")
-
-
-async def collect_face_images(
-    image: Optional[UploadFile] = None,
-    image_front: Optional[UploadFile] = None,
-    image_left: Optional[UploadFile] = None,
-    image_right: Optional[UploadFile] = None,
-    image_up: Optional[UploadFile] = None,
-    image_down: Optional[UploadFile] = None,
-) -> Dict[str, bytes]:
-    """
-    Collect and read bytes from uploaded face images.
-    
-    Args:
-        image: Legacy single image (treated as 'front')
-        image_front: Front face image
-        image_left: Left face image
-        image_right: Right face image
-        image_up: Up face image
-        image_down: Down face image
+    def upload_face_images(self, supabase, user_id: str, images: Dict[str, bytes]) -> None:
+        """
+        Upload face images to Supabase storage and update database records.
+        Automatically crops faces before uploading to ensure only face data is stored.
         
-    Returns:
-        Dictionary mapping angle to image bytes
-    """
-    face_images = {}
-    if image:
-        face_images['front'] = await image.read()
-    if image_front:
-        face_images['front'] = await image_front.read()
-    if image_left:
-        face_images['left'] = await image_left.read()
-    if image_right:
-        face_images['right'] = await image_right.read()
-    if image_up:
-        face_images['up'] = await image_up.read()
-    if image_down:
-        face_images['down'] = await image_down.read()
-    
-    return face_images
+        Args:
+            supabase: Supabase service/client
+            user_id: User identifier
+            images: Dictionary of angle -> image bytes
+        """
+        for angle, image_data in images.items():
+            try:
+                # Attempt to crop the face to store only the face region
+                cropped_data = self.crop_face(image_data)
+                
+                # cropped data if successful, otherwise fallback to original
+                data_to_upload = cropped_data if cropped_data else image_data
+                
+                file_path = f"{user_id}/{angle}.jpg"
+                
+                # Use storage service's generic upload method
+                supabase.upload_file(
+                    bucket='face-images',
+                    path=file_path,
+                    file_data=data_to_upload,
+                    content_type="image/jpeg",
+                    upsert=True
+                )
+                
+                # Upsert image record
+                supabase.update_face_image_metadata(user_id, angle, file_path)
+
+            except Exception as e:
+                logger.warning(f"Failed to upload {angle} image: {str(e)}")
+
+    @staticmethod
+    async def collect_face_images(images: Dict[str, Optional[UploadFile]]) -> Dict[str, bytes]:
+        """
+        Collect and read bytes from uploaded face images.
+        
+        Args:
+            images: Dictionary mapping image types (e.g., 'image_front') to UploadFile objects.
+        """
+        face_images = {}
+        
+        # Map input args to angle names
+        # Priority: image_front > image (legacy)
+        front = images.get('image_front') or images.get('image')
+        
+        inputs = {
+            'front': front,
+            'left': images.get('image_left'),
+            'right': images.get('image_right'),
+            'up': images.get('image_up'),
+            'down': images.get('image_down')
+        }
+
+        for angle, file_obj in inputs.items():
+            if file_obj:
+                face_images[angle] = await file_obj.read()
+                
+        return face_images
 
 # Singleton instance
 _face_service_instance: Optional[FaceRecognitionService] = None
@@ -575,3 +533,6 @@ def get_face_service() -> FaceRecognitionService:
     if _face_service_instance is None:
         _face_service_instance = FaceRecognitionService()
     return _face_service_instance
+
+# Export static method for backward compatibility and easier usage
+collect_face_images = FaceRecognitionService.collect_face_images

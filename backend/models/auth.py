@@ -1,7 +1,6 @@
 """
 Authentication related Pydantic models.
 """
-from typing import Optional
 from pydantic import BaseModel, Field, field_validator
 try:
     import email_validator  # noqa: F401
@@ -15,10 +14,12 @@ class LoginRequest(BaseModel):
     password: str
 
     @field_validator('email')
+    @classmethod
     def validate_email_field(cls, v):
         return normalize_email(v)
 
 class LoginResponse(BaseModel):
+    id: str
     user_id: str
     name: str
     email: str

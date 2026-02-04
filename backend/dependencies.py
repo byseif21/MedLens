@@ -1,11 +1,59 @@
-from fastapi import HTTPException, Depends
+from fastapi import HTTPException, Depends, UploadFile, File, Form
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from typing import Dict, Any
+from typing import Dict, Any, Optional
+from dataclasses import dataclass
 import jwt
 from utils.config import get_config
+from models.user import RegistrationRequest
 
 settings = get_config()
 security = HTTPBearer()
+
+@dataclass
+class RegistrationFormData:
+    name: str = Form(...)
+    email: str = Form(...)
+    password: str = Form(...)
+    phone: Optional[str] = Form(None)
+    date_of_birth: Optional[str] = Form(None)
+    gender: Optional[str] = Form(None)
+    nationality: Optional[str] = Form(None)
+    id_number: Optional[str] = Form(None)
+
+    def to_registration_request(self) -> RegistrationRequest:
+        """Convert form data to RegistrationRequest model."""
+        return RegistrationRequest(
+            name=self.name,
+            email=self.email,
+            password=self.password,
+            phone=self.phone,
+            date_of_birth=self.date_of_birth,
+            gender=self.gender,
+            nationality=self.nationality,
+            id_number=self.id_number
+        )
+
+@dataclass
+class FaceUploads:
+    """Dependency class to group face image uploads."""
+    image: Optional[UploadFile] = File(None)
+    image_front: Optional[UploadFile] = File(None)
+    image_left: Optional[UploadFile] = File(None)
+    image_right: Optional[UploadFile] = File(None)
+    image_up: Optional[UploadFile] = File(None)
+    image_down: Optional[UploadFile] = File(None)
+
+    def to_dict(self) -> Dict[str, UploadFile]:
+        """Extract present face images into a dictionary."""
+        uploads = {
+            'image': self.image,  # Legacy/Generic fallback
+            'image_front': self.image_front,
+            'image_left': self.image_left,
+            'image_right': self.image_right,
+            'image_up': self.image_up,
+            'image_down': self.image_down
+        }
+        return {k: v for k, v in uploads.items() if v is not None}
 
 def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Dict[str, Any]:
     """
@@ -34,4 +82,13 @@ def verify_user_access(current_user: dict, target_user_id: str):
     role = (current_user or {}).get("role") or "user"
     
     if current_user_id != target_user_id and role != "admin":
-        raise HTTPException(status_code=403, detail="Not authorized to update this profile")
+        raise HTTPException(status_code=403, detail="Not authorized to access this user data")
+
+def get_current_admin_user(current_user: dict = Depends(get_current_user)) -> dict:
+    """
+    Dependency to verify that the current user has 'admin' role.
+    """
+    role = current_user.get("role")
+    if role != "admin":
+        raise HTTPException(status_code=403, detail="Admin privileges required")
+    return current_user

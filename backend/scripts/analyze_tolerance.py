@@ -1,12 +1,18 @@
 
 import os
 import sys
-import itertools
-import argparse
 from pathlib import Path
-from typing import List, Dict, Tuple
+from typing import List, Dict
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+try:
+    import numpy as np
+    import face_recognition as fr
+except ImportError:
+    print("❌ Error: Missing required libraries (numpy, face_recognition).")
+    print("Please install them first: pip install numpy face_recognition")
+    sys.exit(1)
 
 def analyze_dataset(dataset_path: str):
     """
@@ -20,16 +26,6 @@ def analyze_dataset(dataset_path: str):
           ├── img1.jpg
           └── img2.jpg
     """
-    try:
-        import numpy as np
-        import face_recognition as fr
-        from services.face_service import get_face_service
-        # We use the service just for its helper methods if needed, 
-        # but here we use face_recognition directly for batch processing efficiency
-    except ImportError:
-        print("❌ Error: Missing required libraries (numpy, face_recognition).")
-        print("Please install them first: pip install numpy face_recognition")
-        return
 
     dataset = Path(dataset_path)
     if not dataset.exists():
