@@ -3,6 +3,7 @@ Supabase storage service for Smart Glass AI system.
 Handles database operations and image storage.
 """
 
+import logging
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from supabase import create_client, Client
@@ -10,6 +11,8 @@ import uuid
 
 from utils.config import config
 from models.user import UserCreate, UserResponse, UserSearchFilters
+
+logger = logging.getLogger(__name__)
 
 
 class SupabaseError(Exception):
@@ -23,6 +26,7 @@ class SupabaseService:
     def __init__(self):
         """Initialize Supabase client with environment variables."""
         if not config.SUPABASE_URL:
+            logger.error("Supabase configuration missing: SUPABASE_URL not set")
             raise SupabaseError(
                 "Supabase configuration missing. Please set SUPABASE_URL"
             )
@@ -31,9 +35,13 @@ class SupabaseService:
         supabase_key = config.SUPABASE_SERVICE_KEY or config.SUPABASE_KEY
         
         if not supabase_key:
+            logger.error("Supabase configuration missing: SUPABASE_KEY/SERVICE_KEY not set")
             raise SupabaseError(
                 "Supabase key missing. Please set SUPABASE_SERVICE_KEY or SUPABASE_KEY"
             )
+            
+        if not config.SUPABASE_SERVICE_KEY:
+            logger.warning("SUPABASE_SERVICE_KEY not set. Falling back to SUPABASE_KEY (Anon). RLS policies may block operations.")
         
         try:
             self.client: Client = create_client(
@@ -42,6 +50,7 @@ class SupabaseService:
             )
             self.storage_bucket = "face-images"
         except Exception as e:
+            logger.error(f"Failed to initialize Supabase client: {str(e)}")
             raise SupabaseError(f"Failed to initialize Supabase client: {str(e)}")
     
     def check_connection(self) -> bool:
@@ -100,21 +109,31 @@ class SupabaseService:
             SupabaseError: If save operation fails or user already exists
         """
         try:
+            logger.info(f"Attempting to save user: {user_data.email}")
             self._ensure_user_not_exists(user_data.email)
             user_dict = self._prepare_user_dict(user_data, extra_data)
             user_record = self._insert_user_record(user_dict)
+            logger.info(f"User saved successfully: {user_data.email}")
             return self._map_to_user_response(user_record)
             
-        except SupabaseError:
+        except SupabaseError as e:
+            logger.error(f"Supabase error saving user {user_data.email}: {str(e)}")
             raise
         except Exception as e:
+            logger.error(f"Unexpected error saving user {user_data.email}: {str(e)}", exc_info=True)
             raise SupabaseError(f"Failed to save user: {str(e)}")
 
     def _ensure_user_not_exists(self, email: str) -> None:
         """Check if user with given email already exists."""
-        existing_user = self.client.table('users').select('*').eq('email', email).execute()
-        if existing_user.data and len(existing_user.data) > 0:
-            raise SupabaseError(f"User with email {email} already exists")
+        try:
+            existing_user = self.client.table('users').select('*').eq('email', email).execute()
+            if existing_user.data and len(existing_user.data) > 0:
+                raise SupabaseError(f"User with email {email} already exists")
+        except Exception as e:
+            if "User with email" in str(e):
+                raise
+            # If select fails (e.g. RLS), we might assume user doesn't exist or log warning
+            logger.warning(f"Failed to check existing user {email}: {str(e)}. Proceeding with insert attempt.")
 
     def _prepare_user_dict(
         self, 
@@ -135,10 +154,16 @@ class SupabaseService:
 
     def _insert_user_record(self, user_dict: Dict[str, Any]) -> Dict[str, Any]:
         """Insert user record into database and return the result."""
-        response = self.client.table('users').insert(user_dict).execute()
-        if not response.data or len(response.data) == 0:
-            raise SupabaseError("Failed to insert user data")
-        return response.data[0]
+        try:
+            response = self.client.table('users').insert(user_dict).execute()
+            if not response.data or len(response.data) == 0:
+                raise SupabaseError("Failed to insert user data - no data returned")
+            return response.data[0]
+        except Exception as e:
+            logger.error(f"Database insert failed: {str(e)}")
+            if "row-level security" in str(e):
+                raise SupabaseError(f"Permission denied: RLS policy blocks user creation. Ensure SUPABASE_SERVICE_KEY is set or RLS policy allows public insert. Details: {str(e)}")
+            raise SupabaseError(f"Database insert failed: {str(e)}")
 
     def _map_to_user_response(self, user_record: Dict[str, Any]) -> UserResponse:
         """Convert database record to UserResponse model."""

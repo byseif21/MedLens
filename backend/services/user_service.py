@@ -7,8 +7,10 @@ from utils.security import hash_password, verify_password
 from services.profile_picture_service import get_profile_picture_url, ProfilePictureError
 from utils.validation import validate_password, ValidationError
 from services.connection_service import ConnectionService
-
 from models.user import RegistrationRequest, UserCreate
+import logging
+
+logger = logging.getLogger(__name__)
 
 async def register_new_user(
     request: RegistrationRequest,
@@ -17,29 +19,46 @@ async def register_new_user(
     """
     Register a new user with validation, face processing, and database creation.
     """
+    logger.info(f"Starting registration for user: {request.email}")
     supabase = get_supabase_service()
     face_service = get_face_service()
     
-    # 1. Validate Input & Check Existence
-    _validate_registration(supabase, request)
-    
-    # 2. Process Face Data (Encoding & Duplication Check)
-    avg_encoding, face_images = await _process_face_data(face_service, face_images_dict)
-    
-    # 3. Create User & Upload Images
-    face_data = (avg_encoding, face_images)
-    return _persist_user_registration(supabase, request, face_data)
+    try:
+        # 1. Validate Input & Check Existence
+        logger.info("Validating registration input...")
+        _validate_registration(supabase, request)
+        
+        # 2. Process Face Data (Encoding & Duplication Check)
+        logger.info("Processing face data...")
+        avg_encoding, face_images = await _process_face_data(face_service, face_images_dict)
+        logger.info(f"Face data processed. Avg encoding length: {len(avg_encoding)}")
+        
+        # 3. Create User & Upload Images
+        logger.info("Persisting user registration...")
+        face_data = (avg_encoding, face_images)
+        result = _persist_user_registration(supabase, request, face_data)
+        logger.info(f"User registration completed successfully for: {request.email}")
+        return result
+        
+    except HTTPException as e:
+        logger.warning(f"Registration failed (HTTP {e.status_code}): {e.detail}")
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error during registration for {request.email}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
 
 def _validate_registration(supabase, request: RegistrationRequest):
     """Validate password and check if user email already exists."""
     try:
         validate_password(request.password)
     except ValidationError as e:
+        logger.warning(f"Password validation failed: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
     # Check existence using storage service
     existing = supabase.get_user_by_email(request.email)
     if existing:
+        logger.warning(f"User already exists: {request.email}")
         raise HTTPException(status_code=409, detail="User with this email already exists")
 
 async def _process_face_data(
@@ -47,23 +66,29 @@ async def _process_face_data(
     face_images_dict: Dict[str, UploadFile]
 ) -> Tuple[List[float], Dict[str, bytes]]:
     """Collect images, generate encoding, and check for face duplicates."""
-    face_images = await face_service.collect_face_images(face_images_dict)
-    
-    if not face_images:
-        raise HTTPException(status_code=400, detail="At least one face image is required")
-    
     try:
+        face_images = await face_service.collect_face_images(face_images_dict)
+        
+        if not face_images:
+            raise HTTPException(status_code=400, detail="At least one face image is required")
+        
         avg_encoding = face_service.process_face_images(face_images)
+        
+        match_result = face_service.find_match(avg_encoding)
+        if match_result.matched:
+            logger.warning(f"Face duplicate detected. Matches user: {match_result.user_id}")
+            raise HTTPException(
+                status_code=409, 
+                detail="This face is already registered to another user."
+            )
+        return avg_encoding, face_images
+        
     except FaceRecognitionError as e:
+        logger.error(f"Face recognition error: {e}")
         raise HTTPException(status_code=400, detail=str(e))
-    
-    match_result = face_service.find_match(avg_encoding)
-    if match_result.matched:
-        raise HTTPException(
-            status_code=409, 
-            detail="This face is already registered to another user."
-        )
-    return avg_encoding, face_images
+    except Exception as e:
+        logger.error(f"Unexpected error processing face data: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Face processing failed: {str(e)}")
 
 def _persist_user_registration(
     supabase, 
@@ -96,15 +121,17 @@ def _persist_user_registration(
         try:
             user_response = supabase.save_user(user_create, extra_data=extra_data)
         except Exception as e:
+            logger.error(f"Database save failed: {e}")
             # Re-raise as HTTPException to match previous behavior
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
             
         user_id = user_response.id
 
         try:
+            face_service = get_face_service() # Ensure we get the service
             face_service.upload_face_images(supabase, user_id, face_images)
         except Exception as e:
-            print(f"Error uploading images: {e}")
+            logger.error(f"Image upload failed for user {user_id}: {e}")
             rollback_error_msg: Optional[str] = None
             try:
                 delete_user_fully(str(user_id))
@@ -112,8 +139,7 @@ def _persist_user_registration(
                 rollback_error_msg = (
                     f"Rollback failed when deleting user {user_id}: {rollback_error}"
                 )
-                # Log rollback failure for diagnostics
-                print(rollback_error_msg)
+                logger.critical(rollback_error_msg)
             
             error_detail = f"Failed to upload face images: {str(e)}"
             if rollback_error_msg is not None:
@@ -130,6 +156,7 @@ def _persist_user_registration(
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"Persist registration failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to create user: {str(e)}")
 
 def delete_user_fully(user_id: str) -> bool:
