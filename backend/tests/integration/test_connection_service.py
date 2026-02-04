@@ -5,7 +5,7 @@ import sys
 import os
 
 # Add parent directory to path to allow importing backend modules
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 from services.connection_service import ConnectionService
 from models.connections import (
