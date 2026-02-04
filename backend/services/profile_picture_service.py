@@ -70,7 +70,6 @@ def _construct_timestamped_url(supabase_service, image_path: str, created_at: st
             created_at,
             image_path,
         )
-        pass
         
     base_url = supabase_service.get_storage_public_url(image_path)
     return f"{base_url}?t={timestamp}"

@@ -23,10 +23,12 @@ class MainInfoUpdate(BaseModel):
     id_number: Optional[str] = None
 
     @field_validator('name', 'date_of_birth', 'nationality', 'gender', 'id_number')
+    @classmethod
     def validate_text_fields(cls, v):
         return sanitize_text(v)
 
     @field_validator('phone')
+    @classmethod
     def validate_phone_field(cls, v):
         return validate_phone(v)
 
@@ -39,6 +41,7 @@ class MedicalInfoUpdate(BaseModel):
     emergency_notes: Optional[str] = None
     
     @field_validator('*')
+    @classmethod
     def validate_text_fields(cls, v):
         # We can sanitize all text fields here
         if isinstance(v, str):
@@ -53,10 +56,12 @@ class Relative(BaseModel):
     address: Optional[str] = None
 
     @field_validator('name', 'relation', 'address')
+    @classmethod
     def validate_text_fields(cls, v):
         return sanitize_text(v)
 
     @field_validator('phone')
+    @classmethod
     def validate_phone_field(cls, v):
         return validate_phone(v)
 
