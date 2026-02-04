@@ -39,6 +39,8 @@ class UserCreate(UserBase):
 class UserResponse(UserBase):
     """Model for user data in API responses."""
     id: str = Field(..., description="Unique user identifier")
+    role: str = Field("user", description="User role (admin/user)")
+    is_active: bool = Field(True, description="User active status")
     image_url: Optional[str] = Field(None, description="URL to user's face image")
     registered_at: datetime = Field(..., description="Registration timestamp")
     
