@@ -345,12 +345,19 @@ class SupabaseService:
                 pass
 
             # Sanitize query string to prevent injection in PostgREST syntax
-            safe_query = query_str.replace(',', '').replace('(', '').replace(')', '')     
+            # replace dangerous characters with spaces to preserve word separation while preventing injection.
+            safe_query = query_str
+            for char in [',', '(', ')', '"', "'", '.']:
+                safe_query = safe_query.replace(char, ' ')
+            safe_query = safe_query.strip()
+            
             if is_uuid:
                 or_condition = f"id.eq.{normalized_uuid},name.ilike.%{safe_query}%,email.ilike.%{safe_query}%"
-            else:
+                query_obj = query_obj.or_(or_condition)
+            elif safe_query:
+                # Only apply filter if we have a valid search string after sanitization
                 or_condition = f"name.ilike.%{safe_query}%,email.ilike.%{safe_query}%"
-            query_obj = query_obj.or_(or_condition)
+                query_obj = query_obj.or_(or_condition)
         
         if role:
             query_obj = query_obj.eq('role', role)
