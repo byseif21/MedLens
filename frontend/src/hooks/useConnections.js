@@ -102,21 +102,29 @@ const createConnectionActions = (context) => {
         { refreshConnections: true }
       ),
 
-    acceptRequest: (requestId) =>
-      executeAction(
+    acceptRequest: async (requestId) => {
+      context.setProcessingRequestId(requestId);
+      const result = await executeAction(
         context,
         () => acceptConnectionRequest(requestId),
         'Connection request accepted successfully!',
         { refreshConnections: true, refreshPending: true }
-      ),
+      );
+      context.setProcessingRequestId(null);
+      return result;
+    },
 
-    rejectRequest: (requestId) =>
-      executeAction(
+    rejectRequest: async (requestId) => {
+      context.setProcessingRequestId(requestId);
+      const result = await executeAction(
         context,
         () => rejectConnectionRequest(requestId),
         'Connection request rejected.',
         { refreshPending: true }
-      ),
+      );
+      context.setProcessingRequestId(null);
+      return result;
+    },
 
     clearSuccessMessage: () => context.setSuccessMessage(null),
     clearError: () => context.setError(null),
@@ -125,6 +133,7 @@ const createConnectionActions = (context) => {
 
 export const useConnections = (targetUserId) => {
   const [loading, setLoading] = useState(false);
+  const [processingRequestId, setProcessingRequestId] = useState(null);
   const [linkedConnections, setLinkedConnections] = useState([]);
   const [externalContacts, setExternalContacts] = useState([]);
   const [pendingRequests, setPendingRequests] = useState([]);
@@ -180,12 +189,14 @@ export const useConnections = (targetUserId) => {
         setSuccessMessage,
         fetchConnections,
         fetchPendingRequests,
+        setProcessingRequestId,
       }),
     [setError, setSuccessMessage, fetchConnections, fetchPendingRequests]
   );
 
   return {
     loading,
+    processingRequestId,
     linkedConnections,
     externalContacts,
     pendingRequests,

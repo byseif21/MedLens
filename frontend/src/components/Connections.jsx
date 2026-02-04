@@ -14,7 +14,7 @@ import {
   Users,
 } from 'lucide-react';
 
-const PendingRequestsList = ({ requests, onAccept, onReject }) => {
+const PendingRequestsList = ({ requests, onAccept, onReject, processingRequestId }) => {
   if (requests.length === 0) return null;
 
   return (
@@ -24,34 +24,47 @@ const PendingRequestsList = ({ requests, onAccept, onReject }) => {
         Pending Connection Requests ({requests.length})
       </h3>
       <div className="space-y-3">
-        {requests.map((request) => (
-          <div
-            key={request.id}
-            className="flex items-center justify-between p-3 bg-white border border-medical-gray-200 rounded-lg shadow-sm"
-          >
-            <div>
-              <p className="font-medium text-medical-dark">{request.sender_name}</p>
-              <p className="text-xs text-medical-gray-500">{request.sender_email}</p>
-              <p className="text-sm text-medical-primary font-medium mt-1">
-                Wants to connect as: {request.relationship}
-              </p>
+        {requests.map((request) => {
+          const isProcessing = processingRequestId === request.id;
+          return (
+            <div
+              key={request.id}
+              className="flex items-center justify-between p-3 bg-white border border-medical-gray-200 rounded-lg shadow-sm"
+            >
+              <div>
+                <p className="font-medium text-medical-dark">{request.sender_name}</p>
+                <p className="text-xs text-medical-gray-500">{request.sender_email}</p>
+                <p className="text-sm text-medical-primary font-medium mt-1">
+                  Wants to connect as: {request.relationship}
+                </p>
+              </div>
+              <div className="flex gap-2 flex-shrink-0">
+                <button
+                  onClick={() => onAccept(request.id)}
+                  disabled={isProcessing}
+                  className={`px-3 py-1.5 text-white text-sm font-medium rounded-md transition-colors ${
+                    isProcessing
+                      ? 'bg-medical-primary/50 cursor-not-allowed'
+                      : 'bg-medical-primary hover:bg-medical-primary-dark'
+                  }`}
+                >
+                  {isProcessing ? 'Accepting...' : 'Accept'}
+                </button>
+                <button
+                  onClick={() => onReject(request.id)}
+                  disabled={isProcessing}
+                  className={`px-3 py-1.5 text-medical-gray-700 text-sm font-medium rounded-md transition-colors ${
+                    isProcessing
+                      ? 'bg-medical-gray-100/50 text-medical-gray-400 cursor-not-allowed'
+                      : 'bg-medical-gray-100 hover:bg-medical-gray-200'
+                  }`}
+                >
+                  Decline
+                </button>
+              </div>
             </div>
-            <div className="flex gap-2 flex-shrink-0">
-              <button
-                onClick={() => onAccept(request.id)}
-                className="px-3 py-1.5 bg-medical-primary text-white text-sm font-medium rounded-md hover:bg-medical-primary-dark transition-colors"
-              >
-                Accept
-              </button>
-              <button
-                onClick={() => onReject(request.id)}
-                className="px-3 py-1.5 bg-medical-gray-100 text-medical-gray-700 text-sm font-medium rounded-md hover:bg-medical-gray-200 transition-colors"
-              >
-                Decline
-              </button>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -61,6 +74,7 @@ PendingRequestsList.propTypes = {
   requests: PropTypes.array.isRequired,
   onAccept: PropTypes.func.isRequired,
   onReject: PropTypes.func.isRequired,
+  processingRequestId: PropTypes.string,
 };
 
 const ConnectionsSection = ({ title, icon: Icon, connections, type, onEdit, onRemove }) => {
@@ -174,6 +188,7 @@ const Connections = ({ targetUserId }) => {
 
   const {
     loading,
+    processingRequestId,
     linkedConnections,
     externalContacts,
     pendingRequests,
@@ -267,6 +282,7 @@ const Connections = ({ targetUserId }) => {
         requests={pendingRequests}
         onAccept={acceptRequest}
         onReject={rejectRequest}
+        processingRequestId={processingRequestId}
       />
 
       <ConnectionsSection
