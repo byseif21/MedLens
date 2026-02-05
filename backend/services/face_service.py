@@ -417,8 +417,13 @@ class FaceRecognitionService:
         try:
             if not self._are_dependencies_available:
                 return None
+            try:
+                image = ImageProcessor.preprocess_image(image_bytes)
+            except ImageProcessingError as e:
+                logger.warning(f"Image preprocessing failed in crop_face: {e}")
+                # Fallback to direct load if preprocessing fails (though unlikely)
+                image = fr.load_image_file(io.BytesIO(image_bytes))
 
-            image = fr.load_image_file(io.BytesIO(image_bytes))
             face_locations = fr.face_locations(image)
             
             # strictly 1 face for the profile image

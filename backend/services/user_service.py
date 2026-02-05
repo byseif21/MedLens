@@ -1,6 +1,7 @@
 from typing import List, Dict, Any, Optional, Tuple
 import json
 from fastapi import UploadFile, HTTPException
+from fastapi.concurrency import run_in_threadpool
 from services.storage_service import get_supabase_service
 from services.face_service import get_face_service, FaceRecognitionError
 from utils.security import hash_password, verify_password
@@ -36,7 +37,7 @@ async def register_new_user(
         # 3. Create User & Upload Images
         logger.info("Persisting user registration...")
         face_data = (avg_encoding, face_images)
-        result = _persist_user_registration(supabase, request, face_data)
+        result = await _persist_user_registration(supabase, request, face_data)
         logger.info(f"User registration completed successfully for: {request.email}")
         return result
         
@@ -72,9 +73,9 @@ async def _process_face_data(
         if not face_images:
             raise HTTPException(status_code=400, detail="At least one face image is required")
         
-        avg_encoding = face_service.process_face_images(face_images)
+        avg_encoding = await run_in_threadpool(face_service.process_face_images, face_images)
         
-        match_result = face_service.find_match(avg_encoding)
+        match_result = await run_in_threadpool(face_service.find_match, avg_encoding)
         if match_result.matched:
             logger.warning(f"Face duplicate detected. Matches user: {match_result.user_id}")
             raise HTTPException(
@@ -90,7 +91,7 @@ async def _process_face_data(
         logger.error(f"Unexpected error processing face data: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Face processing failed: {str(e)}")
 
-def _persist_user_registration(
+async def _persist_user_registration(
     supabase, 
     request: RegistrationRequest, 
     face_data: Tuple[List[float], Dict[str, bytes]]
@@ -125,15 +126,25 @@ def _persist_user_registration(
             raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
             
         user_id = user_response.id
+        logger.info(f"User created in DB: {user_id}")
 
         try:
             face_service = get_face_service() # Ensure we get the service
-            face_service.upload_face_images(supabase, user_id, face_images)
+            logger.info(f"Uploading face images for {user_id}...")
+            await run_in_threadpool(face_service.upload_face_images, supabase, user_id, face_images)
+            logger.info(f"Face images uploaded for {user_id}")
+
+            avatar_url = get_profile_picture_url(user_id, supabase)
+            if avatar_url:
+                logger.info(f"Setting profile picture for {user_id} to {avatar_url}")
+            else:
+                logger.warning(f"No profile picture URL found for {user_id} after upload")
+                
         except Exception as e:
             logger.error(f"Image upload failed for user {user_id}: {e}")
             try:
                 # Best-effort rollback of created user if image upload fails
-                delete_user_fully(str(user_id))
+                await run_in_threadpool(delete_user_fully, str(user_id))
             except Exception as rollback_error:
                 rollback_error_msg = (
                     f"Rollback failed when deleting user {user_id}: {rollback_error}"
@@ -154,7 +165,11 @@ def _persist_user_registration(
             )
 
         # Return dictionary representation of the created user
-        return user_response.model_dump()
+        response_dict = user_response.model_dump()
+        if avatar_url:
+            response_dict['image_url'] = avatar_url
+            
+        return response_dict
 
     except HTTPException:
         raise
