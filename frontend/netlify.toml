@@ -1,4 +1,10 @@
 [[redirects]]
+  from = "https://medglass.netlify.app/*"
+  to = "https://medlens.live/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
 from = "/api/*"
 to = "https://smart-medical-glass-production.up.railway.app/api/:splat"
 status = 200
