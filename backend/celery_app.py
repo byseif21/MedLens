@@ -18,6 +18,13 @@ celery_app.conf.update(
     enable_utc=True,
     # Task time limit to prevent hung processes
     task_time_limit=30,
+    # SSL settings for Redis (Upstash)
+    broker_use_ssl={
+        'ssl_cert_reqs': 'CERT_NONE'
+    },
+    redis_backend_use_ssl={
+        'ssl_cert_reqs': 'CERT_NONE'
+    }
 )
 
 if __name__ == "__main__":
