@@ -1,8 +1,8 @@
-# Backend - Smart Glass AI
+# Backend - MedLens
 
 ## Overview
 
-The backend component is a Python FastAPI server that provides face recognition capabilities through RESTful API endpoints. It uses OpenCV and the face_recognition library to extract facial features, compare them against stored encodings, and manage user data through Supabase integration.
+The backend component of MedLens is a Python FastAPI server that provides face recognition capabilities through RESTful API endpoints. It uses OpenCV and the face_recognition library to extract facial features, compare them against stored encodings, and manage user data through Supabase integration.
 
 ## Contents
 

@@ -1,504 +1,153 @@
-# Frontend - Smart Glass AI
+# MedLens Frontend
 
-## Overview
-
-The frontend component is a React-based web application that provides an intuitive interface for face registration and recognition testing. Users can upload face images, enter personal information, and test the face recognition system through a clean, responsive UI.
-
-## Contents
-
-This folder contains:
-
-- **src/**: Source code for the React application
-  - **components/**: Reusable UI components (RegistrationForm, RecognitionTest, UserInfoDisplay)
-  - **services/**: API integration layer for backend communication
-  - **utils/**: Helper functions and utilities
-  - **types/**: TypeScript type definitions
-- **public/**: Static assets (images, icons)
-- **package.json**: Node.js dependencies and scripts
-- **.env.example**: Environment variables template
-
-## Technology Stack
-
-- **React 18+** or **Next.js 14+**: UI framework
-- **TypeScript**: Type-safe JavaScript
-- **Axios**: HTTP client for API requests
-- **React Router** (if using Vite): Client-side routing
-- **CSS Modules** or **Tailwind CSS**: Styling
-- **Vite** or **Next.js**: Build tool and development server
-
-## Prerequisites
-
-- Node.js 18 or higher
-- npm (comes with Node.js) or yarn package manager
-- Backend API running on http://localhost:8000
-
-## Setup Instructions
-
-### Option 1: Using Vite + React
-
-#### 1. Create React Application
-
-```bash
-# Navigate to frontend folder
-cd frontend
-
-# Create Vite + React app
-npm create vite@latest . -- --template react-ts
-
-# Or with yarn
-yarn create vite . --template react-ts
-```
-
-#### 2. Install Dependencies
-
-```bash
-npm install axios react-router-dom
-
-# Or with yarn
-yarn add axios react-router-dom
-```
-
-#### 3. Configure Environment Variables
-
-Create a `.env` file in the frontend folder:
-
-```bash
-cp .env.example .env
-```
-
-Edit the `.env` file:
-
-```
-VITE_API_URL=http://localhost:8000
-VITE_MAX_FILE_SIZE=5242880
-```
-
-#### 4. Start Development Server
-
-```bash
-npm run dev
-
-# Or with yarn
-yarn dev
-```
-
-The application will be available at `http://localhost:5173`
-
-### Option 2: Using Next.js
-
-#### 1. Create Next.js Application
-
-```bash
-# Navigate to frontend folder
-cd frontend
-
-# Create Next.js app
-npx create-next-app@latest . --typescript --tailwind --app
-
-# Or with yarn
-yarn create next-app . --typescript --tailwind --app
-```
-
-#### 2. Install Dependencies
-
-```bash
-npm install axios
-
-# Or with yarn
-yarn add axios
-```
-
-#### 3. Configure Environment Variables
-
-Create a `.env.local` file:
-
-```
-NEXT_PUBLIC_API_URL=http://localhost:8000
-NEXT_PUBLIC_MAX_FILE_SIZE=5242880
-```
-
-#### 4. Start Development Server
-
-```bash
-npm run dev
-
-# Or with yarn
-yarn dev
-```
-
-The application will be available at `http://localhost:3000`
-
-## Project Structure
-
-```
-frontend/
-├── src/
-│   ├── components/
-│   │   ├── RegistrationForm.tsx    # User registration form
-│   │   ├── RecognitionTest.tsx     # Face recognition interface
-│   │   └── UserInfoDisplay.tsx     # Display recognized user info
-│   ├── services/
-│   │   └── api.ts                  # API client and endpoints
-│   ├── utils/
-│   │   └── validators.ts           # Input validation helpers
-│   ├── types/
-│   │   └── index.ts                # TypeScript interfaces
-│   ├── App.tsx                     # Main application component
-│   └── main.tsx                    # Application entry point
-├── public/
-│   └── assets/                     # Static images and icons
-├── package.json                    # Dependencies and scripts
-├── .env.example                    # Environment variables template
-├── tsconfig.json                   # TypeScript configuration
-├── vite.config.ts                  # Vite configuration (if using Vite)
-└── README.md                       # This file
-```
-
-## Available Scripts
-
-### Development
-
-```bash
-# Start development server with hot reload
-npm run dev
-```
-
-### Build
-
-```bash
-# Create production build
-npm run build
-```
-
-### Preview
-
-```bash
-# Preview production build locally
-npm run preview
-```
-
-### Code Quality
-
-```bash
-# Run ESLint
-npm run lint
-
-# Fix ESLint errors automatically
-npm run lint:fix
-
-# Format code with Prettier
-npm run format
-
-# Check code formatting
-npm run format:check
-
-# Run TypeScript type checking
-npm run type-check
-```
-
-## Development Tools
-
-This project includes professional development tools for code quality:
-
-- **ESLint**: Catches errors and enforces best practices
-- **Prettier**: Ensures consistent code formatting
-- **TypeScript**: Provides type safety (with JSX support)
-- **Husky**: Runs pre-commit hooks automatically
-- **lint-staged**: Lints and formats only changed files
-
-### Pre-commit Hooks
-
-Code is automatically linted and formatted before each commit. The commit will be blocked if there are unfixable errors.
-
-For detailed information, see:
-
-- [QUICK_START.md](./QUICK_START.md) - Quick reference guide
-- [DEVELOPMENT.md](./DEVELOPMENT.md) - Comprehensive development guide
+The modern, medical-grade frontend interface for the MedLens system. Built with React and Vite, this application provides a secure and responsive dashboard for healthcare professionals to manage patient identities, view encrypted medical records, and perform real-time biometric identification.
 
 ## Features
 
-### 1. User Registration
+### Authentication & Security
 
-- Upload face image with preview
-- Enter personal information (name, email, phone)
-- Form validation with error messages
-- Success/error feedback after submission
+- **Role-Based Access Control (RBAC)**: Distinct, secure environments for Administrators, Doctors, and Nurses.
+- **Biometric Login**: Support for face-recognition based login (in development).
+- **Secure Session Management**: JWT handling with automatic token refreshing via `AuthContext`.
+- **Protected Routes**: Middleware-like route guards ensuring unauthorized access is blocked.
 
-### 2. Face Recognition
+### Medical & Biometric Core
 
-- Upload image for recognition
-- Display loading state during processing
-- Show recognized user information with confidence score
-- Handle "not recognized" scenarios gracefully
+- **Real-Time Face Recognition**:
+  - **Live Camera Feed**: Powered by `FaceCapture.jsx` and `useCamera` hook.
+  - **Multi-Face Detection**: Capability to detect multiple patients in a single frame (`MultiFaceCapture.jsx`).
+  - **Image Upload**: Fallback mechanism for static image analysis (`FaceUploader.jsx`).
+- **Patient Management**:
+  - **Profile Dashboard**: Comprehensive view of patient vitals, history, and emergency contacts.
+  - **Connection Graph**: Manage Doctor-Patient relationships and authorized family members (`Connections.jsx`).
+- **Data Privacy**: UI designed to obscure sensitive data until authorized.
 
-### 3. Responsive Design
+### User Experience (UX)
 
-- Mobile-friendly interface
-- Adaptive layouts for different screen sizes
-- Touch-friendly controls
+- **Glassmorphism Design**: Modern, clean aesthetic optimized for clinical environments (`glassmorphism.css`).
+- **Responsive Layouts**: Adapts seamlessly to tablets (rounds) and desktops (nurses' station).
+- **Instant Feedback**: Toast notifications for all system actions (success, error, network status).
+- **Interactive Demos**: Built-in `DemoPage` for training and simulation without backend dependency.
 
-## API Integration
+## Technology Stack
 
-The frontend communicates with the backend through the following endpoints:
+- **Core**: [React 18](https://reactjs.org/)
+- **Build System**: [Vite](https://vitejs.dev/) (Fast HMR & Optimized Builds)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/) + Custom Glassmorphism
+- **Routing**: [React Router v6](https://reactrouter.com/)
+- **State Management**: React Context API (`AuthContext`)
+- **API Client**: [Axios](https://axios-http.com/) (Interceptors for auth headers)
+- **Backend Integration**:
+  - REST API (FastAPI)
+  - [Supabase](https://supabase.com/) (Direct subscription/storage access)
+- **Icons**: [Lucide React](https://lucide.dev/)
+- **Validation**: [Zod](https://zod.dev/)
 
-### Register User
+## Project Structure
 
-```typescript
-POST /api/register
-Content-Type: multipart/form-data
-
-Request:
-- image: File
-- name: string
-- email: string
-- phone: string (optional)
-
-Response:
-{
-  success: boolean;
-  user_id?: string;
-  message?: string;
-  error?: string;
-}
-```
-
-### Recognize Face
-
-```typescript
-POST /api/recognize
-Content-Type: multipart/form-data
-
-Request:
-- image: File
-
-Response:
-{
-  recognized: boolean;
-  user?: {
-    id: string;
-    name: string;
-    email: string;
-    phone?: string;
-    registered_at: string;
-  };
-  confidence?: number;
-  message?: string;
-}
-```
-
-## Component Documentation
-
-### RegistrationForm Component
-
-Handles user registration with face image upload.
-
-**Props:**
-
-```typescript
-interface RegistrationFormProps {
-  onSubmit: (data: RegistrationData) => Promise<void>;
-}
-```
-
-**Features:**
-
-- Image upload with preview
-- Form validation
-- Error handling
-- Success feedback
-
-### RecognitionTest Component
-
-Provides interface for testing face recognition.
-
-**Props:**
-
-```typescript
-interface RecognitionTestProps {
-  onRecognize: (image: File) => Promise<RecognitionResult>;
-}
-```
-
-**Features:**
-
-- Image upload
-- Loading state
-- Result display
-- Error handling
-
-### UserInfoDisplay Component
-
-Displays recognized user information.
-
-**Props:**
-
-```typescript
-interface UserInfoDisplayProps {
-  user: UserData;
-  confidence: number;
-}
-```
-
-**Features:**
-
-- Formatted user data display
-- Confidence score visualization
-- Responsive card layout
-
-## Styling
-
-### Using CSS Modules
-
-```typescript
-import styles from './Component.module.css';
-
-<div className={styles.container}>
-  {/* Component content */}
-</div>
-```
-
-### Using Tailwind CSS
-
-```typescript
-<div className="flex flex-col items-center p-4 bg-white rounded-lg shadow-md">
-  {/* Component content */}
-</div>
-```
-
-## Development Guidelines
-
-### Code Style
-
-- Use TypeScript for type safety
-- Follow React best practices and hooks patterns
-- Use functional components with hooks
-- Implement proper error boundaries
-- Add loading states for async operations
-
-### File Naming
-
-- Components: PascalCase (e.g., `RegistrationForm.tsx`)
-- Utilities: camelCase (e.g., `validators.ts`)
-- Types: PascalCase (e.g., `UserData.ts`)
-
-### State Management
-
-- Use React hooks (useState, useEffect) for local state
-- Consider Context API for global state if needed
-- Keep state close to where it's used
-
-## Testing
-
-### Running Tests
+A highly organized codebase ensuring scalability and maintainability.
 
 ```bash
-# Install testing dependencies
-npm install --save-dev @testing-library/react @testing-library/jest-dom vitest
-
-# Run tests
-npm run test
-
-# Run tests with coverage
-npm run test:coverage
+frontend/
+├── src/
+│   ├── components/         # UI Building Blocks
+│   │   ├── FaceCapture.jsx     # Webcam handling & frame capture
+│   │   ├── FaceUploader.jsx    # Drag-and-drop image upload
+│   │   ├── Navbar.jsx          # Responsive navigation
+│   │   ├── MedicalInfo.jsx     # Patient medical history display
+│   │   └── ... (Modals, Cards, Spinners)
+│   ├── context/            # Global State
+│   │   └── AuthContext.js      # User session & permission state
+│   ├── hooks/              # Custom Logic (Separation of Concerns)
+│   │   ├── useCamera.js        # Camera stream management
+│   │   ├── useAuth.js          # Authentication actions
+│   │   ├── useConnections.js   # Patient relationship logic
+│   │   └── ...
+│   ├── pages/              # Route Views
+│   │   ├── AdminDashboard.jsx  # System administration
+│   │   ├── ProfileDashboard.jsx # Patient details view
+│   │   ├── RecognitionPage.jsx # Core biometric scanning
+│   │   └── ...
+│   ├── services/           # API Integration
+│   │   ├── api.js              # General backend endpoints
+│   │   ├── auth.js             # Auth-specific endpoints
+│   │   └── supabase.js         # Direct Supabase client
+│   └── utils/              # Helpers
+│       ├── validation.js       # Input validation logic
+│       └── dateUtils.js        # Formatting helpers
+├── public/                 # Static Assets
+└── .env                    # Environment Configuration
 ```
 
-### Test Structure
+## Getting Started
 
-```typescript
-import { render, screen } from '@testing-library/react';
-import { RegistrationForm } from './RegistrationForm';
+### Prerequisites
 
-describe('RegistrationForm', () => {
-  it('renders form fields', () => {
-    render(<RegistrationForm onSubmit={jest.fn()} />);
-    expect(screen.getByLabelText('Name')).toBeInTheDocument();
-  });
-});
-```
+- **Node.js**: v18 or higher
+- **npm** or **yarn**
 
-## Troubleshooting
+### Installation
 
-### CORS Errors
+1.  **Navigate to the frontend directory:**
 
-- Ensure backend CORS is configured to allow frontend origin
-- Check that API_URL in .env is correct
-- Verify backend server is running
+    ```bash
+    cd frontend
+    ```
 
-### Image Upload Issues
+2.  **Install dependencies:**
 
-- Check file size (max 5MB)
-- Verify file format (JPEG or PNG only)
-- Ensure proper Content-Type header
+    ```bash
+    npm install
+    ```
 
-### Build Errors
+3.  **Environment Configuration:**
+    Create a `.env` file in the `frontend/` root directory. This is critical for API connection.
 
-- Clear node_modules and reinstall: `rm -rf node_modules && npm install`
-- Clear build cache: `rm -rf dist` or `rm -rf .next`
-- Check for TypeScript errors: `npm run type-check`
+    ```env
+    # Backend API URL (FastAPI)
+    VITE_API_URL=http://localhost:8000
 
-### Environment Variables Not Loading
+    # Supabase Configuration (For Auth/Storage)
+    VITE_SUPABASE_URL=your_project_url
+    VITE_SUPABASE_ANON_KEY=your_anon_key
+    ```
 
-- Ensure .env file exists and has correct format
-- Restart development server after changing .env
-- Use correct prefix (VITE* for Vite, NEXT_PUBLIC* for Next.js)
+4.  **Run Development Server:**
+    ```bash
+    npm run dev
+    ```
+    The application will launch at `http://localhost:5173`.
 
-## Performance Optimization
+## Available Scripts
 
-- Lazy load components with React.lazy()
-- Optimize images (compress, use appropriate formats)
-- Implement code splitting
-- Use React.memo for expensive components
-- Debounce form inputs
+See `package.json` for the full list.
 
-## Deployment
+| Script               | Description                                            |
+| :------------------- | :----------------------------------------------------- |
+| `npm run dev`        | Starts the Vite development server.                    |
+| `npm run build`      | Compiles the app for production.                       |
+| `npm run preview`    | Locally previews the production build.                 |
+| `npm run lint`       | Runs ESLint to identify code quality issues.           |
+| `npm run lint:fix`   | Automatically fixes simple linting errors.             |
+| `npm run format`     | Formats code using Prettier.                           |
+| `npm run type-check` | Runs TypeScript compiler (check-only) for type safety. |
 
-### Vercel (Recommended for Next.js)
+## Key Modules Explained
 
-```bash
-# Install Vercel CLI
-npm install -g vercel
+### Face Recognition Flow
 
-# Deploy
-vercel
-```
+1. **Capture**: `FaceCapture` component uses `useCamera` to access the webcam.
+2. **Process**: Frames are captured and sent via `api.js` to the backend `/recognize` endpoint.
+3. **Result**: Backend returns a `match` object (or null).
+4. **Display**: If matched, `RecognitionPage` redirects to the `ProfileDashboard` of the identified patient.
 
-### Netlify (Recommended for Vite)
+### Authentication System
 
-```bash
-# Install Netlify CLI
-npm install -g netlify-cli
+- Uses **JWT (JSON Web Tokens)**.
+- `AuthContext` holds the `user` state and `token`.
+- `axios.js` is configured with an **interceptor** to automatically attach the `Authorization: Bearer <token>` header to every request.
+- Handles automatic logout on 401 (Unauthorized) responses.
 
-# Build and deploy
-npm run build
-netlify deploy --prod --dir=dist
-```
+---
 
-### Environment Variables in Production
-
-Set the following environment variables in your deployment platform:
-
-- `VITE_API_URL` or `NEXT_PUBLIC_API_URL`: Production backend URL
-- `VITE_MAX_FILE_SIZE` or `NEXT_PUBLIC_MAX_FILE_SIZE`: Maximum file size
-
-## Browser Support
-
-- Chrome/Edge (latest 2 versions)
-- Firefox (latest 2 versions)
-- Safari (latest 2 versions)
-- Mobile browsers (iOS Safari, Chrome Mobile)
-
-## Accessibility
-
-- Semantic HTML elements
-- ARIA labels for form inputs
-- Keyboard navigation support
-- Screen reader friendly
-- Sufficient color contrast
-
-## Additional Resources
-
-- [React Documentation](https://react.dev/)
-- [Next.js Documentation](https://nextjs.org/docs)
-- [Vite Documentation](https://vitejs.dev/)
-- [TypeScript Documentation](https://www.typescriptlang.org/docs/)
-- [Axios Documentation](https://axios-http.com/docs/intro)
+© 2026 MedLens Inc. All rights reserved.

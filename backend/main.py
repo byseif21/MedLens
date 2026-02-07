@@ -11,8 +11,8 @@ logger = logging.getLogger(__name__)
 
 # Initialize FastAPI app
 app = FastAPI(
-    title="Smart Glass AI API",
-    description="Face recognition API for Smart Glass AI system",
+    title="MedLens API",
+    description="Face recognition API for MedLens system",
     version="1.0.0"
 )
 
@@ -44,7 +44,7 @@ app.include_router(admin.router)
 @app.on_event("startup")
 async def startup_event():
     """Run database migrations and other startup tasks."""
-    logger.info("Starting Smart Glass AI API...")
+    logger.info("Starting MedLens API...")
     
     # Check and run database migrations
     try:
@@ -56,12 +56,12 @@ async def startup_event():
     except Exception as e:
         logger.error(f"Startup error: {e}")
     
-    logger.info("Smart Glass AI API started successfully")
+    logger.info("MedLens API started successfully")
 
 @app.get("/")
 async def root():
     """Root endpoint"""
-    return {"message": "Smart Glass AI API is running"}
+    return {"message": "MedLens API is running"}
 
 @app.get("/api/health")
 @app.head("/api/health")

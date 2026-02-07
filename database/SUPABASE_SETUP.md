@@ -72,7 +72,7 @@ USING (bucket_id = 'face-images');
 
 Run your frontend:
 ```bash
-cd Smart-Medical-Glass/frontend
+cd MedLens/frontend
 npm run dev
 ```
 

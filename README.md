@@ -1,20 +1,20 @@
-# Smart Glass AI
+# MedLens
 
 ## Project Overview
 
-Smart Glass AI is a prototype system that simulates smart glasses capable of recognizing people's faces and displaying their information in real-time. The system demonstrates face recognition technology through an intuitive web interface, allowing users to register faces with personal information and test recognition capabilities.
+MedLens is a medical-focused smart glasses system designed to assist healthcare professionals and patients by recognizing people's faces and retrieving relevant medical information in real-time. The system demonstrates face recognition technology through an intuitive web interface, enabling secure access to patient data, medical history, and emergency contacts.
 
 ## Features
 
-- **Face Registration**: Register users with facial images and personal information
-- **Face Recognition**: Identify registered individuals from uploaded images
-- **Real-time Processing**: Fast face detection and matching using AI-powered algorithms
-- **User-Friendly Interface**: Intuitive React-based web application
-- **Secure Data Storage**: Supabase integration for reliable data persistence
+- **Medical Identity Recognition**: Instantly identify patients and medical personnel from face images
+- **Patient Profile Management**: Securely manage medical history, emergency contacts, and personal data
+- **Real-time Processing**: Fast face detection and matching for immediate information retrieval
+- **Secure Access Control**: Role-based access (Doctors, Patients, Admins) ensuring data privacy
+- **Intuitive Dashboard**: React-based interface for managing connections and medical records
 
 ## Technology Stack
 
-- **Frontend**: React/Next.js with modern UI components
+- **Frontend**: React (Vite) with modern UI components
 - **Backend**: Python FastAPI with face recognition capabilities
 - **Database**: Supabase (PostgreSQL) for data persistence and image storage
 - **AI/ML**: OpenCV and face_recognition library for facial analysis
@@ -22,7 +22,7 @@ Smart Glass AI is a prototype system that simulates smart glasses capable of rec
 ## Folder Structure
 
 ```
-Smart-Glass-AI/
+MedLens/
 ├── frontend/          # React web application
 ├── backend/           # Python FastAPI server with face recognition
 ├── database/          # Supabase configuration and setup
@@ -44,7 +44,7 @@ Before setting up the project, ensure you have the following installed:
 
 ```bash
 git clone <repository-url>
-cd Smart-Glass-AI
+cd MedLens
 ```
 
 ### 2. Database Setup
@@ -56,8 +56,10 @@ Navigate to the `database/` folder and follow the instructions in its README.md 
 
 ```bash
 cd database
-# Follow instructions in database/README.md
+# See database/README.md for detailed setup instructions
 ```
+
+> **Detailed Instructions:** [database/README.md](./database/README.md)
 
 ### 3. Backend Setup
 
@@ -68,8 +70,10 @@ Navigate to the `backend/` folder and follow the instructions in its README.md t
 
 ```bash
 cd backend
-# Follow instructions in backend/README.md
+# See backend/README.md for detailed setup instructions
 ```
+
+> **Detailed Instructions:** [backend/README.md](./backend/README.md)
 
 ### 4. Frontend Setup
 
@@ -80,8 +84,10 @@ Navigate to the `frontend/` folder and follow the instructions in its README.md 
 
 ```bash
 cd frontend
-# Follow instructions in frontend/README.md
+# See frontend/README.md for detailed setup instructions
 ```
+
+> **Detailed Instructions:** [frontend/README.md](./frontend/README.md)
 
 ## Quick Start
 
@@ -128,10 +134,6 @@ For detailed information about each component, refer to the README.md files in t
 - [Frontend Documentation](./frontend/README.md)
 - [Backend Documentation](./backend/README.md)
 - [Database Documentation](./database/README.md)
-
-## License
-
-This is a prototype project for demonstration purposes.
 
 ## Support
 

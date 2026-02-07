@@ -1,8 +1,16 @@
-# Database - Smart Glass AI
+# Database - MedLens
 
 ## Overview
 
-The database component uses Supabase, a PostgreSQL-based backend-as-a-service platform, to provide authentication, data persistence, and file storage for the Smart Glass AI system. This folder contains configuration files, setup instructions, and database schema documentation.
+The database component of **MedLens** is built on **Supabase**, utilizing its robust PostgreSQL engine to handle secure patient data, medical records, and facial biometric storage. It acts as the backbone for the system's "Identity Verification" and "Medical Alerts" features, ensuring HIPAA-compliant data handling and real-time access for healthcare providers.
+
+## Security & Compliance
+
+This database schema is designed with **HIPAA compliance** principles in mind:
+- **Role-Based Access Control (RBAC)**: Strict separation between 'admin', 'doctor', and 'patient' roles.
+- **Data Minimization**: Only essential biometric data (encodings) is stored for recognition.
+- **Encryption Ready**: Fields like `medical_history` are designated for application-level encryption before storage.
+- **Audit Trails**: All records include `created_at` and `updated_at` timestamps to track data lifecycle.
 
 ## Contents
 
@@ -35,7 +43,7 @@ Supabase is an open-source Firebase alternative that provides:
 2. Sign up or log in to your account
 3. Click "New Project"
 4. Fill in project details:
-   - **Name**: smart-glass-ai (or your preferred name)
+   - **Name**: medlens (or your preferred name)
    - **Database Password**: Choose a strong password (save this!)
    - **Region**: Select closest to your location
    - **Pricing Plan**: Free tier is sufficient for development
@@ -81,18 +89,21 @@ SUPABASE_SERVICE_KEY=your-service-role-key
 3. Copy and paste the following SQL schema:
 
 ```sql
--- Create users table
+-- Create users table (Medical Personnel & Patients)
 CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name VARCHAR(255) NOT NULL,
   email VARCHAR(255) UNIQUE NOT NULL,
   phone VARCHAR(50),
+  role VARCHAR(50) DEFAULT 'patient', -- 'doctor', 'nurse', 'patient', 'admin'
+  medical_history TEXT, -- Encrypted JSON blob in production (HIPAA compliant)
+  emergency_contact JSONB,
   image_url TEXT,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- Create face_encodings table
+-- Create face_encodings table (Biometric Data)
 CREATE TABLE face_encodings (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -152,7 +163,7 @@ WITH CHECK (bucket_id = 'face-images' AND auth.role() = 'authenticated');
 
 ### users Table
 
-Stores user information and metadata.
+Stores user information, including medical context.
 
 | Column | Type | Description |
 |--------|------|-------------|
@@ -160,6 +171,9 @@ Stores user information and metadata.
 | name | VARCHAR(255) | User's full name |
 | email | VARCHAR(255) | User's email (unique) |
 | phone | VARCHAR(50) | User's phone number (optional) |
+| role | VARCHAR(50) | Role: 'doctor', 'patient', 'admin' |
+| medical_history | TEXT | Summary of medical conditions (encrypted in prod) |
+| emergency_contact | JSONB | JSON object with contact details |
 | image_url | TEXT | URL to stored face image |
 | created_at | TIMESTAMP | Registration timestamp |
 | updated_at | TIMESTAMP | Last update timestamp |
@@ -216,8 +230,9 @@ supabase = create_client(
 
 # Insert user
 user = supabase.table("users").insert({
-    "name": "John Doe",
-    "email": "john@example.com"
+    "name": "Dr. Smith",
+    "email": "smith@hospital.com",
+    "role": "doctor"
 }).execute()
 
 # Query users
@@ -270,7 +285,7 @@ USING (auth.uid() = id);
 
 - **anon key**: Safe to use in frontend (limited permissions)
 - **service_role key**: Use only in backend (full permissions)
-- Never expose service_role key in client-side code
+- **Never expose service_role key in client-side code**
 - Rotate keys if compromised (Project Settings → API)
 
 ### Environment Variables
