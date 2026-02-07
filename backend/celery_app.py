@@ -1,3 +1,4 @@
+import ssl
 from celery import Celery
 from utils.config import Config
 
@@ -20,10 +21,10 @@ celery_app.conf.update(
     task_time_limit=30,
     # SSL settings for Redis (Upstash)
     broker_use_ssl={
-        'ssl_cert_reqs': 'CERT_NONE'
+        'ssl_cert_reqs': ssl.CERT_NONE
     },
     redis_backend_use_ssl={
-        'ssl_cert_reqs': 'CERT_NONE'
+        'ssl_cert_reqs': ssl.CERT_NONE
     }
 )
 
