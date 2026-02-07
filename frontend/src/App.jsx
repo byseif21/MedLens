@@ -6,6 +6,7 @@ import RecognitionPage from './pages/RecognitionPage';
 import AdminDashboard from './pages/AdminDashboard';
 import SettingsPage from './pages/SettingsPage';
 import HomePage from './pages/HomePage';
+import DemoPage from './pages/DemoPage';
 import { ProtectedRoute, PublicRoute, AdminRoute } from './router/routeGuards';
 import { AuthProvider } from './context/AuthProvider';
 
@@ -20,6 +21,7 @@ function App() {
       >
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/demo" element={<DemoPage />} />
           <Route element={<PublicRoute />}>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />

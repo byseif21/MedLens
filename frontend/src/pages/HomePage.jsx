@@ -40,7 +40,7 @@ const HomePage = () => {
               <ScanFace className="w-6 h-6" />
             </div>
             <span className="text-xl font-bold tracking-tight text-slate-900">
-              Smart<span className="text-medical-primary">Glass</span>
+              Med<span className="text-medical-primary">Lens</span>
             </span>
           </div>
 
@@ -135,8 +135,9 @@ const HomePage = () => {
       {/* Hero Section */}
       <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-7xl pointer-events-none">
-          <div className="absolute top-20 right-0 w-[600px] h-[600px] bg-medical-primary/5 rounded-full blur-[100px] mix-blend-multiply animate-pulse" />
-          <div className="absolute top-40 -left-20 w-[500px] h-[500px] bg-medical-secondary/5 rounded-full blur-[100px] mix-blend-multiply animate-pulse delay-700" />
+          {/* Background blobs */}
+          <div className="absolute top-20 right-0 w-[600px] h-[600px] bg-medical-primary/10 rounded-full blur-[100px] mix-blend-multiply animate-[pulse_1s_cubic-bezier(0.4,0,0.6,1)_infinite]" />
+          <div className="absolute top-40 -left-20 w-[500px] h-[500px] bg-medical-secondary/10 rounded-full blur-[100px] mix-blend-multiply animate-[pulse_1s_cubic-bezier(0.4,0,0.6,1)_infinite] delay-700" />
         </div>
 
         <div className="max-w-7xl mx-auto px-6 relative z-10">
@@ -147,25 +148,34 @@ const HomePage = () => {
                 v2.0 is now live
               </div>
               <h1 className="text-5xl lg:text-7xl font-bold tracking-tight text-slate-900 leading-[1.1] mb-6">
-                Identity verification <br />
+                Medical Identity <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-medical-primary to-medical-secondary">
-                  reimagined.
+                  Reimagined.
                 </span>
               </h1>
               <p className="text-lg text-slate-600 mb-10 leading-relaxed max-w-lg">
-                Enterprise-grade facial recognition infrastructure. Secure, scalable, and
-                privacy-first authentication for the modern web.
+                Assistive smart glass technology for healthcare professionals. Instantly identify
+                patients, access medical history, and view emergency contacts securely in real-time.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link
-                  to="/register"
-                  className="inline-flex justify-center items-center gap-2 px-8 py-4 rounded-full bg-medical-primary text-white font-semibold hover:bg-medical-dark transition-all hover:shadow-xl hover:shadow-medical-primary/20 active:scale-95"
+                  to="/login"
+                  className="group inline-flex items-center gap-2 px-8 py-4 rounded-full bg-medical-primary text-white font-semibold hover:bg-white transition-all duration-500 hover:shadow-2xl hover:shadow-medical-primary/40 active:scale-95"
                 >
-                  Start Building
-                  <ChevronRight className="w-5 h-5" />
+                  <span className="group-hover:text-slate-600 transition-colors duration-500">
+                    Try{' '}
+                    <span className="font-bold group-hover:text-slate-900 transition-colors duration-500">
+                      Med
+                    </span>
+                    <span className="font-bold group-hover:text-medical-primary transition-colors duration-500">
+                      Lens
+                    </span>{' '}
+                    Now
+                  </span>
+                  <ChevronRight className="w-5 h-5 group-hover:text-medical-primary transition-colors duration-500" />
                 </Link>
                 <Link
-                  to="/recognize"
+                  to="/demo"
                   className="inline-flex justify-center items-center gap-2 px-8 py-4 rounded-full bg-white border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95"
                 >
                   View Demo
@@ -175,15 +185,15 @@ const HomePage = () => {
               <div className="mt-12 flex items-center gap-8 text-sm text-slate-500 font-medium">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-medical-accent" />
-                  <span>99.9% Accuracy</span>
+                  <span>HIPAA Compliant</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-medical-accent" />
-                  <span>SOC2 Compliant</span>
+                  <span>Secure Patient Data</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-medical-accent" />
-                  <span>Real-time Processing</span>
+                  <span>Instant Retrieval</span>
                 </div>
               </div>
             </div>
@@ -241,8 +251,8 @@ const HomePage = () => {
                           <CheckCircle2 className="w-4 h-4 text-green-500" />
                         </div>
                         <div>
-                          <div className="text-sm font-semibold text-white">Match Confirmed</div>
-                          <div className="text-xs text-slate-400">ID: 8829-XJ-92</div>
+                          <div className="text-sm font-semibold text-white">Patient Identified</div>
+                          <div className="text-xs text-slate-400">Record #8829-XJ-92</div>
                         </div>
                       </div>
                     </div>
@@ -256,14 +266,14 @@ const HomePage = () => {
               {/* Floating Cards */}
               <div className="absolute top-20 -right-8 p-4 rounded-2xl bg-white shadow-xl shadow-slate-200/50 border border-slate-100 animate-floating-card md:block z-10">
                 <Activity className="w-6 h-6 text-orange-500 mb-2" />
-                <div className="text-xs font-semibold text-slate-900">Live Detection</div>
-                <div className="text-[10px] text-slate-500">Active Monitoring</div>
+                <div className="text-xs font-semibold text-slate-900">Medical Alerts</div>
+                <div className="text-[10px] text-slate-500">Critical Info</div>
               </div>
 
               <div className="absolute bottom-40 -left-12 p-4 rounded-2xl bg-white shadow-xl shadow-slate-200/50 border border-slate-100 animate-floating-card-delayed md:block z-10">
                 <ShieldCheck className="w-6 h-6 text-medical-primary mb-2" />
-                <div className="text-xs font-semibold text-slate-900">Enterprise-Grade</div>
-                <div className="text-[10px] text-slate-500">AES-256 Encrypted</div>
+                <div className="text-xs font-semibold text-slate-900">Secure Records</div>
+                <div className="text-[10px] text-slate-500">Doctor Access Only</div>
               </div>
             </div>
           </div>
@@ -274,18 +284,20 @@ const HomePage = () => {
       <section className="py-12 border-y border-slate-100 bg-slate-50/50">
         <div className="max-w-7xl mx-auto px-6">
           <p className="text-center text-sm font-semibold text-slate-500 mb-8 uppercase tracking-wider">
-            Trusted by industry leaders
+            Partnered with leading healthcare institutions
           </p>
           <div className="flex flex-wrap justify-center items-center gap-12 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
             {/* Simple Text Logos for demo */}
-            {['Acme Corp', 'GlobalBank', 'HealthPlus', 'SecureNet', 'FutureID'].map((name) => (
-              <span
-                key={name}
-                className="text-xl font-bold text-slate-400 hover:text-slate-800 cursor-default transition-colors"
-              >
-                {name}
-              </span>
-            ))}
+            {['City Hospital', 'MedCare Systems', 'HealthFirst', 'EmergencyResp', 'BioSecure'].map(
+              (name) => (
+                <span
+                  key={name}
+                  className="text-xl font-bold text-slate-400 hover:text-slate-800 cursor-default transition-colors"
+                >
+                  {name}
+                </span>
+              )
+            )}
           </div>
         </div>
       </section>
@@ -295,10 +307,10 @@ const HomePage = () => {
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center max-w-2xl mx-auto mb-20">
             <h2 className="text-3xl font-bold text-slate-900 mb-4">
-              Everything you need for secure identity
+              Advanced Tools for Medical Professionals
             </h2>
             <p className="text-slate-600">
-              Powerful features built for developers, designed for security teams.
+              Powerful tools designed for healthcare providers, ensuring speed and security.
             </p>
           </div>
 
@@ -458,10 +470,10 @@ const HomePage = () => {
                 <div className="w-8 h-8 rounded-lg bg-medical-primary flex items-center justify-center text-white">
                   <ScanFace className="w-5 h-5" />
                 </div>
-                <span className="text-lg font-bold text-slate-900">SmartGlass</span>
+                <span className="text-lg font-bold text-slate-900">MedLens</span>
               </div>
               <p className="text-slate-500 text-sm">
-                Next-generation biometric infrastructure for the modern world.
+                Next-generation medical assistance for the modern world.
               </p>
             </div>
 
@@ -540,7 +552,7 @@ const HomePage = () => {
           </div>
 
           <div className="pt-8 border-t border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-sm text-slate-400">© 2024 SmartGlass Inc. All rights reserved.</p>
+            <p className="text-sm text-slate-400">© 2026 MedLens Inc. All rights reserved.</p>
             <div className="flex gap-4">
               {/* Social icons placeholders */}
               <div className="w-8 h-8 rounded-full bg-slate-200 hover:bg-slate-300 transition-colors cursor-pointer"></div>
