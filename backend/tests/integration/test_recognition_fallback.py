@@ -18,8 +18,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 from routers.recognition import recognize_face
 
 @pytest.mark.asyncio
-async def test_recognition_fail_fast_blur():
-    """Test that blurry images are rejected synchronously (Fail Fast)."""
+async def test_recognition_fail_fast_invalid_format():
+    """Test that invalid image formats are rejected synchronously (Fail Fast)."""
     
     with patch('routers.recognition.get_config'), \
          patch('routers.recognition.ImageProcessor') as mock_processor:
@@ -31,18 +31,16 @@ async def test_recognition_fail_fast_blur():
         mock_image = MagicMock(spec=UploadFile)
         mock_image.read = mock_read_func
 
-        # Setup Processor Mocks
-        mock_processor.validate_image_format.return_value = True
-        mock_processor.validate_image_size.return_value = True
-        mock_processor.load_image_from_bytes.return_value = "fake_numpy_array"
-        mock_processor.check_blur.return_value = (True, 50.0) 
+        # Setup Processor Mocks to RAISE error
+        from utils.image_processor import ImageProcessingError
+        mock_processor.validate_image_format.side_effect = ImageProcessingError("Invalid image format")
 
         # Expect HTTPException(400)
         with pytest.raises(HTTPException) as excinfo:
             await recognize_face(mock_image, {"sub": "user1", "role": "user"})
         
         assert excinfo.value.status_code == 400
-        assert "blurry" in excinfo.value.detail
+        assert "Invalid image format" in excinfo.value.detail
 
 @pytest.mark.asyncio
 async def test_recognition_fallback_on_timeout():
@@ -64,7 +62,7 @@ async def test_recognition_fallback_on_timeout():
         # Setup Valid Image
         mock_processor.validate_image_format.return_value = True
         mock_processor.validate_image_size.return_value = True
-        mock_processor.check_blur.return_value = (False, 200.0)
+        # Note: check_blur is no longer called in recognition.py
 
         # Setup Celery Mock to FAIL/TIMEOUT
         mock_async_result = MagicMock()

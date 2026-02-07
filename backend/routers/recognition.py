@@ -26,16 +26,7 @@ async def recognize_face(image: UploadFile = File(...), current_user: dict = Dep
         try:
             ImageProcessor.validate_image_format(image_bytes)
             ImageProcessor.validate_image_size(image_bytes)
-            
-            img_array = ImageProcessor.load_image_from_bytes(image_bytes)
-            is_blurry, variance = ImageProcessor.check_blur(img_array, threshold=80.0)
-            
-            if is_blurry:
-                raise HTTPException(
-                    status_code=400, 
-                    detail=f"Image is too blurry (Score: {variance:.1f}). Please hold steady."
-                )
-                
+  
         except ImageProcessingError as e:
             raise HTTPException(status_code=400, detail=str(e))
         
