@@ -18,6 +18,11 @@ import {
   Flag,
   Trash2,
   AlertTriangle,
+  WifiOff,
+  Video,
+  Lightbulb,
+  Battery,
+  Plug,
 } from 'lucide-react';
 import FaceUploader from '../components/FaceUploader';
 import MultiFaceCapture from '../components/MultiFaceCapture';
@@ -25,6 +30,7 @@ import ProfileAvatar from '../components/ProfileAvatar';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useNotifications } from '../hooks/useNotifications';
 import { useAuth } from '../hooks/useAuth';
+import { useSmartGlass } from '../context/SmartGlassContext';
 import {
   updateFaceEnrollment,
   updateProfilePicture,
@@ -66,6 +72,18 @@ const SettingsPage = () => {
   const navigate = useNavigate();
   const { notify } = useNotifications();
   const { user, updateUser, logout } = useAuth();
+  const {
+    glassIp,
+    setGlassIp,
+    isConnected,
+    checkConnection,
+    resetGlassWifi,
+    disconnectGlass,
+    getGlassStreamUrl,
+    getGlassSnapshotUrl,
+    updateDisplay,
+    batteryLevel,
+  } = useSmartGlass();
 
   const userId = user?.id;
 
@@ -75,6 +93,45 @@ const SettingsPage = () => {
     { id: 'device', label: 'Smart Glass Preferences', icon: ScanFace },
     { id: 'security', label: 'Security & Face ID', icon: Key },
   ];
+
+  const handleTestDisplay = async () => {
+    notify({
+      type: 'info',
+      title: 'Testing Display',
+      message: 'Sending test alert to Smart Glass...',
+    });
+
+    // Sends "TEST ALERT" text and triggers the LED flash (alert=true)
+    await updateDisplay('TEST', 'ALERT', true);
+  };
+
+  const handleResetWifi = async () => {
+    const confirm = window.confirm(
+      'Secure Disconnect?\n\nThis will reset Wi‑Fi settings and restart the device. It will create the "MedLens‑Glass‑Setup" hotspot to reconfigure, and prevents access from others on the current network.'
+    );
+    if (!confirm) return;
+    try {
+      notify({
+        type: 'info',
+        title: 'Resetting Wi‑Fi...',
+        message: 'Sending reset command to your glass.',
+      });
+      disconnectGlass();
+      await resetGlassWifi();
+      notify({
+        type: 'success',
+        title: 'Glass Reset',
+        message: 'Device is restarting. Connect to "MedLens‑Glass‑Setup" to reconfigure.',
+      });
+    } catch (err) {
+      console.error('Wi‑Fi reset error:', err);
+      notify({
+        type: 'warning',
+        title: 'Reset Attempted',
+        message: 'If the device restarted, connect to "MedLens‑Glass‑Setup".',
+      });
+    }
+  };
 
   const handleDeleteAccount = async (e) => {
     e.preventDefault();
@@ -642,70 +699,266 @@ const SettingsPage = () => {
               <div className="medical-card">
                 <div className="flex items-start justify-between mb-6">
                   <div>
-                    <h2 className="text-2xl font-semibold mb-1">Smart Glass Preferences</h2>
+                    <h2 className="text-2xl font-semibold mb-1 flex items-center gap-2">
+                      <ScanFace className="w-6 h-6 text-medical-primary" />
+                      Smart Glass Configuration
+                    </h2>
                     <p className="text-sm text-medical-gray-600">
-                      Configure how notifications and medical information should appear on your
-                      smart medical glasses. These options are placeholders and will be connected to
-                      the device integration later.
+                      Manage connection to your smart glass.
                     </p>
+                  </div>
+                  <div className="flex flex-col sm:flex-row items-center">
+                    <div
+                      className={`px-3 py-1 rounded-full text-sm font-medium ${
+                        isConnected ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      }`}
+                    >
+                      {isConnected ? 'Connected' : 'Disconnected'}
+                    </div>
+                    {isConnected && (
+                      <div
+                        className="sm:ml-1 ml-0 flex items-center gap-0.5 sm:mt-0 mt-1"
+                        title={
+                          batteryLevel === 100
+                            ? 'Powered via USB'
+                            : `Battery ${batteryLevel != null ? `${batteryLevel}%` : 'N/A'}`
+                        }
+                      >
+                        {batteryLevel >= 90 ? (
+                          <>
+                            <Plug className="w-4 h-4 text-medical-gray-700" />
+                            <span className="text-xs text-medical-gray-700">USB</span>
+                          </>
+                        ) : (
+                          <>
+                            <div className="relative w-4 h-4">
+                              <Battery className="w-4 h-4 text-medical-gray-700" />
+                              <div className="absolute left-[3px] top-1/2 -translate-y-1/2 w-[10px] h-[4px]">
+                                <div
+                                  className={`h-full rounded-sm ${
+                                    batteryLevel == null
+                                      ? 'bg-gray-400'
+                                      : batteryLevel > 60
+                                        ? 'bg-green-600'
+                                        : batteryLevel >= 30
+                                          ? 'bg-yellow-600'
+                                          : 'bg-red-600'
+                                  }`}
+                                  style={{
+                                    width: `${Math.max(0, Math.min(100, batteryLevel ?? 0))}%`,
+                                  }}
+                                />
+                              </div>
+                            </div>
+                            <span className="text-xs text-medical-gray-700">
+                              {batteryLevel != null ? `${batteryLevel}%` : 'N/A'}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-medical-dark">
-                        Show basic profile on recognize
-                      </p>
-                      <p className="text-sm text-medical-gray-600">
-                        Display name and age only when someone is recognized.
-                      </p>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Glass IP Address
+                    </label>
+                    <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                      <input
+                        type="text"
+                        value={glassIp}
+                        onChange={(e) => setGlassIp(e.target.value)}
+                        className="flex-1 w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-md focus:ring-medical-primary focus:border-medical-primary"
+                        placeholder="e.g., 192.168.4.1 or https://192.168.4.1"
+                      />
+                      <button
+                        type="button"
+                        onClick={checkConnection}
+                        className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-medical-primary"
+                      >
+                        Test Connection
+                      </button>
+                      {import.meta.env.DEV && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setGlassIp('localhost:8001');
+                            setTimeout(checkConnection, 100);
+                          }}
+                          className="w-full sm:w-auto px-4 py-2 border border-blue-200 bg-blue-50 rounded-md text-sm font-medium text-blue-700 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                          title="Use the local mock glass simulator"
+                        >
+                          Use Mock Glass
+                        </button>
+                      )}
                     </div>
-                    <button
-                      type="button"
-                      className="relative inline-flex h-6 w-11 items-center rounded-full bg-medical-gray-300 cursor-not-allowed opacity-60"
-                    >
-                      <span className="inline-block h-5 w-5 transform rounded-full bg-white shadow translate-x-1" />
-                    </button>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-medical-dark">Show medical alerts only</p>
-                      <p className="text-sm text-medical-gray-600">
-                        Limit glass alerts to critical medical warnings for safety.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      className="relative inline-flex h-6 w-11 items-center rounded-full bg-medical-gray-300 cursor-not-allowed opacity-60"
-                    >
-                      <span className="inline-block h-5 w-5 transform rounded-full bg-white shadow translate-x-1" />
-                    </button>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-medical-dark">Emergency contact shortcut</p>
-                      <p className="text-sm text-medical-gray-600">
-                        Enable a one-tap shortcut on the glasses to show emergency contacts for the
-                        current patient.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      className="relative inline-flex h-6 w-11 items-center rounded-full bg-medical-gray-300 cursor-not-allowed opacity-60"
-                    >
-                      <span className="inline-block h-5 w-5 transform rounded-full bg-white shadow translate-x-1" />
-                    </button>
-                  </div>
-
-                  <div className="mt-4 bg-medical-light border border-medical-primary/20 rounded-lg p-4">
-                    <p className="text-medical-gray-700 text-sm">
-                      These smart glass settings will be wired to the hardware integration later.
-                      For now, they are just preparing the UX and do not change any stored profile
-                      data, so there is no duplication with your main information.
+                    <p className="text-xs text-gray-500 mt-1">
+                      Enter the IP address shown on the device serial output. Default is usually
+                      192.168.4.1.
                     </p>
+                  </div>
+
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                    <h4 className="font-medium text-blue-900 mb-2">How to Connect</h4>
+                    <ol className="list-decimal list-inside text-sm text-blue-800 space-y-1">
+                      <li>Turn on your glass.</li>
+                      <li>
+                        Connect your phone/laptop to the &quot;MedLens-Glass-Setup&quot; Wi‑Fi
+                        hotspot (if in AP mode).
+                      </li>
+                      <li>Enter the IP address above.</li>
+                      <li>Click &quot;Test Connection&quot;.</li>
+                    </ol>
+                  </div>
+
+                  {/* Hardware Controls */}
+                  {glassIp && (
+                    <div className="bg-white p-4 rounded-lg border border-gray-200 mt-6 shadow-sm">
+                      <h4 className="font-medium text-gray-900 mb-4 flex items-center gap-2">
+                        <ScanFace className="w-5 h-5 text-medical-primary" />
+                        Hardware Controls
+                      </h4>
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        <a
+                          href={getGlassStreamUrl()}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-colors ${
+                            isConnected
+                              ? 'border-medical-primary/30 bg-medical-light text-medical-primary hover:bg-medical-primary/10'
+                              : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                          }`}
+                          onClick={(e) => !isConnected && e.preventDefault()}
+                        >
+                          <Video className="w-5 h-5" />
+                          <span className="font-medium">Open Camera Stream</span>
+                        </a>
+
+                        <button
+                          type="button"
+                          onClick={handleTestDisplay}
+                          className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-colors ${
+                            isConnected
+                              ? 'border-yellow-200 bg-yellow-50 text-yellow-700 hover:bg-yellow-100'
+                              : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                          }`}
+                          disabled={!isConnected}
+                        >
+                          <Lightbulb className="w-5 h-5" />
+                          <span className="font-medium">Test Flash & Display</span>
+                        </button>
+
+                        <a
+                          href={getGlassSnapshotUrl()}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-colors ${
+                            isConnected
+                              ? 'border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                              : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                          }`}
+                          onClick={(e) => !isConnected && e.preventDefault()}
+                        >
+                          <Camera className="w-5 h-5" />
+                          <span className="font-medium">Take Test Snapshot</span>
+                        </a>
+
+                        <button
+                          type="button"
+                          className="flex items-center justify-center gap-2 p-3 rounded-lg border transition-colors border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed"
+                          disabled
+                          title="Coming soon"
+                        >
+                          <Plug className="w-5 h-5" />
+                          <span className="font-medium">Disconnect App (coming soon)</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={handleResetWifi}
+                          className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-colors ${
+                            isConnected
+                              ? 'border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100'
+                              : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                          }`}
+                          disabled={!isConnected}
+                        >
+                          <WifiOff className="w-5 h-5" />
+                          <span className="font-medium">Disconnect Glass (Reset Wi‑Fi)</span>
+                        </button>
+                      </div>
+                      {!isConnected && (
+                        <p className="text-xs text-gray-500 mt-2 text-center">
+                          Connect to the device to enable these controls.
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Device Preferences Section */}
+                  <div className="border-t border-gray-200 pt-6 mt-6">
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">Device Preferences</h3>
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-medical-dark">
+                            Show basic profile on recognize
+                          </p>
+                          <p className="text-sm text-medical-gray-600">
+                            Display name and age only when someone is recognized.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          className="relative inline-flex h-6 w-11 items-center rounded-full bg-medical-gray-300 cursor-not-allowed opacity-60"
+                        >
+                          <span className="inline-block h-5 w-5 transform rounded-full bg-white shadow translate-x-1" />
+                        </button>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-medical-dark">Show medical alerts only</p>
+                          <p className="text-sm text-medical-gray-600">
+                            Limit glass alerts to critical medical warnings for safety.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          className="relative inline-flex h-6 w-11 items-center rounded-full bg-medical-gray-300 cursor-not-allowed opacity-60"
+                        >
+                          <span className="inline-block h-5 w-5 transform rounded-full bg-white shadow translate-x-1" />
+                        </button>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-medical-dark">
+                            Emergency contact shortcut
+                          </p>
+                          <p className="text-sm text-medical-gray-600">
+                            Enable a one-tap shortcut on the glasses to show emergency contacts for
+                            the current patient.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          className="relative inline-flex h-6 w-11 items-center rounded-full bg-medical-gray-300 cursor-not-allowed opacity-60"
+                        >
+                          <span className="inline-block h-5 w-5 transform rounded-full bg-white shadow translate-x-1" />
+                        </button>
+                      </div>
+
+                      <div className="mt-4 bg-medical-light border border-medical-primary/20 rounded-lg p-4">
+                        <p className="text-medical-gray-700 text-sm">
+                          These smart glass settings will be wired to the hardware integration
+                          later. For now, they are just preparing the UX and do not change any
+                          stored profile data.
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

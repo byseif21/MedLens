@@ -14,6 +14,7 @@ import {
   Menu,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { useSmartGlass } from '../context/SmartGlassContext';
 import MainInfo from '../components/MainInfo';
 import MedicalInfo from '../components/MedicalInfo';
 import Connections from '../components/Connections';
@@ -30,6 +31,7 @@ const ProfileDashboard = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { isConnected, isScanning, toggleScanning } = useSmartGlass();
   const { userId: urlUserId } = useParams();
   const currentUserId = user?.id;
   const userRole = user?.role;
@@ -294,7 +296,7 @@ const ProfileDashboard = () => {
       {/* Tabs (Desktop) */}
       <div className="max-sm:hidden bg-white border-b border-medical-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex justify-start gap-4 md:gap-8">
+          <nav className="flex justify-start gap-4 md:gap-8 items-center">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
@@ -309,6 +311,36 @@ const ProfileDashboard = () => {
                 {tab.label}
               </button>
             ))}
+
+            {/* Smart Glass Control - Visible when connected or was scanning */}
+            {(isConnected || isScanning) && (
+              <div className="ml-auto pl-4 border-l border-gray-200">
+                <button
+                  onClick={toggleScanning}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all shadow-sm border ${
+                    !isConnected
+                      ? 'bg-yellow-50 text-yellow-600 border-yellow-200'
+                      : isScanning
+                        ? 'bg-gradient-to-r from-red-50 to-white text-red-600 border-red-200 animate-pulse'
+                        : 'bg-white text-medical-primary border-medical-primary/30 hover:bg-medical-primary/5'
+                  }`}
+                  title={
+                    !isConnected
+                      ? 'Connection Lost - Trying to reconnect...'
+                      : isScanning
+                        ? 'Stop Smart Glass Detection'
+                        : 'Start Smart Glass Detection'
+                  }
+                >
+                  <ScanFace
+                    className={`w-4 h-4 ${
+                      !isConnected ? 'opacity-50' : isScanning ? 'animate-spin-slow' : ''
+                    }`}
+                  />
+                  {!isConnected ? 'Reconnecting...' : isScanning ? 'Scanning...' : 'Glass Ready'}
+                </button>
+              </div>
+            )}
           </nav>
         </div>
       </div>

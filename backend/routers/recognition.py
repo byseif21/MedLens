@@ -5,7 +5,7 @@ import logging
 from services.user_service import get_complete_user_profile
 from utils.config import get_config
 from utils.image_processor import ImageProcessor, ImageProcessingError
-from services.face_service import get_face_service #, FaceRecognitionError
+from services.face_service import get_face_service, FaceRecognitionError
 from dependencies import get_current_user
 # from services.tasks import recognize_face_task #NOTE: This requires the worker to be running to actually process
 
@@ -96,6 +96,18 @@ async def recognize_face(image: UploadFile = File(...), current_user: dict = Dep
     
     except HTTPException:
         raise
+    except FaceRecognitionError as e:
+        # Expected error (e.g., No face detected, multiple faces, quality check failed)
+        # Log it as INFO so we can see it in the terminal without it being a scary ERROR
+        logger.info(f"Scan result: {e}")
+        
+        # Return as a valid response with match=False so client doesn't see 500 error
+        return {
+            "success": True,
+            "match": False,
+            "message": str(e),
+            "confidence": 0.0
+        }
     except Exception as e:
         logger.error(f"Unexpected error in recognize_face: {e}")
         raise HTTPException(status_code=500, detail=f"Recognition failed: {str(e)}")
