@@ -1,5 +1,13 @@
 /* eslint-disable no-console */
-import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+} from 'react';
 import axios from 'axios';
 import apiClient from '../services/axios';
 import { recognizeFace } from '../services/api';
@@ -38,6 +46,11 @@ export const SmartGlassProvider = ({ children }) => {
     localStorage.setItem('medlens_glass_ip', glassIp);
   }, [glassIp]);
 
+  const isCloud = useMemo(
+    () => !glassIp.includes('.') && !glassIp.includes('localhost') && glassIp.length > 0,
+    [glassIp]
+  );
+
   // Base URL helper
   const getGlassUrl = useCallback(
     (endpoint) => {
@@ -47,12 +60,22 @@ export const SmartGlassProvider = ({ children }) => {
     [glassIp]
   );
 
+  const forceDisconnect = useCallback(() => {
+    if (scanIntervalRef.current) {
+      clearInterval(scanIntervalRef.current);
+      scanIntervalRef.current = null;
+    }
+    setIsScanning(false);
+    setIsConnected(false);
+    setBatteryLevel(null);
+  }, []);
+
   // Check Connection
   const checkConnection = useCallback(async () => {
     try {
       // CLOUD RELAY MODE (Device ID)
       // If it looks like a Device ID (no dots, not localhost), route to Backend
-      if (!glassIp.includes('.') && !glassIp.includes('localhost') && glassIp.length > 0) {
+      if (isCloud) {
         // Use standard axios (with auth) to hit our backend relay
         const response = await axios.get(
           `${import.meta.env.VITE_API_URL}/api/glass/status/${glassIp}`
@@ -74,7 +97,11 @@ export const SmartGlassProvider = ({ children }) => {
           }
           return true;
         } else {
-          throw new Error('Device offline in cloud');
+          if (isConnected)
+            console.log('[SmartGlass] 🔌 Cloud Relay reports offline, marking disconnected');
+          forceDisconnect();
+          setConnectionFailures(0);
+          return false;
         }
       }
 
@@ -128,21 +155,19 @@ export const SmartGlassProvider = ({ children }) => {
         // mark as disconnected after 3 consecutive failures (≈30s)
         if (newCount >= 3) {
           if (isConnected) console.log('[SmartGlass] 🔌 Marking as disconnected after 3 failures');
-          setIsConnected(false);
+          forceDisconnect();
         }
         return newCount;
       });
       return false;
     }
     return false;
-  }, [glassIp, isConnected, getGlassUrl, notify]);
+  }, [glassIp, isConnected, getGlassUrl, notify, isCloud, forceDisconnect]);
 
   // Update Glass Display
   const updateDisplay = async (line1, line2, alert = false) => {
     if (!isConnected) return;
     try {
-      const isCloud =
-        !glassIp.includes('.') && !glassIp.includes('localhost') && glassIp.length > 0;
       if (isCloud) {
         await axios.post(`${import.meta.env.VITE_API_URL}/api/glass/command/${glassIp}`, {
           type: 'DISPLAY_TEXT',
@@ -186,8 +211,8 @@ export const SmartGlassProvider = ({ children }) => {
       clearInterval(statusPollRef.current);
       statusPollRef.current = null;
     }
-    const isCloud = !glassIp.includes('.') && !glassIp.includes('localhost') && glassIp.length > 0;
-    if (isCloud && isConnected) {
+    const isCloudLocal = isCloud;
+    if (isCloudLocal && isConnected) {
       try {
         await apiClient.post(`/api/devices/unpair`, {
           device_id: glassIp,
@@ -205,8 +230,8 @@ export const SmartGlassProvider = ({ children }) => {
 
   // Get Snapshot URL
   const getGlassSnapshotUrl = () => {
-    const isCloud = !glassIp.includes('.') && !glassIp.includes('localhost') && glassIp.length > 0;
-    if (isCloud) {
+    const isCloudLocal = isCloud;
+    if (isCloudLocal) {
       return `${import.meta.env.VITE_API_URL}/api/glass/frame/${glassIp}`;
     }
     return getGlassUrl('capture');
@@ -225,10 +250,9 @@ export const SmartGlassProvider = ({ children }) => {
 
     try {
       // 1. Get Image from Glass
-      const isCloud =
-        !glassIp.includes('.') && !glassIp.includes('localhost') && glassIp.length > 0;
+      const isCloudLocal = isCloud;
       console.log('[SmartGlass] Requesting capture from Glass...');
-      const response = isCloud
+      const response = isCloudLocal
         ? await axios.get(`${import.meta.env.VITE_API_URL}/api/glass/frame/${glassIp}`, {
             responseType: 'blob',
             timeout: 8000,
