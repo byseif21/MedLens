@@ -1,6 +1,7 @@
 /* eslint-disable no-console */
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
+import apiClient from '../services/axios';
 import { recognizeFace } from '../services/api';
 import { useNotifications } from '../hooks/useNotifications';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -61,6 +62,13 @@ export const SmartGlassProvider = ({ children }) => {
           setIsConnected(true);
           setConnectionFailures(0);
           setBatteryLevel(response.data.battery);
+          try {
+            await apiClient.post(`/api/devices/pair`, {
+              device_id: glassIp,
+            });
+          } catch (err) {
+            console.warn('[SmartGlass] Pairing device failed:', err?.message || err);
+          }
           return true;
         } else {
           throw new Error('Device offline in cloud');
@@ -166,7 +174,7 @@ export const SmartGlassProvider = ({ children }) => {
   };
 
   // Disconnect Glass (client-side)
-  const disconnectGlass = () => {
+  const disconnectGlass = async () => {
     if (scanIntervalRef.current) {
       clearInterval(scanIntervalRef.current);
       scanIntervalRef.current = null;
@@ -174,6 +182,16 @@ export const SmartGlassProvider = ({ children }) => {
     if (statusPollRef.current) {
       clearInterval(statusPollRef.current);
       statusPollRef.current = null;
+    }
+    const isCloud = !glassIp.includes('.') && !glassIp.includes('localhost') && glassIp.length > 0;
+    if (isCloud && isConnected) {
+      try {
+        await apiClient.post(`/api/devices/unpair`, {
+          device_id: glassIp,
+        });
+      } catch (err) {
+        console.warn('[SmartGlass] Unpairing device failed:', err?.message || err);
+      }
     }
     setIsScanning(false);
     setIsConnected(false);
