@@ -2,6 +2,7 @@
 #include <WiFi.h>
 #include <WiFiManager.h> // https://github.com/tzapu/WiFiManager
 #include <HTTPClient.h>
+#include <WiFiClientSecure.h>
 #include "soc/soc.h"
 #include "soc/rtc_cntl_reg.h"
 
@@ -123,7 +124,14 @@ void sendHeartbeat() {
   }
 
   HTTPClient http;
-  
+  bool useTls = String(BACKEND_URL).startsWith("https");
+  WiFiClientSecure secureClient;
+  if (useTls) {
+    secureClient.setInsecure();
+    http.begin(secureClient, BACKEND_URL);
+  } else {
+    http.begin(BACKEND_URL);
+  }
   // Prepare Multipart Data
   String boundary = "------------------------735323031399963166993862";
   String head = "--" + boundary + "\r\nContent-Disposition: form-data; name=\"image\"; filename=\"capture.jpg\"\r\nContent-Type: image/jpeg\r\n\r\n";
@@ -135,8 +143,6 @@ void sendHeartbeat() {
 
   size_t allLen = extra.length() + head.length() + fb->len + tail.length();
 
-  // Connect
-  http.begin(BACKEND_URL);
   http.addHeader("Content-Type", "multipart/form-data; boundary=" + boundary);
   http.addHeader("Content-Length", String(allLen));
 
@@ -168,6 +174,7 @@ void sendHeartbeat() {
   
   if (httpResponseCode > 0) {
     String response = http.getString();
+    Serial.printf("Sync response: %d\n", httpResponseCode);
     // Serial.println(httpResponseCode);
     // Serial.println(response);
     

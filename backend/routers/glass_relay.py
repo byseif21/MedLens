@@ -94,22 +94,21 @@ async def get_device_status(device_id: str):
         else:
             device = res.data[0]
         
-        # Check if online (seen recently)
+        status_val = device.get("status")
         last_seen = device.get("last_seen")
-        is_connected = False
+        is_connected = status_val == "online"
         heartbeat_window_seconds = 15
         try:
             if isinstance(last_seen, str):
-                # Supabase returns ISO timestamp strings
                 dt = datetime.fromisoformat(last_seen.replace("Z", "+00:00"))
             elif isinstance(last_seen, datetime):
                 dt = last_seen
             else:
                 dt = None
-            if dt:
-                is_connected = (datetime.utcnow() - dt).total_seconds() <= heartbeat_window_seconds
+            if dt and (datetime.utcnow() - dt).total_seconds() <= heartbeat_window_seconds:
+                is_connected = True
         except Exception:
-            is_connected = False
+            pass
 
         return {
             "connected": is_connected,
@@ -121,12 +120,14 @@ async def get_device_status(device_id: str):
         if device_id in in_memory_devices:
             device = in_memory_devices[device_id]
             last_seen = device.get("last_seen")
-            is_connected = False
+            status_val = device.get("status")
+            is_connected = status_val == "online"
             try:
                 dt = datetime.fromisoformat(str(last_seen).replace("Z", "+00:00"))
-                is_connected = (datetime.utcnow() - dt).total_seconds() <= 15
+                if (datetime.utcnow() - dt).total_seconds() <= 15:
+                    is_connected = True
             except Exception:
-                is_connected = False
+                pass
             return {
                 "connected": is_connected,
                 "battery": device.get("battery_level", 0),
