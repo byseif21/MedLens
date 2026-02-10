@@ -191,7 +191,13 @@ export const SmartGlassProvider = ({ children }) => {
   const resetGlassWifi = async () => {
     if (!glassIp) return false;
     try {
-      await glassClient.current.get(getGlassUrl('reset_wifi'), { timeout: 2000 });
+      if (isCloud) {
+        await axios.post(`${import.meta.env.VITE_API_URL}/api/glass/command/${glassIp}`, {
+          type: 'RESET_WIFI',
+        });
+      } else {
+        await glassClient.current.get(getGlassUrl('reset_wifi'), { timeout: 2000 });
+      }
       setIsConnected(false);
       return true;
     } catch (err) {
@@ -211,8 +217,7 @@ export const SmartGlassProvider = ({ children }) => {
       clearInterval(statusPollRef.current);
       statusPollRef.current = null;
     }
-    const isCloudLocal = isCloud;
-    if (isCloudLocal && isConnected) {
+    if (isCloud && isConnected) {
       try {
         await apiClient.post(`/api/devices/unpair`, {
           device_id: glassIp,
@@ -230,8 +235,7 @@ export const SmartGlassProvider = ({ children }) => {
 
   // Get Snapshot URL
   const getGlassSnapshotUrl = () => {
-    const isCloudLocal = isCloud;
-    if (isCloudLocal) {
+    if (isCloud) {
       return `${import.meta.env.VITE_API_URL}/api/glass/frame/${glassIp}`;
     }
     return getGlassUrl('capture');
@@ -250,9 +254,8 @@ export const SmartGlassProvider = ({ children }) => {
 
     try {
       // 1. Get Image from Glass
-      const isCloudLocal = isCloud;
       console.log('[SmartGlass] Requesting capture from Glass...');
-      const response = isCloudLocal
+      const response = isCloud
         ? await axios.get(`${import.meta.env.VITE_API_URL}/api/glass/frame/${glassIp}`, {
             responseType: 'blob',
             timeout: 8000,
