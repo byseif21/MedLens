@@ -22,6 +22,7 @@ export const SmartGlassProvider = ({ children }) => {
   const [batteryLevel, setBatteryLevel] = useState(null);
 
   const scanIntervalRef = useRef(null);
+  const statusPollRef = useRef(null);
   const isScanningRef = useRef(false);
   const { notify } = useNotifications();
   const navigate = useNavigate();
@@ -48,6 +49,25 @@ export const SmartGlassProvider = ({ children }) => {
   // Check Connection
   const checkConnection = useCallback(async () => {
     try {
+      // CLOUD RELAY MODE (Device ID)
+      // If it looks like a Device ID (no dots, not localhost), route to Backend
+      if (!glassIp.includes('.') && !glassIp.includes('localhost') && glassIp.length > 0) {
+        // Use standard axios (with auth) to hit our backend relay
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_URL}/api/glass/status/${glassIp}`
+        );
+        if (response.data.connected) {
+          if (!isConnected) console.log('[SmartGlass] ✅ Cloud Relay Connected');
+          setIsConnected(true);
+          setConnectionFailures(0);
+          setBatteryLevel(response.data.battery);
+          return true;
+        } else {
+          throw new Error('Device offline in cloud');
+        }
+      }
+
+      // LOCAL MODE (Direct IP)
       const url = getGlassUrl('status');
       const response = await glassClient.current.get(url, { timeout: 8000 });
       if (response.data.status === 'ok') {
@@ -58,6 +78,9 @@ export const SmartGlassProvider = ({ children }) => {
         setConnectionFailures(0);
         setBatteryLevel(response.data.battery);
         localStorage.setItem('medlens_glass_last_ok', String(Date.now()));
+        if (!statusPollRef.current) {
+          statusPollRef.current = setInterval(checkConnection, 10000);
+        }
         return true;
       }
     } catch (error) {
@@ -103,13 +126,6 @@ export const SmartGlassProvider = ({ children }) => {
     return false;
   }, [glassIp, isConnected, getGlassUrl, notify]);
 
-  // Poll connection status every 10 seconds
-  useEffect(() => {
-    checkConnection();
-    const interval = setInterval(checkConnection, 10000);
-    return () => clearInterval(interval);
-  }, [checkConnection]);
-
   // Update Glass Display
   const updateDisplay = async (line1, line2, alert = false) => {
     if (!isConnected) return;
@@ -143,6 +159,10 @@ export const SmartGlassProvider = ({ children }) => {
     if (scanIntervalRef.current) {
       clearInterval(scanIntervalRef.current);
       scanIntervalRef.current = null;
+    }
+    if (statusPollRef.current) {
+      clearInterval(statusPollRef.current);
+      statusPollRef.current = null;
     }
     setIsScanning(false);
     setIsConnected(false);

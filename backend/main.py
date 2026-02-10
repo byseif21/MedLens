@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 from utils.config import get_config
-from routers import registration, recognition, auth, profile, users, connections, admin
+from routers import registration, recognition, auth, profile, users, connections, admin, devices, glass_relay
 import logging
 # Import celery_app to ensure it's initialized and configured with the correct Broker URL
 # from celery_app import celery_app  # noqa
@@ -41,6 +41,8 @@ app.include_router(profile.router)
 app.include_router(users.router)
 app.include_router(connections.router)
 app.include_router(admin.router)
+app.include_router(devices.router)
+app.include_router(glass_relay.router)
 
 # Run migrations on startup
 @app.on_event("startup")

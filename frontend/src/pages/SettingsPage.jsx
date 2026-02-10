@@ -761,9 +761,35 @@ const SettingsPage = () => {
                 </div>
 
                 <div className="space-y-6">
+                  {/* Connection Mode Selector */}
+                  <div className="flex p-1 bg-gray-100 rounded-lg mb-4">
+                    <button
+                      className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
+                        !glassIp.includes('GLASS_') && !glassIp.includes('mock_')
+                          ? 'bg-white shadow text-medical-primary'
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                      onClick={() => setGlassIp('localhost:8001')}
+                    >
+                      Local Mode (Direct IP)
+                    </button>
+                    <button
+                      className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
+                        glassIp.includes('GLASS_') || glassIp.includes('mock_')
+                          ? 'bg-white shadow text-medical-primary'
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                      onClick={() => setGlassIp('GLASS_001')}
+                    >
+                      Cloud Mode (Device ID)
+                    </button>
+                  </div>
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Glass IP Address
+                      {glassIp.includes('GLASS_') || glassIp.includes('mock_')
+                        ? 'Device ID'
+                        : 'Glass IP Address'}
                     </label>
                     <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
                       <input
@@ -771,46 +797,67 @@ const SettingsPage = () => {
                         value={glassIp}
                         onChange={(e) => setGlassIp(e.target.value)}
                         className="flex-1 w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-md focus:ring-medical-primary focus:border-medical-primary"
-                        placeholder="e.g., 192.168.4.1 or https://192.168.4.1"
+                        placeholder={
+                          glassIp.includes('GLASS_') || glassIp.includes('mock_')
+                            ? 'e.g., GLASS_001'
+                            : 'e.g., 192.168.4.1'
+                        }
                       />
                       <button
                         type="button"
-                        onClick={checkConnection}
+                        onClick={() => (isConnected ? disconnectGlass() : checkConnection())}
                         className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-medical-primary"
                       >
-                        Test Connection
+                        {isConnected ? 'Disconnect' : 'Connect'}
                       </button>
-                      {import.meta.env.DEV && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setGlassIp('localhost:8001');
-                            setTimeout(checkConnection, 100);
-                          }}
-                          className="w-full sm:w-auto px-4 py-2 border border-blue-200 bg-blue-50 rounded-md text-sm font-medium text-blue-700 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                          title="Use the local mock glass simulator"
-                        >
-                          Use Mock Glass
-                        </button>
-                      )}
+                      {import.meta.env.DEV &&
+                        (glassIp.includes('GLASS_') || glassIp.includes('mock_') ? (
+                          <button
+                            type="button"
+                            onClick={() => setGlassIp('mock_glass_001')}
+                            className="w-full sm:w-auto px-4 py-2 border border-blue-200 bg-blue-50 rounded-md text-sm font-medium text-blue-700 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            title="Use the cloud relay mock device (requires mock_device_client.py)"
+                          >
+                            Use Cloud Mock
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setGlassIp('localhost:8001')}
+                            className="w-full sm:w-auto px-4 py-2 border border-blue-200 bg-blue-50 rounded-md text-sm font-medium text-blue-700 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            title="Use the local IP mock glass (requires mock_glass.py)"
+                          >
+                            Use Local Mock
+                          </button>
+                        ))}
                     </div>
                     <p className="text-xs text-gray-500 mt-1">
-                      Enter the IP address shown on the device serial output. Default is usually
-                      192.168.4.1.
+                      {glassIp.includes('GLASS_') || glassIp.includes('mock_')
+                        ? 'Enter the unique ID printed on your device frame.'
+                        : 'Enter the IP address shown on the device serial output. Default is usually 192.168.4.1.'}
                     </p>
                   </div>
 
                   <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
                     <h4 className="font-medium text-blue-900 mb-2">How to Connect</h4>
-                    <ol className="list-decimal list-inside text-sm text-blue-800 space-y-1">
-                      <li>Turn on your glass.</li>
-                      <li>
-                        Connect your phone/laptop to the &quot;MedLens-Glass-Setup&quot; Wi‑Fi
-                        hotspot (if in AP mode).
-                      </li>
-                      <li>Enter the IP address above.</li>
-                      <li>Click &quot;Test Connection&quot;.</li>
-                    </ol>
+                    {glassIp.includes('GLASS_') || glassIp.includes('mock_') ? (
+                      <ol className="list-decimal list-inside text-sm text-blue-800 space-y-1">
+                        <li>Turn on your glass (ensure it has Wi-Fi).</li>
+                        <li>Enter your Device ID (e.g. GLASS_001).</li>
+                        <li>Click &quot;Connect&quot;.</li>
+                        <li>If it&apos;s your first time, you may need to Pair it.</li>
+                      </ol>
+                    ) : (
+                      <ol className="list-decimal list-inside text-sm text-blue-800 space-y-1">
+                        <li>Turn on your glass.</li>
+                        <li>
+                          Connect your phone/laptop to the &quot;MedLens-Glass-Setup&quot; Wi‑Fi
+                          hotspot (if in AP mode).
+                        </li>
+                        <li>Enter the IP address above.</li>
+                        <li>Click &quot;Connect&quot;.</li>
+                      </ol>
+                    )}
                   </div>
 
                   {/* Hardware Controls */}
