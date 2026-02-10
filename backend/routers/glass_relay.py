@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from typing import Optional, Dict, List
-from datetime import datetime
+from datetime import datetime, timezone
 from services.storage_service import get_supabase_service
 
 router = APIRouter(prefix="/api/glass", tags=["Smart Glass Relay"])
@@ -104,8 +104,12 @@ async def get_device_status(device_id: str):
                 dt = last_seen
             else:
                 dt = None
-            if dt and (datetime.utcnow() - dt).total_seconds() <= heartbeat_window_seconds:
-                is_connected = True
+            if dt:
+                if dt.tzinfo is not None:
+                    dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+                now = datetime.utcnow()
+                if (now - dt).total_seconds() <= heartbeat_window_seconds:
+                    is_connected = True
         except Exception:
             pass
 
@@ -122,7 +126,10 @@ async def get_device_status(device_id: str):
             is_connected = False
             try:
                 dt = datetime.fromisoformat(str(last_seen).replace("Z", "+00:00"))
-                if (datetime.utcnow() - dt).total_seconds() <= 15:
+                if dt.tzinfo is not None:
+                    dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+                now = datetime.utcnow()
+                if (now - dt).total_seconds() <= 15:
                     is_connected = True
             except Exception:
                 pass
