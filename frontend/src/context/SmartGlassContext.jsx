@@ -62,6 +62,9 @@ export const SmartGlassProvider = ({ children }) => {
           setIsConnected(true);
           setConnectionFailures(0);
           setBatteryLevel(response.data.battery);
+          if (!statusPollRef.current) {
+            statusPollRef.current = setInterval(checkConnection, 10000);
+          }
           try {
             await apiClient.post(`/api/devices/pair`, {
               device_id: glassIp,

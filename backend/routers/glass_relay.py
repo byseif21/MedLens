@@ -94,9 +94,8 @@ async def get_device_status(device_id: str):
         else:
             device = res.data[0]
         
-        status_val = device.get("status")
         last_seen = device.get("last_seen")
-        is_connected = status_val == "online"
+        is_connected = False
         heartbeat_window_seconds = 15
         try:
             if isinstance(last_seen, str):
@@ -120,8 +119,7 @@ async def get_device_status(device_id: str):
         if device_id in in_memory_devices:
             device = in_memory_devices[device_id]
             last_seen = device.get("last_seen")
-            status_val = device.get("status")
-            is_connected = status_val == "online"
+            is_connected = False
             try:
                 dt = datetime.fromisoformat(str(last_seen).replace("Z", "+00:00"))
                 if (datetime.utcnow() - dt).total_seconds() <= 15:
