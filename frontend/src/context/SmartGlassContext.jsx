@@ -130,11 +130,22 @@ export const SmartGlassProvider = ({ children }) => {
   const updateDisplay = async (line1, line2, alert = false) => {
     if (!isConnected) return;
     try {
-      await glassClient.current.post(getGlassUrl('display'), {
-        line1,
-        line2,
-        alert,
-      });
+      const isCloud =
+        !glassIp.includes('.') && !glassIp.includes('localhost') && glassIp.length > 0;
+      if (isCloud) {
+        await axios.post(`${import.meta.env.VITE_API_URL}/api/glass/command/${glassIp}`, {
+          type: 'DISPLAY_TEXT',
+          line1,
+          line2,
+          alert,
+        });
+      } else {
+        await glassClient.current.post(getGlassUrl('display'), {
+          line1,
+          line2,
+          alert,
+        });
+      }
     } catch (err) {
       console.error('Failed to update glass display:', err);
     }
@@ -172,7 +183,13 @@ export const SmartGlassProvider = ({ children }) => {
   const getGlassStreamUrl = () => getGlassUrl('stream');
 
   // Get Snapshot URL
-  const getGlassSnapshotUrl = () => getGlassUrl('capture');
+  const getGlassSnapshotUrl = () => {
+    const isCloud = !glassIp.includes('.') && !glassIp.includes('localhost') && glassIp.length > 0;
+    if (isCloud) {
+      return `${import.meta.env.VITE_API_URL}/api/glass/frame/${glassIp}`;
+    }
+    return getGlassUrl('capture');
+  };
 
   // Perform Recognition
   const performScan = async () => {
@@ -187,11 +204,18 @@ export const SmartGlassProvider = ({ children }) => {
 
     try {
       // 1. Get Image from Glass
+      const isCloud =
+        !glassIp.includes('.') && !glassIp.includes('localhost') && glassIp.length > 0;
       console.log('[SmartGlass] Requesting capture from Glass...');
-      const response = await glassClient.current.get(getGlassUrl('capture'), {
-        responseType: 'blob',
-        timeout: 8000,
-      });
+      const response = isCloud
+        ? await axios.get(`${import.meta.env.VITE_API_URL}/api/glass/frame/${glassIp}`, {
+            responseType: 'blob',
+            timeout: 8000,
+          })
+        : await glassClient.current.get(getGlassUrl('capture'), {
+            responseType: 'blob',
+            timeout: 8000,
+          });
       console.log('[SmartGlass] ✅ Capture received, size:', response.data.size);
       setConnectionFailures(0);
       setIsConnected(true);
