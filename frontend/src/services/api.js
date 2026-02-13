@@ -527,5 +527,3 @@ export const deleteConnection = async (connectionId) => {
     };
   }
 };
-
-export default apiClient;

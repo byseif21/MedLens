@@ -8,7 +8,6 @@ import {
   useRef,
   useMemo,
 } from 'react';
-import axios from 'axios';
 import apiClient from '../services/axios';
 import { recognizeFace } from '../services/api';
 import { useNotifications } from '../hooks/useNotifications';
@@ -39,7 +38,11 @@ export const SmartGlassProvider = ({ children }) => {
 
   // Create a dedicated axios instance for Glass communication
   // This avoids interference from global interceptors (like Auth tokens) that might cause CORS issues
-  const glassClient = useRef(axios.create());
+  const glassClient = useRef(
+    apiClient.create({
+      baseURL: '', // We'll provide full URLs for direct glass communication
+    })
+  );
 
   // Save IP when changed
   useEffect(() => {

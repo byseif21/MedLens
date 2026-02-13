@@ -20,6 +20,19 @@ const apiClient = axios.create({
   timeout: 60000,
 });
 
+// Custom factory method to create new axios instances
+// Use this for external APIs (like direct communication with Smart Glasses)
+// to avoid sending backend auth tokens to unrelated servers.
+apiClient.create = (config = {}) => {
+  return axios.create({
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    timeout: 30000,
+    ...config,
+  });
+};
+
 // Request interceptor
 apiClient.interceptors.request.use(
   (config) => {
