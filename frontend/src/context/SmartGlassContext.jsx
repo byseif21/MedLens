@@ -76,10 +76,7 @@ export const SmartGlassProvider = ({ children }) => {
       // CLOUD RELAY MODE (Device ID)
       // If it looks like a Device ID (no dots, not localhost), route to Backend
       if (isCloud) {
-        // Use standard axios (with auth) to hit our backend relay
-        const response = await axios.get(
-          `${import.meta.env.VITE_API_URL}/api/glass/status/${glassIp}`
-        );
+        const response = await apiClient.get(`/api/glass/status/${glassIp}`);
         if (response.data.connected) {
           if (!isConnected) console.log('[SmartGlass] ✅ Cloud Relay Connected');
           setIsConnected(true);
@@ -169,7 +166,7 @@ export const SmartGlassProvider = ({ children }) => {
     if (!isConnected) return;
     try {
       if (isCloud) {
-        await axios.post(`${import.meta.env.VITE_API_URL}/api/glass/command/${glassIp}`, {
+        await apiClient.post(`/api/glass/command/${glassIp}`, {
           type: 'DISPLAY_TEXT',
           line1,
           line2,
@@ -192,7 +189,7 @@ export const SmartGlassProvider = ({ children }) => {
     if (!glassIp) return false;
     try {
       if (isCloud) {
-        await axios.post(`${import.meta.env.VITE_API_URL}/api/glass/command/${glassIp}`, {
+        await apiClient.post(`/api/glass/command/${glassIp}`, {
           type: 'RESET_WIFI',
         });
       } else {
@@ -256,7 +253,7 @@ export const SmartGlassProvider = ({ children }) => {
       // 1. Get Image from Glass
       console.log('[SmartGlass] Requesting capture from Glass...');
       const response = isCloud
-        ? await axios.get(`${import.meta.env.VITE_API_URL}/api/glass/frame/${glassIp}`, {
+        ? await apiClient.get(`/api/glass/frame/${glassIp}`, {
             responseType: 'blob',
             timeout: 8000,
           })

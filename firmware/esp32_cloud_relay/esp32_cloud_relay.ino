@@ -178,8 +178,19 @@ void sendHeartbeat() {
     // Serial.println(httpResponseCode);
     // Serial.println(response);
     
-    // Simple Command Parsing (look for "blink" or "alert")
-    if (response.indexOf("blink") > 0 || response.indexOf("alert") > 0) {
+    // Simple Command Parsing
+    if (response.indexOf("RESET_WIFI") != -1) {
+        Serial.println("!!! WiFi Reset Command Received !!!");
+        digitalWrite(LED_GPIO_NUM, HIGH);
+        delay(1000);
+        digitalWrite(LED_GPIO_NUM, LOW);
+        
+        WiFiManager wm;
+        wm.resetSettings();
+        ESP.restart();
+    }
+    
+    if (response.indexOf("blink") != -1 || response.indexOf("alert") != -1 || response.indexOf("DISPLAY_TEXT") != -1) {
         digitalWrite(LED_GPIO_NUM, HIGH);
         delay(100);
         digitalWrite(LED_GPIO_NUM, LOW);
