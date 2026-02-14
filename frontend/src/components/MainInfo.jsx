@@ -28,7 +28,7 @@ const MainInfo = ({ profile, onUpdate, readOnly = false, targetUserId = null }) 
   return (
     <div className="medical-card">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-semibold">Main Information</h2>
+        <h2 className="text-2xl font-semibold dark:text-white">Main Information</h2>
         {canEdit &&
           (!isEditing ? (
             <button

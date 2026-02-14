@@ -53,21 +53,29 @@ const FaceUploader = ({ onUpload, isLoading = false }) => {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-xl font-semibold text-center">Upload Your Face Photo</h3>
-      <p className="text-medical-gray-600 text-center text-sm">Select a clear photo of your face</p>
+      <h3 className="text-xl font-semibold text-center dark:text-white transition-colors">
+        Upload Your Face Photo
+      </h3>
+      <p className="text-medical-gray-600 dark:text-medical-gray-400 text-center text-sm transition-colors">
+        Select a clear photo of your face
+      </p>
 
       {!preview ? (
         <div
           onClick={() => fileInputRef.current?.click()}
-          className="border-2 border-dashed border-medical-gray-300 rounded-lg p-8 sm:p-12 text-center cursor-pointer hover:border-medical-primary hover:bg-medical-light/50 transition-all duration-200"
+          className="border-2 border-dashed border-medical-gray-300 dark:border-medical-gray-600 rounded-lg p-8 sm:p-12 text-center cursor-pointer hover:border-medical-primary hover:bg-medical-light/50 dark:hover:bg-medical-gray-700/50 transition-all duration-200"
         >
-          <Upload className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-medical-gray-400 mb-4" />
-          <p className="text-medical-gray-600 mb-2">Click to select a photo</p>
-          <p className="text-medical-gray-400 text-sm">JPEG, PNG (max 5MB)</p>
+          <Upload className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-medical-gray-400 dark:text-medical-gray-500 mb-4 transition-colors" />
+          <p className="text-medical-gray-600 dark:text-medical-gray-400 mb-2 transition-colors">
+            Click to select a photo
+          </p>
+          <p className="text-medical-gray-400 dark:text-medical-gray-500 text-sm transition-colors">
+            JPEG, PNG (max 5MB)
+          </p>
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="relative bg-medical-gray-100 rounded-lg overflow-hidden">
+          <div className="relative bg-medical-gray-100 dark:bg-medical-gray-900 rounded-lg overflow-hidden transition-colors">
             <img src={preview} alt="Preview" className="w-full h-auto object-contain max-h-96" />
           </div>
 
@@ -102,8 +110,8 @@ const FaceUploader = ({ onUpload, isLoading = false }) => {
       )}
 
       {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-red-600 text-sm text-center">{error}</p>
+        <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg transition-colors">
+          <p className="text-red-600 dark:text-red-400 text-sm text-center">{error}</p>
         </div>
       )}
 
@@ -116,9 +124,11 @@ const FaceUploader = ({ onUpload, isLoading = false }) => {
       />
 
       {/* Tips */}
-      <div className="bg-medical-light border border-medical-primary/20 rounded-lg p-4">
-        <h4 className="font-medium text-medical-dark mb-2 text-sm">Photo Tips:</h4>
-        <ul className="text-medical-gray-600 text-sm space-y-1">
+      <div className="bg-medical-light dark:bg-medical-gray-800/50 border border-medical-primary/20 dark:border-medical-gray-700 rounded-lg p-4 transition-colors">
+        <h4 className="font-medium text-medical-dark dark:text-white mb-2 text-sm transition-colors">
+          Photo Tips:
+        </h4>
+        <ul className="text-medical-gray-600 dark:text-medical-gray-400 text-sm space-y-1 transition-colors">
           <li className="flex items-start gap-2">
             <span className="text-medical-accent mt-0.5">✓</span>
             <span>Use a clear, well-lit photo</span>

@@ -4,14 +4,14 @@ import { useMedicalInfo } from '../hooks/useMedicalInfo';
 
 const MedicalInfoField = ({ label, name, value, onChange, disabled, rows = 2, placeholder }) => (
   <div>
-    <label className="label-medical">{label}</label>
+    <label className="label-medical transition-colors">{label}</label>
     <textarea
       name={name}
       value={value}
       onChange={onChange}
       disabled={disabled}
       rows={rows}
-      className="input-medical disabled:bg-medical-gray-50 disabled:cursor-not-allowed resize-none"
+      className="input-medical resize-none transition-colors"
       placeholder={placeholder}
     />
   </div>
@@ -44,7 +44,7 @@ const MedicalInfo = ({ profile, onUpdate, readOnly = false, targetUserId = null 
   return (
     <div className="medical-card">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-semibold">Medical Information</h2>
+        <h2 className="text-2xl font-semibold dark:text-white">Medical Information</h2>
         {canEdit &&
           (!isEditing ? (
             <button

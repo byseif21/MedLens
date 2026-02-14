@@ -99,34 +99,38 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-medical-gradient py-8 px-4">
+    <div className="min-h-screen bg-medical-gradient py-8 px-4 transition-colors duration-300">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
           <Link
             to="/login"
-            className="inline-flex items-center text-medical-primary hover:text-cyan-700 mb-4"
+            className="inline-flex items-center text-medical-primary dark:text-medical-secondary hover:text-cyan-700 dark:hover:text-medical-primary mb-4 transition-colors"
           >
             <ChevronLeft className="w-5 h-5 mr-2" />
             Back to Login
           </Link>
-          <h1 className="text-3xl font-bold text-medical-dark mb-2">New User Registration</h1>
-          <p className="text-medical-gray-600">Register your face and personal information</p>
+          <h1 className="text-3xl font-bold text-medical-dark dark:text-white mb-2 transition-colors">
+            New User Registration
+          </h1>
+          <p className="text-medical-gray-600 dark:text-medical-gray-400 transition-colors">
+            Register your face and personal information
+          </p>
         </div>
 
         {/* Progress Steps */}
         <div className="flex items-center justify-center mb-8">
           <div className="flex items-center">
             <div
-              className={`flex items-center justify-center w-10 h-10 rounded-full ${step >= 1 ? 'bg-medical-primary text-white' : 'bg-medical-gray-200 text-medical-gray-500'}`}
+              className={`flex items-center justify-center w-10 h-10 rounded-full transition-colors ${step >= 1 ? 'bg-medical-primary text-white' : 'bg-medical-gray-200 dark:bg-medical-gray-700 text-medical-gray-500 dark:text-medical-gray-400'}`}
             >
               1
             </div>
             <div
-              className={`w-24 h-1 ${step >= 2 ? 'bg-medical-primary' : 'bg-medical-gray-200'}`}
+              className={`w-24 h-1 transition-colors ${step >= 2 ? 'bg-medical-primary' : 'bg-medical-gray-200 dark:bg-medical-gray-700'}`}
             ></div>
             <div
-              className={`flex items-center justify-center w-10 h-10 rounded-full ${step >= 2 ? 'bg-medical-primary text-white' : 'bg-medical-gray-200 text-medical-gray-500'}`}
+              className={`flex items-center justify-center w-10 h-10 rounded-full transition-colors ${step >= 2 ? 'bg-medical-primary text-white' : 'bg-medical-gray-200 dark:bg-medical-gray-700 text-medical-gray-500 dark:text-medical-gray-400'}`}
             >
               2
             </div>
@@ -138,11 +142,15 @@ const RegisterPage = () => {
           {loading ? (
             <div className="py-12">
               <LoadingSpinner />
-              <p className="text-center text-medical-gray-600 mt-4">Registering...</p>
+              <p className="text-center text-medical-gray-600 dark:text-medical-gray-400 mt-4 transition-colors">
+                Registering...
+              </p>
             </div>
           ) : step === 1 ? (
             <>
-              <h2 className="text-2xl font-semibold mb-6">Personal Information</h2>
+              <h2 className="text-2xl font-semibold mb-6 text-medical-dark dark:text-white transition-colors">
+                Personal Information
+              </h2>
               <div className="space-y-4">
                 <div>
                   <label className="label-medical">Full Name *</label>
@@ -251,8 +259,8 @@ const RegisterPage = () => {
                 </div>
 
                 {error && (
-                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-red-600 text-sm">{error}</p>
+                  <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 rounded-lg transition-colors">
+                    <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
                   </div>
                 )}
 
@@ -264,14 +272,14 @@ const RegisterPage = () => {
           ) : (
             <>
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-semibold">Face Registration</h2>
+                <h2 className="text-2xl font-semibold dark:text-white">Face Registration</h2>
                 <button
                   onClick={() => {
                     setStep(1);
                     setFaceMode(null);
                     setCapturedImage(null);
                   }}
-                  className="text-medical-primary hover:text-cyan-700 text-sm"
+                  className="text-medical-primary dark:text-medical-secondary hover:text-cyan-700 dark:hover:text-medical-primary text-sm transition-colors"
                 >
                   ← Edit Info
                 </button>
@@ -279,7 +287,7 @@ const RegisterPage = () => {
 
               {!faceMode ? (
                 <div className="space-y-4">
-                  <p className="text-medical-gray-600 text-center mb-6">
+                  <p className="text-medical-gray-600 dark:text-medical-gray-400 text-center mb-6">
                     Choose how to register your face
                   </p>
                   <button
@@ -301,7 +309,7 @@ const RegisterPage = () => {
                 <div>
                   <button
                     onClick={() => setFaceMode(null)}
-                    className="mb-4 text-medical-primary hover:text-cyan-700 flex items-center gap-2"
+                    className="mb-4 text-medical-primary dark:text-medical-secondary hover:text-cyan-700 dark:hover:text-medical-primary flex items-center gap-2 transition-colors"
                   >
                     <ChevronLeft className="w-5 h-5" />
                     Back
@@ -312,7 +320,7 @@ const RegisterPage = () => {
                 <div>
                   <button
                     onClick={() => setFaceMode(null)}
-                    className="mb-4 text-medical-primary hover:text-cyan-700 flex items-center gap-2"
+                    className="mb-4 text-medical-primary dark:text-medical-secondary hover:text-cyan-700 dark:hover:text-medical-primary flex items-center gap-2 transition-colors"
                   >
                     <ChevronLeft className="w-5 h-5" />
                     Back
@@ -323,8 +331,8 @@ const RegisterPage = () => {
 
               {capturedImage && (
                 <div className="mt-6">
-                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg mb-4">
-                    <p className="text-green-600 text-sm text-center">
+                  <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/30 rounded-lg mb-4 transition-colors">
+                    <p className="text-green-600 dark:text-green-400 text-sm text-center">
                       ✓ Face photos captured successfully
                       {typeof capturedImage === 'object' &&
                         !(capturedImage instanceof File) &&
@@ -338,8 +346,8 @@ const RegisterPage = () => {
               )}
 
               {error && (
-                <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-red-600 text-sm text-center">{error}</p>
+                <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 rounded-lg transition-colors">
+                  <p className="text-red-600 dark:text-red-400 text-sm text-center">{error}</p>
                 </div>
               )}
             </>

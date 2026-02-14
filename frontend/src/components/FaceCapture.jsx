@@ -56,13 +56,15 @@ const FaceCapture = ({ onCapture, variant = 'lg', showSwitch = false }) => {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-xl font-semibold text-center">Capture Your Face</h3>
-      <p className="text-medical-gray-600 text-center text-sm">
+      <h3 className="text-xl font-semibold text-center dark:text-white transition-colors">
+        Capture Your Face
+      </h3>
+      <p className="text-medical-gray-600 dark:text-medical-gray-400 text-center text-sm transition-colors">
         Position your face in the center and click capture
       </p>
 
       <div
-        className={`relative bg-medical-gray-100 rounded-lg overflow-hidden ${styles.container}`}
+        className={`relative bg-medical-gray-100 dark:bg-medical-gray-900 rounded-lg overflow-hidden transition-colors ${styles.container}`}
       >
         {!captured ? (
           <>
@@ -107,8 +109,8 @@ const FaceCapture = ({ onCapture, variant = 'lg', showSwitch = false }) => {
       </div>
 
       {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-red-600 text-sm text-center">{error}</p>
+        <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg transition-colors">
+          <p className="text-red-600 dark:text-red-400 text-sm text-center">{error}</p>
         </div>
       )}
 

@@ -116,7 +116,7 @@ const RecognitionPage = () => {
   return (
     <div className="min-h-screen bg-medical-gradient">
       {/* Header */}
-      <header className="bg-white shadow-medical">
+      <header className="bg-white dark:bg-medical-gray-900 shadow-md shadow-medical-primary/10 dark:shadow-none border-b border-transparent dark:border-medical-gray-800 transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -124,15 +124,19 @@ const RecognitionPage = () => {
                 <ScanFace className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-medical-dark">Face Recognition</h1>
-                <p className="text-sm text-medical-gray-600">Smart Glass Recognition System</p>
+                <h1 className="text-xl font-bold text-medical-dark dark:text-white transition-colors duration-300">
+                  Face Recognition
+                </h1>
+                <p className="text-sm text-medical-gray-600 dark:text-medical-gray-400 transition-colors duration-300">
+                  Smart Glass Recognition System
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-1 sm:gap-2">
               {isAdmin && (
                 <Link
                   to="/admin"
-                  className="btn-medical-secondary bg-pink-50 text-pink-600 border-pink-200 hover:bg-pink-100 flex flex-col sm:flex-row items-center justify-center p-1 sm:px-4 sm:py-2 gap-0.5 sm:gap-2 min-w-[50px] sm:min-w-0"
+                  className="btn-medical-secondary bg-pink-50 dark:bg-pink-900/10 text-pink-600 dark:text-pink-400 border-pink-200 dark:border-pink-900/30 hover:bg-pink-100 dark:hover:bg-pink-900/20 flex flex-col sm:flex-row items-center justify-center p-1 sm:px-4 sm:py-2 gap-0.5 sm:gap-2 min-w-[50px] sm:min-w-0 transition-colors"
                 >
                   <Shield className="w-4 h-4 sm:w-4 sm:h-4" />
                   <span className="text-[9px] sm:text-sm leading-none sm:leading-normal text-center">
@@ -160,7 +164,7 @@ const RecognitionPage = () => {
             {/* Recognition Result */}
             <div className="medical-card mb-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4 sm:gap-0">
-                <h2 className="text-xl sm:text-2xl font-semibold text-green-600 flex items-center gap-2">
+                <h2 className="text-xl sm:text-2xl font-semibold text-green-600 dark:text-green-500 flex items-center gap-2 transition-colors">
                   <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6" />
                   Person Recognized
                 </h2>
@@ -184,7 +188,7 @@ const RecognitionPage = () => {
                 </div>
               </div>
 
-              <div className="bg-medical-light p-6 rounded-lg">
+              <div className="bg-medical-light dark:bg-medical-gray-800/50 p-6 rounded-lg transition-colors duration-300">
                 <div className="flex items-center gap-4 mb-6">
                   <ProfileAvatar
                     imageUrl={recognizedPerson.profile_picture_url}
@@ -194,10 +198,10 @@ const RecognitionPage = () => {
                     className="border-2 border-medical-primary"
                   />
                   <div>
-                    <h3 className="text-2xl font-bold text-medical-dark">
+                    <h3 className="text-2xl font-bold text-medical-dark dark:text-white transition-colors duration-300">
                       {recognizedPerson.name}
                     </h3>
-                    <p className="text-medical-gray-600">
+                    <p className="text-medical-gray-600 dark:text-medical-gray-400 transition-colors duration-300">
                       Confidence: {(recognizedPerson.confidence * 100).toFixed(1)}%
                     </p>
                   </div>
@@ -206,26 +210,34 @@ const RecognitionPage = () => {
                 {/* Personal Info */}
                 <div className="grid md:grid-cols-2 gap-4 mb-6">
                   <div>
-                    <p className="text-sm text-medical-gray-600">Age</p>
-                    <p className="font-medium text-medical-dark">
+                    <p className="text-sm text-medical-gray-600 dark:text-medical-gray-400 transition-colors duration-300">
+                      Age
+                    </p>
+                    <p className="font-medium text-medical-dark dark:text-white transition-colors duration-300">
                       {computeAge(recognizedPerson.date_of_birth) || recognizedPerson.age || 'N/A'}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-medical-gray-600">Gender</p>
-                    <p className="font-medium text-medical-dark capitalize">
+                    <p className="text-sm text-medical-gray-600 dark:text-medical-gray-400 transition-colors duration-300">
+                      Gender
+                    </p>
+                    <p className="font-medium text-medical-dark dark:text-white capitalize transition-colors duration-300">
                       {recognizedPerson.gender || 'N/A'}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-medical-gray-600">Nationality</p>
-                    <p className="font-medium text-medical-dark">
+                    <p className="text-sm text-medical-gray-600 dark:text-medical-gray-400 transition-colors duration-300">
+                      Nationality
+                    </p>
+                    <p className="font-medium text-medical-dark dark:text-white transition-colors duration-300">
                       {recognizedPerson.nationality || 'N/A'}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-medical-gray-600">ID Number</p>
-                    <p className="font-medium text-medical-dark">
+                    <p className="text-sm text-medical-gray-600 dark:text-medical-gray-400 transition-colors duration-300">
+                      ID Number
+                    </p>
+                    <p className="font-medium text-medical-dark dark:text-white transition-colors duration-300">
                       {recognizedPerson.id_number || 'N/A'}
                     </p>
                   </div>
@@ -233,49 +245,51 @@ const RecognitionPage = () => {
 
                 {/* Medical Info */}
                 {canViewMedicalInfo && recognizedPerson.medical_info && (
-                  <div className="border-t border-medical-gray-200 pt-4">
-                    <h4 className="font-semibold text-medical-dark mb-3">Medical Information</h4>
+                  <div className="border-t border-medical-gray-200 dark:border-medical-gray-700 pt-4 transition-colors duration-300">
+                    <h4 className="font-semibold text-medical-dark dark:text-white mb-3 transition-colors duration-300">
+                      Medical Information
+                    </h4>
                     <div className="space-y-3">
                       {recognizedPerson.medical_info.allergies && (
-                        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                          <p className="text-sm font-medium text-red-800 flex items-center gap-2">
+                        <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 rounded-lg transition-colors duration-300">
+                          <p className="text-sm font-medium text-red-800 dark:text-red-400 flex items-center gap-2">
                             <AlertTriangle className="w-4 h-4" />
                             Allergies
                           </p>
-                          <p className="text-sm text-red-600 mt-1">
+                          <p className="text-sm text-red-600 dark:text-red-300/80 mt-1">
                             {recognizedPerson.medical_info.allergies}
                           </p>
                         </div>
                       )}
                       {recognizedPerson.medical_info.chronic_conditions && (
-                        <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                          <p className="text-sm font-medium text-yellow-800 flex items-center gap-2">
+                        <div className="p-3 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-900/30 rounded-lg transition-colors duration-300">
+                          <p className="text-sm font-medium text-yellow-800 dark:text-yellow-400 flex items-center gap-2">
                             <Activity className="w-4 h-4" />
                             Chronic Conditions
                           </p>
-                          <p className="text-sm text-yellow-700 mt-1">
+                          <p className="text-sm text-yellow-700 dark:text-yellow-300/80 mt-1">
                             {recognizedPerson.medical_info.chronic_conditions}
                           </p>
                         </div>
                       )}
                       {recognizedPerson.medical_info.current_medications && (
-                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                          <p className="text-sm font-medium text-blue-800 flex items-center gap-2">
+                        <div className="p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/30 rounded-lg transition-colors duration-300">
+                          <p className="text-sm font-medium text-blue-800 dark:text-blue-400 flex items-center gap-2">
                             <Pill className="w-4 h-4" />
                             Current Medications
                           </p>
-                          <p className="text-sm text-blue-700 mt-1">
+                          <p className="text-sm text-blue-700 dark:text-blue-300/80 mt-1">
                             {recognizedPerson.medical_info.current_medications}
                           </p>
                         </div>
                       )}
                       {recognizedPerson.medical_info.emergency_notes && (
-                        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                          <p className="text-sm font-medium text-red-800 flex items-center gap-2">
+                        <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 rounded-lg transition-colors duration-300">
+                          <p className="text-sm font-medium text-red-800 dark:text-red-400 flex items-center gap-2">
                             <AlertTriangle className="w-4 h-4" />
                             Emergency Notes
                           </p>
-                          <p className="text-sm text-red-600 mt-1">
+                          <p className="text-sm text-red-600 dark:text-red-300/80 mt-1">
                             {recognizedPerson.medical_info.emergency_notes}
                           </p>
                         </div>
@@ -288,19 +302,30 @@ const RecognitionPage = () => {
                 {canViewMedicalInfo &&
                   recognizedPerson.emergency_contacts &&
                   recognizedPerson.emergency_contacts.length > 0 && (
-                    <div className="border-t border-medical-gray-200 pt-4 mt-4">
-                      <h4 className="font-semibold text-medical-dark mb-3">Emergency Contacts</h4>
+                    <div className="border-t border-medical-gray-200 dark:border-medical-gray-700 pt-4 mt-4 transition-colors duration-300">
+                      <h4 className="font-semibold text-medical-dark dark:text-white mb-3 transition-colors duration-300">
+                        Emergency Contacts
+                      </h4>
                       <div className="space-y-2">
                         {recognizedPerson.emergency_contacts.map((relative, index) => (
                           <div
                             key={index}
-                            className="flex items-center justify-between p-3 bg-white rounded-lg border border-medical-gray-200"
+                            className="flex items-center justify-between p-3 bg-white dark:bg-medical-gray-800 rounded-lg border border-medical-gray-200 dark:border-medical-gray-700 transition-colors duration-300"
                           >
                             <div>
-                              <p className="font-medium text-medical-dark">{relative.name}</p>
-                              <p className="text-sm text-medical-gray-600">{relative.relation}</p>
+                              <p className="font-medium text-medical-dark dark:text-white transition-colors duration-300">
+                                {relative.name}
+                              </p>
+                              <p className="text-xs text-medical-primary dark:text-medical-secondary font-medium transition-colors duration-300">
+                                {relative.relation}
+                              </p>
                             </div>
-                            <p className="text-medical-primary font-medium">{relative.phone}</p>
+                            <a
+                              href={`tel:${relative.phone}`}
+                              className="text-medical-primary dark:text-medical-secondary font-medium text-sm transition-colors duration-300"
+                            >
+                              {relative.phone}
+                            </a>
                           </div>
                         ))}
                       </div>
@@ -314,12 +339,16 @@ const RecognitionPage = () => {
             {loading ? (
               <div className="py-12">
                 <LoadingSpinner />
-                <p className="text-center text-medical-gray-600 mt-4">Recognizing face...</p>
+                <p className="text-center text-medical-gray-600 dark:text-medical-gray-400 mt-4 transition-colors">
+                  Recognizing face...
+                </p>
               </div>
             ) : mode === null ? (
               <>
-                <h2 className="text-2xl font-semibold text-center mb-2">Recognize a Person</h2>
-                <p className="text-medical-gray-600 text-center mb-8">
+                <h2 className="text-2xl font-semibold text-center mb-2 text-medical-dark dark:text-white transition-colors">
+                  Recognize a Person
+                </h2>
+                <p className="text-medical-gray-600 dark:text-medical-gray-400 text-center mb-8 transition-colors">
                   Use your smart glass camera or upload a photo to identify someone
                 </p>
 
@@ -342,8 +371,8 @@ const RecognitionPage = () => {
                 </div>
 
                 {error && (
-                  <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-red-600 text-sm text-center">{error}</p>
+                  <div className="mt-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 rounded-lg transition-colors">
+                    <p className="text-red-600 dark:text-red-400 text-sm text-center">{error}</p>
                   </div>
                 )}
               </>
@@ -351,15 +380,15 @@ const RecognitionPage = () => {
               <div>
                 <button
                   onClick={() => setMode(null)}
-                  className="mb-4 text-medical-primary hover:text-cyan-700 flex items-center gap-2"
+                  className="mb-4 text-medical-primary dark:text-medical-secondary hover:text-cyan-700 dark:hover:text-medical-primary flex items-center gap-2 transition-colors"
                 >
                   <ChevronLeft className="w-5 h-5" />
                   Back
                 </button>
                 <FaceCapture onCapture={handleFaceSubmit} showSwitch={true} />
                 {error && (
-                  <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-red-600 text-sm text-center">{error}</p>
+                  <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 rounded-lg transition-colors">
+                    <p className="text-red-600 dark:text-red-400 text-sm text-center">{error}</p>
                   </div>
                 )}
               </div>
@@ -367,15 +396,15 @@ const RecognitionPage = () => {
               <div>
                 <button
                   onClick={() => setMode(null)}
-                  className="mb-4 text-medical-primary hover:text-cyan-700 flex items-center gap-2"
+                  className="mb-4 text-medical-primary dark:text-medical-secondary hover:text-cyan-700 dark:hover:text-medical-primary flex items-center gap-2 transition-colors"
                 >
                   <ChevronLeft className="w-5 h-5" />
                   Back
                 </button>
                 <FaceUploader onUpload={handleFaceSubmit} />
                 {error && (
-                  <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-red-600 text-sm text-center">{error}</p>
+                  <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 rounded-lg transition-colors">
+                    <p className="text-red-600 dark:text-red-400 text-sm text-center">{error}</p>
                   </div>
                 )}
               </div>

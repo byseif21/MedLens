@@ -156,31 +156,31 @@ const AddConnectionModal = ({
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4"
       onClick={handleBackdropClick}
     >
-      <div className="bg-white rounded-lg shadow-medical-lg w-full max-w-2xl overflow-hidden animate-slide-down flex flex-col max-h-[90vh]">
+      <div className="bg-white dark:bg-medical-gray-900 rounded-lg shadow-lg shadow-medical-primary/15 w-full max-w-2xl overflow-hidden animate-slide-down flex flex-col max-h-[90vh] border border-transparent dark:border-medical-gray-800 transition-colors">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-medical-gray-200">
-          <h2 className="text-2xl font-semibold text-medical-dark">
+        <div className="flex items-center justify-between p-6 border-b border-medical-gray-200 dark:border-medical-gray-800 transition-colors">
+          <h2 className="text-2xl font-semibold text-medical-dark dark:text-white transition-colors">
             {isEditMode ? (isEditingLinked ? 'Edit Connection' : 'Edit Contact') : 'Add Connection'}
           </h2>
           <button
             onClick={handleClose}
             disabled={isSubmitting}
-            className="p-2 hover:bg-medical-light rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="p-2 hover:bg-medical-light dark:hover:bg-medical-gray-800 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <X className="w-6 h-6 text-medical-gray-600" />
+            <X className="w-6 h-6 text-medical-gray-600 dark:text-medical-gray-400 transition-colors" />
           </button>
         </div>
 
         {/* Tab Toggle - Hide when editing */}
         {!isEditMode && (
-          <div className="flex border-b border-medical-gray-200">
+          <div className="flex border-b border-medical-gray-200 dark:border-medical-gray-800 transition-colors">
             <button
               onClick={() => setActiveTab('search')}
               disabled={isSubmitting}
               className={`flex-1 py-4 px-6 font-medium transition-colors disabled:opacity-50 ${
                 activeTab === 'search'
-                  ? 'text-medical-primary border-b-2 border-medical-primary bg-medical-light'
-                  : 'text-medical-gray-600 hover:bg-medical-gray-50'
+                  ? 'text-medical-primary border-b-2 border-medical-primary bg-medical-light dark:bg-medical-primary/10'
+                  : 'text-medical-gray-600 dark:text-medical-gray-400 hover:bg-medical-gray-50 dark:hover:bg-medical-gray-800'
               }`}
             >
               Search Existing User
@@ -190,8 +190,8 @@ const AddConnectionModal = ({
               disabled={isSubmitting}
               className={`flex-1 py-4 px-6 font-medium transition-colors disabled:opacity-50 ${
                 activeTab === 'external'
-                  ? 'text-medical-primary border-b-2 border-medical-primary bg-medical-light'
-                  : 'text-medical-gray-600 hover:bg-medical-gray-50'
+                  ? 'text-medical-primary border-b-2 border-medical-primary bg-medical-light dark:bg-medical-primary/10'
+                  : 'text-medical-gray-600 dark:text-medical-gray-400 hover:bg-medical-gray-50 dark:hover:bg-medical-gray-800'
               }`}
             >
               External Contact
@@ -203,18 +203,20 @@ const AddConnectionModal = ({
         <div className="p-6 overflow-y-auto flex-1 min-h-0">
           {isEditMode && isEditingLinked ? (
             <div className="space-y-6">
-              <div className="p-4 bg-medical-light border border-medical-primary/20 rounded-lg">
-                <p className="text-sm text-medical-gray-600 mb-2">Connection:</p>
-                <p className="font-semibold text-medical-dark">
+              <div className="p-4 bg-medical-light dark:bg-medical-gray-800/50 border border-medical-primary/20 dark:border-medical-primary/10 rounded-lg transition-colors">
+                <p className="text-sm text-medical-gray-600 dark:text-medical-gray-400 mb-2 transition-colors">
+                  Connection:
+                </p>
+                <p className="font-semibold text-medical-dark dark:text-white transition-colors">
                   {editingContact.connected_user?.name}
                 </p>
                 {editingContact.connected_user?.id && (
-                  <p className="text-xs text-medical-gray-500 font-mono">
+                  <p className="text-xs text-medical-gray-500 dark:text-medical-gray-500 font-mono transition-colors">
                     ID: {editingContact.connected_user.id.substring(0, 8).toUpperCase()}
                   </p>
                 )}
                 {editingContact.connected_user?.email && (
-                  <p className="text-sm text-medical-gray-400">
+                  <p className="text-sm text-medical-gray-400 dark:text-medical-gray-400 transition-colors">
                     {editingContact.connected_user.email}
                   </p>
                 )}
@@ -236,16 +238,22 @@ const AddConnectionModal = ({
 
               {selectedUser && (
                 <div className="space-y-4">
-                  <div className="p-4 bg-medical-light border border-medical-primary/20 rounded-lg">
-                    <p className="text-sm text-medical-gray-600 mb-2">Selected User:</p>
-                    <p className="font-semibold text-medical-dark">{selectedUser.name}</p>
-                    <p className="text-xs text-medical-gray-500 font-mono">
+                  <div className="p-4 bg-medical-light dark:bg-medical-gray-800/50 border border-medical-primary/20 dark:border-medical-primary/10 rounded-lg transition-colors">
+                    <p className="text-sm text-medical-gray-600 dark:text-medical-gray-400 mb-2 transition-colors">
+                      Selected User:
+                    </p>
+                    <p className="font-semibold text-medical-dark dark:text-white transition-colors">
+                      {selectedUser.name}
+                    </p>
+                    <p className="text-xs text-medical-gray-500 dark:text-medical-gray-500 font-mono transition-colors">
                       ID: {selectedUser.id.substring(0, 8).toUpperCase()}
                     </p>
                     {selectedUser.email && (
-                      <p className="text-sm text-medical-gray-400">{selectedUser.email}</p>
+                      <p className="text-sm text-medical-gray-400 dark:text-medical-gray-400 transition-colors">
+                        {selectedUser.email}
+                      </p>
                     )}
-                    <div className="mt-3 p-2 bg-yellow-50 border border-yellow-100 rounded text-xs text-yellow-800 flex items-start gap-2">
+                    <div className="mt-3 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-100 dark:border-yellow-800 rounded text-xs text-yellow-800 dark:text-yellow-400 flex items-start gap-2 transition-colors">
                       <Info className="w-4 h-4 mt-0.5 shrink-0" />
                       <span>
                         Sending a request will allow this user to see your name and email. Once they
@@ -274,7 +282,7 @@ const AddConnectionModal = ({
 
         {/* Footer - Only show for search tab */}
         {isEditMode && isEditingLinked ? (
-          <div className="flex justify-end gap-3 p-6 border-t border-medical-gray-200">
+          <div className="flex justify-end gap-3 p-6 border-t border-medical-gray-200 dark:border-medical-gray-800 transition-colors">
             <button
               onClick={handleClose}
               disabled={isSubmitting}
@@ -293,7 +301,7 @@ const AddConnectionModal = ({
         ) : (
           activeTab === 'search' &&
           !isEditMode && (
-            <div className="flex justify-end gap-3 p-6 border-t border-medical-gray-200">
+            <div className="flex justify-end gap-3 p-6 border-t border-medical-gray-200 dark:border-medical-gray-800 transition-colors">
               <button
                 onClick={handleClose}
                 disabled={isSubmitting}

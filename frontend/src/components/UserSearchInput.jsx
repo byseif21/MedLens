@@ -38,20 +38,22 @@ const UserSearchInput = ({ onUserSelect, selectedUser = null, currentUserId = nu
           {loading ? (
             <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-medical-primary"></div>
           ) : (
-            <Search className="w-5 h-5 text-medical-gray-400" />
+            <Search className="w-5 h-5 text-medical-gray-400 dark:text-medical-gray-500 transition-colors" />
           )}
         </div>
       </div>
 
       {/* Search hint */}
       {searchQuery.length > 0 && searchQuery.length < 2 && (
-        <p className="text-sm text-medical-gray-500">Type at least 2 characters to search</p>
+        <p className="text-sm text-medical-gray-500 dark:text-medical-gray-400 transition-colors">
+          Type at least 2 characters to search
+        </p>
       )}
 
       {/* Error message */}
       {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-sm text-red-600">{error}</p>
+        <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg transition-colors">
+          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
         </div>
       )}
 

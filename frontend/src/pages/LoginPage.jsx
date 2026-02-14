@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Camera, Upload, ChevronLeft } from 'lucide-react';
+import ThemeToggle from '../components/ThemeToggle';
 import FaceCapture from '../components/FaceCapture';
 import FaceUploader from '../components/FaceUploader';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -192,7 +193,10 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-medical-gradient flex items-center justify-center p-4">
+    <div className="min-h-screen bg-medical-gradient flex items-center justify-center p-4 transition-colors duration-300">
+      <div className="absolute top-6 right-6">
+        <ThemeToggle className="scale-90 shadow-sm" />
+      </div>
       <div className="w-full max-w-md">
         {/* Logo/Header */}
         <div className="text-center mb-8 animate-fade-in">
@@ -201,16 +205,18 @@ const LoginPage = () => {
               <img
                 src="/MedLens.png"
                 alt="MedLens Logo"
-                className="h-56 md:h-64 w-auto object-contain transition-transform duration-300 hover:scale-105"
+                className="h-56 md:h-64 w-auto object-contain transition-transform duration-300 hover:scale-105 drop-shadow-none dark:drop-shadow-[0_0_12px_rgba(255,255,255,0.45)]"
               />
             </Link>
           </div>
-          <p className="text-gray-500 mt-2">Secure Medical Identity System</p>
+          <p className="text-gray-500 dark:text-medical-gray-400 mt-2">
+            Secure Medical Identity System
+          </p>
         </div>
 
         {/* Login Method Tabs */}
         <div className="medical-card mb-4">
-          <div className="flex gap-2 p-1 bg-medical-gray-100 rounded-lg">
+          <div className="flex gap-2 p-1 bg-medical-gray-100 dark:bg-medical-gray-900/50 rounded-lg transition-colors">
             <button
               onClick={() => {
                 setLoginMethod('traditional');
@@ -221,8 +227,8 @@ const LoginPage = () => {
               }}
               className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${
                 loginMethod === 'traditional'
-                  ? 'bg-white text-medical-primary shadow-medical'
-                  : 'text-medical-gray-600 hover:text-medical-dark'
+                  ? 'bg-white dark:bg-medical-gray-800 text-medical-primary dark:text-white shadow-sm'
+                  : 'text-medical-gray-600 dark:text-medical-gray-400 hover:text-medical-dark dark:hover:text-white'
               }`}
             >
               Email Login
@@ -236,11 +242,11 @@ const LoginPage = () => {
               }}
               className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${
                 loginMethod === 'face'
-                  ? 'bg-white text-medical-primary shadow-medical'
-                  : 'text-medical-gray-600 hover:text-medical-dark'
+                  ? 'bg-white dark:bg-medical-gray-800 text-medical-primary dark:text-white shadow-sm'
+                  : 'text-medical-gray-600 dark:text-medical-gray-400 hover:text-medical-dark dark:hover:text-white'
               }`}
             >
-              Face ID
+              Face Login
             </button>
           </div>
         </div>
@@ -250,11 +256,15 @@ const LoginPage = () => {
           {loading ? (
             <div className="py-12">
               <LoadingSpinner />
-              <p className="text-center text-medical-gray-600 mt-4">Authenticating...</p>
+              <p className="text-center text-medical-gray-600 dark:text-medical-gray-400 mt-4 transition-colors">
+                Authenticating...
+              </p>
             </div>
           ) : loginMethod === 'traditional' ? (
             <>
-              <h2 className="text-2xl font-semibold text-center mb-6">Login to Your Account</h2>
+              <h2 className="text-2xl font-semibold text-center mb-6 text-medical-dark dark:text-white transition-colors">
+                Login to Your Account
+              </h2>
 
               <form onSubmit={handleTraditionalLogin} className="space-y-4">
                 <div>
@@ -284,8 +294,8 @@ const LoginPage = () => {
                 </div>
 
                 {error && (
-                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-red-600 text-sm text-center">{error}</p>
+                  <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 rounded-lg transition-colors">
+                    <p className="text-red-600 dark:text-red-400 text-sm text-center">{error}</p>
                   </div>
                 )}
 
@@ -316,10 +326,10 @@ const LoginPage = () => {
                   userName={faceIdentifiedUser.name}
                   size="xl"
                   clickable={false}
-                  className="shadow-medical-lg"
+                  className="shadow-lg"
                 />
-                <h2 className="text-2xl font-semibold mt-5">{`Welcome ${faceIdentifiedUser.name}`}</h2>
-                <p className="text-medical-gray-600 mt-2">
+                <h2 className="text-2xl font-semibold mt-5 text-medical-dark dark:text-white transition-colors">{`Welcome ${faceIdentifiedUser.name}`}</h2>
+                <p className="text-medical-gray-600 dark:text-medical-gray-400 mt-2 transition-colors">
                   Face verified. Enter your password to finish signing in.
                 </p>
               </div>
@@ -339,8 +349,8 @@ const LoginPage = () => {
                 </div>
 
                 {error && (
-                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-red-600 text-sm text-center">{error}</p>
+                  <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 rounded-lg transition-colors">
+                    <p className="text-red-600 dark:text-red-400 text-sm text-center">{error}</p>
                   </div>
                 )}
 
@@ -351,8 +361,10 @@ const LoginPage = () => {
             </div>
           ) : faceMode === null ? (
             <>
-              <h2 className="text-2xl font-semibold text-center mb-2">Login with Face ID</h2>
-              <p className="text-medical-gray-600 text-center mb-8">
+              <h2 className="text-2xl font-semibold text-center mb-2 text-medical-dark dark:text-white transition-colors">
+                Login with Face ID
+              </h2>
+              <p className="text-medical-gray-600 dark:text-medical-gray-400 text-center mb-8 transition-colors">
                 Authenticate using your registered face
               </p>
 
@@ -375,8 +387,8 @@ const LoginPage = () => {
               </div>
 
               {error && (
-                <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-red-600 text-sm text-center">{error}</p>
+                <div className="mt-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 rounded-lg transition-colors">
+                  <p className="text-red-600 dark:text-red-400 text-sm text-center">{error}</p>
                 </div>
               )}
             </>
@@ -391,8 +403,8 @@ const LoginPage = () => {
               </button>
               <FaceCapture onCapture={handleFaceSubmit} variant="sm" />
               {error && (
-                <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-red-600 text-sm text-center">{error}</p>
+                <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 rounded-lg transition-colors">
+                  <p className="text-red-600 dark:text-red-400 text-sm text-center">{error}</p>
                 </div>
               )}
             </div>
@@ -407,16 +419,18 @@ const LoginPage = () => {
               </button>
               <FaceUploader onUpload={handleFaceSubmit} />
               {error && (
-                <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-red-600 text-sm text-center">{error}</p>
+                <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 rounded-lg transition-colors">
+                  <p className="text-red-600 dark:text-red-400 text-sm text-center">{error}</p>
                 </div>
               )}
             </div>
           )}
 
           {/* Register Link */}
-          <div className="mt-6 pt-6 border-t border-medical-gray-200 text-center">
-            <p className="text-medical-gray-600 text-sm mb-3">Don&apos;t have an account?</p>
+          <div className="mt-6 pt-6 border-t border-medical-gray-200 dark:border-medical-gray-700 text-center transition-colors">
+            <p className="text-medical-gray-600 dark:text-medical-gray-400 text-sm mb-3 transition-colors">
+              Don&apos;t have an account?
+            </p>
             <Link to="/register" className="text-medical-primary hover:text-cyan-700 font-medium">
               Register New User →
             </Link>

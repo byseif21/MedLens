@@ -13,9 +13,7 @@ const MainInfoForm = ({ formData, errors, isEditing, onChange }) => {
           value={formData.name}
           onChange={onChange}
           disabled={!isEditing}
-          className={`input-medical disabled:bg-medical-gray-50 disabled:cursor-not-allowed ${
-            errors.name ? 'border-red-500' : ''
-          }`}
+          className={`input-medical ${errors.name ? 'border-red-500' : ''}`}
         />
         {errors.name && <p className="text-sm text-red-500 mt-1">{errors.name}</p>}
       </div>
@@ -28,9 +26,7 @@ const MainInfoForm = ({ formData, errors, isEditing, onChange }) => {
           value={formData.phone}
           onChange={onChange}
           disabled={!isEditing}
-          className={`input-medical disabled:bg-medical-gray-50 disabled:cursor-not-allowed ${
-            errors.phone ? 'border-red-500' : ''
-          }`}
+          className={`input-medical ${errors.phone ? 'border-red-500' : ''}`}
         />
         {errors.phone && <p className="text-sm text-red-500 mt-1">{errors.phone}</p>}
       </div>
@@ -41,7 +37,8 @@ const MainInfoForm = ({ formData, errors, isEditing, onChange }) => {
           type="text"
           value={computeAge(formData.date_of_birth)}
           readOnly
-          className="input-medical disabled:bg-medical-gray-50 disabled:cursor-not-allowed"
+          disabled={!isEditing}
+          className="input-medical"
         />
       </div>
 
@@ -68,9 +65,7 @@ const MainInfoForm = ({ formData, errors, isEditing, onChange }) => {
           value={formData.nationality}
           onChange={onChange}
           disabled={!isEditing}
-          className={`input-medical disabled:bg-medical-gray-50 disabled:cursor-not-allowed ${
-            errors.nationality ? 'border-red-500' : ''
-          }`}
+          className={`input-medical ${errors.nationality ? 'border-red-500' : ''}`}
         >
           <option value="">Select Nationality</option>
           {countries.map((c) => (
@@ -89,9 +84,7 @@ const MainInfoForm = ({ formData, errors, isEditing, onChange }) => {
           value={formData.gender}
           onChange={onChange}
           disabled={!isEditing}
-          className={`input-medical disabled:bg-medical-gray-50 disabled:cursor-not-allowed ${
-            errors.gender ? 'border-red-500' : ''
-          }`}
+          className={`input-medical ${errors.gender ? 'border-red-500' : ''}`}
         >
           <option value="">Select Gender</option>
           <option value="male">Male</option>
@@ -109,7 +102,7 @@ const MainInfoForm = ({ formData, errors, isEditing, onChange }) => {
           value={formData.id_number}
           onChange={onChange}
           disabled={!isEditing}
-          className={`input-medical disabled:bg-medical-gray-50 disabled:cursor-not-allowed ${
+          className={`input-medical disabled:bg-medical-gray-50 dark:disabled:bg-medical-gray-800/50 disabled:cursor-not-allowed ${
             errors.id_number ? 'border-red-500' : ''
           }`}
         />

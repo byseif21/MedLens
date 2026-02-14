@@ -4,10 +4,10 @@ import { Link as LinkIcon, Globe, Mail, Phone, MapPin, Edit2, Trash2 } from 'luc
 
 const ConnectionBadge = ({ isLinked }) => (
   <span
-    className={`px-2 py-1 text-xs font-medium rounded-full ${
+    className={`px-2 py-1 text-xs font-medium rounded-full transition-colors ${
       isLinked
-        ? 'bg-medical-primary/10 text-medical-primary'
-        : 'bg-medical-gray-200 text-medical-gray-700'
+        ? 'bg-medical-primary/10 dark:bg-medical-primary/20 text-medical-primary'
+        : 'bg-medical-gray-200 dark:bg-medical-gray-700 text-medical-gray-700 dark:text-medical-gray-300'
     }`}
   >
     {isLinked ? (
@@ -33,7 +33,7 @@ const ConnectionActions = ({ onEdit, onRemove, connection, isLinked }) => (
     {onEdit && (
       <button
         onClick={() => onEdit(connection)}
-        className="p-2 text-medical-primary hover:bg-medical-light rounded-lg transition-colors"
+        className="p-2 text-medical-primary dark:text-medical-secondary hover:bg-medical-primary/10 dark:hover:bg-medical-secondary/10 rounded-lg transition-all hover:scale-110 active:scale-95"
         title={isLinked ? 'Edit connection' : 'Edit contact'}
       >
         <Edit2 className="w-5 h-5" />
@@ -43,7 +43,7 @@ const ConnectionActions = ({ onEdit, onRemove, connection, isLinked }) => (
     {onRemove && (
       <button
         onClick={() => onRemove(connection)}
-        className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+        className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-all hover:scale-110 active:scale-95"
         title="Remove connection"
       >
         <Trash2 className="w-5 h-5" />
@@ -62,7 +62,7 @@ ConnectionActions.propTypes = {
 const ContactItem = ({ icon: Icon, text }) => {
   if (!text) return null;
   return (
-    <p className="text-medical-gray-600 text-sm flex items-center gap-2">
+    <p className="text-medical-gray-600 dark:text-medical-gray-400 text-sm flex items-center gap-2 transition-colors">
       <Icon className="w-4 h-4" />
       {text}
     </p>
@@ -102,12 +102,14 @@ const ConnectionHeader = ({ connection, isLinked }) => (
     {isLinked ? (
       <Link
         to={`/profile/${connection.connected_user?.id}`}
-        className="font-semibold text-medical-dark text-lg hover:text-medical-primary transition-colors"
+        className="font-semibold text-medical-dark dark:text-white text-lg hover:text-medical-primary dark:hover:text-medical-secondary transition-colors"
       >
         {connection.connected_user?.name}
       </Link>
     ) : (
-      <h3 className="font-semibold text-medical-dark text-lg">{connection.name}</h3>
+      <h3 className="font-semibold text-medical-dark dark:text-white text-lg transition-colors">
+        {connection.name}
+      </h3>
     )}
     <ConnectionBadge isLinked={isLinked} />
   </div>
@@ -122,7 +124,7 @@ const ConnectionCard = ({ connection, type, onEdit, onRemove, showActions = fals
   const isLinked = type === 'linked';
 
   return (
-    <div className="medical-card hover:shadow-medical-hover transition-shadow">
+    <div className="medical-card hover:shadow-xl hover:shadow-medical-primary/25 dark:hover:shadow-lg dark:hover:shadow-medical-primary/20 transition-all duration-500 ease-in-out">
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 sm:gap-0">
         <div className="flex-1 w-full">
           <ConnectionHeader connection={connection} isLinked={isLinked} />

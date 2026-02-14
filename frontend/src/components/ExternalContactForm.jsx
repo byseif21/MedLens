@@ -21,8 +21,8 @@ const ExternalContactForm = ({
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* Submit Error */}
       {errors.submit && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-sm text-red-600">{errors.submit}</p>
+        <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg transition-colors">
+          <p className="text-sm text-red-600 dark:text-red-400">{errors.submit}</p>
         </div>
       )}
 

@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
@@ -22,20 +23,14 @@ export default {
             700: '#334155',
             800: '#1e293b',
             900: '#0f172a',
+            950: '#020617',
           },
         },
       },
       backgroundImage: {
-        'medical-gradient': 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
-        'medical-card': 'linear-gradient(to bottom right, #ffffff, #f8fafc)',
+        // in index.css with dark mode support
       },
-      boxShadow: {
-        medical: '0 4px 6px -1px rgba(8, 145, 178, 0.1), 0 2px 4px -1px rgba(8, 145, 178, 0.06)',
-        'medical-lg':
-          '0 10px 15px -3px rgba(8, 145, 178, 0.1), 0 4px 6px -2px rgba(8, 145, 178, 0.05)',
-        'medical-hover':
-          '0 20px 25px -5px rgba(8, 145, 178, 0.15), 0 10px 10px -5px rgba(8, 145, 178, 0.04)',
-      },
+      boxShadow: {},
       fontFamily: {
         sans: [
           'Inter',

@@ -23,7 +23,12 @@ import {
   Lightbulb,
   Battery,
   Plug,
+  Palette,
+  Sun,
+  Moon,
+  Monitor,
 } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 import FaceUploader from '../components/FaceUploader';
 import MultiFaceCapture from '../components/MultiFaceCapture';
 import ProfileAvatar from '../components/ProfileAvatar';
@@ -85,10 +90,12 @@ const SettingsPage = () => {
     batteryLevel,
   } = useSmartGlass();
 
+  const { theme, setTheme } = useTheme();
   const userId = user?.id;
 
   const settingsTabs = [
     { id: 'profile', label: 'Profile Picture', icon: User },
+    { id: 'appearance', label: 'Appearance', icon: Palette },
     { id: 'privacy', label: 'Privacy Settings', icon: Shield },
     { id: 'device', label: 'Smart Glass Preferences', icon: ScanFace },
     { id: 'security', label: 'Security & Face ID', icon: Key },
@@ -404,16 +411,26 @@ const SettingsPage = () => {
     { label: 'At least one letter', met: /[a-zA-Z]/.test(passwordForm.newPassword) },
   ];
 
+  if (isLoadingProfile) {
+    return (
+      <div className="min-h-screen bg-medical-gradient flex items-center justify-center transition-colors duration-300">
+        <LoadingSpinner size="lg" text="Loading settings..." />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-medical-gradient">
-      <header className="bg-white shadow-medical">
+    <div className="min-h-screen bg-medical-gradient transition-colors duration-300">
+      <header className="bg-white dark:bg-medical-gray-900 shadow-md shadow-medical-primary/10 dark:shadow-none border-b border-transparent dark:border-medical-gray-800 transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <ProfileAvatar imageUrl={user?.profile_picture_url} userName={user?.name} size="lg" />
               <div>
-                <h1 className="text-xl font-bold text-medical-dark">Account Settings</h1>
-                <p className="text-sm text-medical-gray-600">
+                <h1 className="text-xl font-bold text-medical-dark dark:text-white">
+                  Account Settings
+                </h1>
+                <p className="text-sm text-medical-gray-600 dark:text-medical-gray-400">
                   Manage your Face ID, profile photo, and smart glass preferences.
                 </p>
               </div>
@@ -443,8 +460,8 @@ const SettingsPage = () => {
                   onClick={() => setActiveSection(tab.id)}
                   className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium border flex items-center gap-3 transition-colors ${
                     activeSection === tab.id
-                      ? 'bg-medical-primary text-white border-medical-primary'
-                      : 'bg-white text-medical-gray-700 border-medical-gray-200 hover:bg-medical-gray-50'
+                      ? 'bg-medical-primary text-white border-medical-primary shadow-md shadow-medical-primary/20'
+                      : 'bg-white dark:bg-medical-gray-800 text-medical-gray-700 dark:text-medical-gray-300 border-medical-gray-200 dark:border-medical-gray-700 hover:bg-medical-gray-50 dark:hover:bg-medical-gray-700'
                   }`}
                 >
                   <Icon className="w-5 h-5" />
@@ -459,8 +476,8 @@ const SettingsPage = () => {
               <div className="medical-card">
                 <div className="flex items-start justify-between mb-6">
                   <div>
-                    <h2 className="text-2xl font-semibold mb-1">Profile Picture</h2>
-                    <p className="text-sm text-medical-gray-600">
+                    <h2 className="text-2xl font-semibold dark:text-white mb-1">Profile Picture</h2>
+                    <p className="text-sm text-medical-gray-600 dark:text-medical-gray-400">
                       Choose a new profile photo. This is used in the dashboard and recognition
                       results but does not change your medical information.
                     </p>
@@ -474,9 +491,9 @@ const SettingsPage = () => {
                       userName={user?.name}
                       size="xl"
                       clickable={false}
-                      className="shadow-medical-lg"
+                      className="shadow-lg shadow-medical-primary/15 dark:ring-2 dark:ring-medical-primary/20"
                     />
-                    <p className="text-sm text-medical-gray-600 text-center">
+                    <p className="text-sm text-medical-gray-600 dark:text-medical-gray-400 text-center">
                       Current profile picture as seen in your dashboard and recognition cards.
                     </p>
                   </div>
@@ -493,7 +510,7 @@ const SettingsPage = () => {
                       </div>
                     )}
                     {selectedAvatarFile && !isSubmittingAvatar && (
-                      <p className="mt-3 text-sm text-medical-gray-600">
+                      <p className="mt-3 text-sm text-medical-gray-600 dark:text-medical-gray-400">
                         Selected file: {selectedAvatarFile.name}
                       </p>
                     )}
@@ -502,12 +519,83 @@ const SettingsPage = () => {
               </div>
             )}
 
+            {activeSection === 'appearance' && (
+              <div className="medical-card">
+                <div className="flex items-start justify-between mb-6">
+                  <div>
+                    <h2 className="text-2xl font-semibold dark:text-white mb-1">Appearance</h2>
+                    <p className="text-sm text-medical-gray-600 dark:text-medical-gray-400">
+                      Customize how MedLens looks for you. Choose between light, dark, or follow
+                      your system preference.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-6 bg-medical-gray-50 dark:bg-medical-gray-900/50 rounded-2xl border border-medical-gray-100 dark:border-medical-gray-700 transition-colors">
+                  <h3 className="text-sm font-semibold text-medical-gray-900 dark:text-white mb-6 uppercase tracking-wider">
+                    Theme Mode
+                  </h3>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {[
+                      { id: 'light', label: 'Light', icon: Sun, desc: 'Classic bright view' },
+                      { id: 'auto', label: 'Auto', icon: Monitor, desc: 'Follow system' },
+                      { id: 'dark', label: 'Dark', icon: Moon, desc: 'Easier on the eyes' },
+                    ].map((mode) => {
+                      const Icon = mode.icon;
+                      const isSelected = theme === mode.id;
+                      return (
+                        <button
+                          key={mode.id}
+                          onClick={() => setTheme(mode.id)}
+                          className={`flex flex-col items-center justify-center p-6 rounded-xl border-2 transition-all duration-300 ${
+                            isSelected
+                              ? 'bg-white dark:bg-medical-gray-800 border-medical-primary shadow-lg shadow-medical-primary/10 ring-4 ring-medical-primary/5'
+                              : 'bg-medical-gray-50 dark:bg-medical-gray-900/40 border-transparent hover:border-medical-gray-200 dark:hover:border-medical-gray-700 hover:bg-white dark:hover:bg-medical-gray-800'
+                          }`}
+                        >
+                          <div
+                            className={`p-3 rounded-full mb-3 transition-colors ${
+                              isSelected
+                                ? 'bg-medical-primary text-white'
+                                : 'bg-medical-gray-100 dark:bg-medical-gray-800 text-medical-gray-500 dark:text-medical-gray-400'
+                            }`}
+                          >
+                            <Icon size={24} />
+                          </div>
+                          <span
+                            className={`font-bold text-lg mb-1 ${
+                              isSelected
+                                ? 'text-medical-gray-900 dark:text-white'
+                                : 'text-medical-gray-600 dark:text-medical-gray-400'
+                            }`}
+                          >
+                            {mode.label}
+                          </span>
+                          <span className="text-xs text-medical-gray-500 dark:text-medical-gray-500 text-center">
+                            {mode.desc}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <p className="mt-6 text-xs text-medical-gray-500 dark:text-medical-gray-400 italic">
+                    * Auto mode will automatically switch between light and dark based on your
+                    operating system settings.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {activeSection === 'privacy' && (
               <div className="medical-card">
                 <div className="flex items-start justify-between mb-6">
                   <div>
-                    <h2 className="text-2xl font-semibold mb-1">Privacy Settings</h2>
-                    <p className="text-sm text-medical-gray-600">
+                    <h2 className="text-2xl font-semibold dark:text-white mb-1">
+                      Privacy Settings
+                    </h2>
+                    <p className="text-sm text-medical-gray-600 dark:text-medical-gray-400">
                       Control what information is visible to other users when they recognize your
                       face. Doctors and admins will always have full access.
                     </p>
@@ -517,14 +605,14 @@ const SettingsPage = () => {
                 <div className="space-y-6">
                   {/* Master Privacy Switch */}
                   <div
-                    className={`flex items-center justify-between p-4 border border-medical-gray-200 rounded-lg bg-white ${isLoadingProfile ? 'opacity-60' : ''}`}
+                    className={`flex items-center justify-between p-4 border border-medical-gray-200 dark:border-medical-gray-700 rounded-lg bg-white dark:bg-medical-gray-800/50 transition-colors ${isLoadingProfile ? 'opacity-60' : ''}`}
                   >
                     <div>
-                      <h3 className="font-medium text-gray-900 flex items-center gap-2">
+                      <h3 className="font-medium text-medical-dark dark:text-white flex items-center gap-2">
                         <Eye className="w-5 h-5 text-medical-primary" />
                         Public Profile Visibility
                       </h3>
-                      <p className="text-sm text-medical-gray-600">
+                      <p className="text-sm text-medical-gray-600 dark:text-medical-gray-400">
                         {privacySettings.is_name_public
                           ? 'Your profile is visible to others. You can customize what details are shown below.'
                           : 'Private Mode enabled. Your name is hidden and all other details are automatically concealed from public users.'}
@@ -538,7 +626,7 @@ const SettingsPage = () => {
                         disabled={isLoadingProfile}
                         onChange={(e) => handlePrivacyUpdate('is_name_public', e.target.checked)}
                       />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-cyan-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-medical-primary"></div>
+                      <div className="w-11 h-6 bg-gray-200 dark:bg-medical-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-cyan-300 dark:peer-focus:ring-cyan-900 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 dark:after:border-medical-gray-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-medical-primary"></div>
                     </label>
                   </div>
 
@@ -546,17 +634,17 @@ const SettingsPage = () => {
                   <div
                     className={`space-y-4 transition-opacity duration-200 ${!privacySettings.is_name_public || isLoadingProfile ? 'opacity-50 pointer-events-none' : ''}`}
                   >
-                    <h4 className="font-medium text-medical-dark pt-2">
+                    <h4 className="font-medium text-medical-dark dark:text-white pt-2">
                       Detailed Visibility Settings
                     </h4>
 
-                    <div className="flex items-center justify-between p-4 border border-medical-gray-200 rounded-lg bg-white">
+                    <div className="flex items-center justify-between p-4 border border-medical-gray-200 dark:border-medical-gray-700 rounded-lg bg-white dark:bg-medical-gray-800 transition-colors">
                       <div>
-                        <h3 className="font-medium text-gray-900 flex items-center gap-2">
+                        <h3 className="font-medium text-medical-dark dark:text-white flex items-center gap-2">
                           <FileText className="w-4 h-4 text-medical-primary" />
                           Show Government ID
                         </h3>
-                        <p className="text-sm text-medical-gray-600">
+                        <p className="text-sm text-medical-gray-600 dark:text-medical-gray-400">
                           Allow others to see your ID number (Default: Hidden).
                         </p>
                       </div>
@@ -572,17 +660,17 @@ const SettingsPage = () => {
                             handlePrivacyUpdate('is_id_number_public', e.target.checked)
                           }
                         />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-cyan-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-medical-primary"></div>
+                        <div className="w-11 h-6 bg-gray-200 dark:bg-medical-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-cyan-300 dark:peer-focus:ring-cyan-900 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 dark:after:border-medical-gray-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-medical-primary"></div>
                       </label>
                     </div>
 
-                    <div className="flex items-center justify-between p-4 border border-medical-gray-200 rounded-lg bg-white">
+                    <div className="flex items-center justify-between p-4 border border-medical-gray-200 dark:border-medical-gray-700 rounded-lg bg-white dark:bg-medical-gray-800 transition-colors">
                       <div>
-                        <h3 className="font-medium text-gray-900 flex items-center gap-2">
+                        <h3 className="font-medium text-medical-dark dark:text-white flex items-center gap-2">
                           <Phone className="w-4 h-4 text-medical-primary" />
                           Show Phone Number
                         </h3>
-                        <p className="text-sm text-medical-gray-600">
+                        <p className="text-sm text-medical-gray-600 dark:text-medical-gray-400">
                           Allow others to see your phone number.
                         </p>
                       </div>
@@ -596,14 +684,14 @@ const SettingsPage = () => {
                           disabled={!privacySettings.is_name_public}
                           onChange={(e) => handlePrivacyUpdate('is_phone_public', e.target.checked)}
                         />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-cyan-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-medical-primary"></div>
+                        <div className="w-11 h-6 bg-gray-200 dark:bg-medical-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-cyan-300 dark:peer-focus:ring-cyan-900 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 dark:after:border-medical-gray-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-medical-primary"></div>
                       </label>
                     </div>
 
-                    {/*<div className="flex items-center justify-between p-4 border border-medical-gray-200 rounded-lg bg-white">
+                    {/*<div className="flex items-center justify-between p-4 border border-medical-gray-200 dark:border-medical-gray-700/50 rounded-lg bg-white dark:bg-medical-gray-800/50">
                       <div>
-                        <h3 className="font-medium text-gray-900">Show Email Address</h3>
-                        <p className="text-sm text-medical-gray-600">Allow others to see your email address.</p>
+                        <h3 className="font-medium text-gray-900 dark:text-white">Show Email Address</h3>
+                        <p className="text-sm text-medical-gray-600 dark:text-medical-gray-400">Allow others to see your email address.</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
                         <input 
@@ -613,17 +701,17 @@ const SettingsPage = () => {
                           disabled={!privacySettings.is_name_public}
                           onChange={(e) => handlePrivacyUpdate('is_email_public', e.target.checked)}
                         />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-cyan-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-medical-primary"></div>
+                        <div className="w-11 h-6 bg-gray-200 dark:bg-medical-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-cyan-300 dark:peer-focus:ring-cyan-900 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 dark:after:border-medical-gray-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-medical-primary"></div>
                       </label>
                     </div>*/}
 
-                    <div className="flex items-center justify-between p-4 border border-medical-gray-200 rounded-lg bg-white">
+                    <div className="flex items-center justify-between p-4 border border-medical-gray-200 dark:border-medical-gray-700 rounded-lg bg-white dark:bg-medical-gray-800 transition-colors">
                       <div>
-                        <h3 className="font-medium text-gray-900 flex items-center gap-2">
+                        <h3 className="font-medium text-medical-dark dark:text-white flex items-center gap-2">
                           <Calendar className="w-4 h-4 text-medical-primary" />
                           Show Age
                         </h3>
-                        <p className="text-sm text-medical-gray-600">
+                        <p className="text-sm text-medical-gray-600 dark:text-medical-gray-400">
                           Allow others to see your age.
                         </p>
                       </div>
@@ -635,17 +723,17 @@ const SettingsPage = () => {
                           disabled={!privacySettings.is_name_public}
                           onChange={(e) => handlePrivacyUpdate('is_dob_public', e.target.checked)}
                         />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-cyan-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-medical-primary"></div>
+                        <div className="w-11 h-6 bg-gray-200 dark:bg-medical-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-cyan-300 dark:peer-focus:ring-cyan-900 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 dark:after:border-medical-gray-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-medical-primary"></div>
                       </label>
                     </div>
 
-                    <div className="flex items-center justify-between p-4 border border-medical-gray-200 rounded-lg bg-white">
+                    <div className="flex items-center justify-between p-4 border border-medical-gray-200 dark:border-medical-gray-700 rounded-lg bg-white dark:bg-medical-gray-800 transition-colors">
                       <div>
-                        <h3 className="font-medium text-gray-900 flex items-center gap-2">
+                        <h3 className="font-medium text-medical-dark dark:text-white flex items-center gap-2">
                           <User className="w-4 h-4 text-medical-primary" />
                           Show Gender
                         </h3>
-                        <p className="text-sm text-medical-gray-600">
+                        <p className="text-sm text-medical-gray-600 dark:text-medical-gray-400">
                           Allow others to see your gender.
                         </p>
                       </div>
@@ -661,17 +749,17 @@ const SettingsPage = () => {
                             handlePrivacyUpdate('is_gender_public', e.target.checked)
                           }
                         />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-cyan-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-medical-primary"></div>
+                        <div className="w-11 h-6 bg-gray-200 dark:bg-medical-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-cyan-300 dark:peer-focus:ring-cyan-900 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 dark:after:border-medical-gray-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-medical-primary"></div>
                       </label>
                     </div>
 
-                    <div className="flex items-center justify-between p-4 border border-medical-gray-200 rounded-lg bg-white">
+                    <div className="flex items-center justify-between p-4 border border-medical-gray-200 dark:border-medical-gray-700 rounded-lg bg-white dark:bg-medical-gray-800 transition-colors">
                       <div>
-                        <h3 className="font-medium text-gray-900 flex items-center gap-2">
+                        <h3 className="font-medium text-medical-dark dark:text-white flex items-center gap-2">
                           <Flag className="w-4 h-4 text-medical-primary" />
                           Show Nationality
                         </h3>
-                        <p className="text-sm text-medical-gray-600">
+                        <p className="text-sm text-medical-gray-600 dark:text-medical-gray-400">
                           Allow others to see your nationality.
                         </p>
                       </div>
@@ -687,7 +775,7 @@ const SettingsPage = () => {
                             handlePrivacyUpdate('is_nationality_public', e.target.checked)
                           }
                         />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-cyan-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-medical-primary"></div>
+                        <div className="w-11 h-6 bg-gray-200 dark:bg-medical-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-cyan-300 dark:peer-focus:ring-cyan-900 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 dark:after:border-medical-gray-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-medical-primary"></div>
                       </label>
                     </div>
                   </div>
@@ -699,18 +787,20 @@ const SettingsPage = () => {
               <div className="medical-card">
                 <div className="flex items-start justify-between mb-6">
                   <div>
-                    <h2 className="text-2xl font-semibold mb-1 flex items-center gap-2">
+                    <h2 className="text-2xl font-semibold dark:text-white mb-1 flex items-center gap-2">
                       <ScanFace className="w-6 h-6 text-medical-primary" />
                       Smart Glass Configuration
                     </h2>
-                    <p className="text-sm text-medical-gray-600">
+                    <p className="text-sm text-medical-gray-600 dark:text-medical-gray-400">
                       Manage connection to your smart glass.
                     </p>
                   </div>
                   <div className="flex flex-col sm:flex-row items-center">
                     <div
-                      className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        isConnected ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                        isConnected
+                          ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300'
+                          : 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300'
                       }`}
                     >
                       {isConnected ? 'Connected' : 'Disconnected'}
@@ -726,23 +816,25 @@ const SettingsPage = () => {
                       >
                         {batteryLevel >= 90 ? (
                           <>
-                            <Plug className="w-4 h-4 text-medical-gray-700" />
-                            <span className="text-xs text-medical-gray-700">USB</span>
+                            <Plug className="w-4 h-4 text-medical-gray-700 dark:text-medical-gray-300" />
+                            <span className="text-xs text-medical-gray-700 dark:text-medical-gray-300">
+                              USB
+                            </span>
                           </>
                         ) : (
                           <>
                             <div className="relative w-4 h-4">
-                              <Battery className="w-4 h-4 text-medical-gray-700" />
+                              <Battery className="w-4 h-4 text-medical-gray-700 dark:text-medical-gray-300" />
                               <div className="absolute left-[3px] top-1/2 -translate-y-1/2 w-[10px] h-[4px]">
                                 <div
                                   className={`h-full rounded-sm ${
                                     batteryLevel == null
-                                      ? 'bg-gray-400'
+                                      ? 'bg-gray-400 dark:bg-medical-gray-600'
                                       : batteryLevel > 60
-                                        ? 'bg-green-600'
+                                        ? 'bg-green-600 dark:bg-green-500'
                                         : batteryLevel >= 30
-                                          ? 'bg-yellow-600'
-                                          : 'bg-red-600'
+                                          ? 'bg-yellow-600 dark:bg-yellow-500'
+                                          : 'bg-red-600 dark:bg-red-500'
                                   }`}
                                   style={{
                                     width: `${Math.max(0, Math.min(100, batteryLevel ?? 0))}%`,
@@ -750,7 +842,7 @@ const SettingsPage = () => {
                                 />
                               </div>
                             </div>
-                            <span className="text-xs text-medical-gray-700">
+                            <span className="text-xs text-medical-gray-700 dark:text-medical-gray-300">
                               {batteryLevel != null ? `${batteryLevel}%` : 'N/A'}
                             </span>
                           </>
@@ -762,12 +854,12 @@ const SettingsPage = () => {
 
                 <div className="space-y-6">
                   {/* Connection Mode Selector */}
-                  <div className="flex p-1 bg-gray-100 rounded-lg mb-4">
+                  <div className="flex p-1 bg-gray-100 dark:bg-medical-gray-900 rounded-lg mb-4">
                     <button
                       className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
                         !glassIp.includes('GLASS_') && !glassIp.includes('mock_')
-                          ? 'bg-white shadow text-medical-primary'
-                          : 'text-gray-500 hover:text-gray-700'
+                          ? 'bg-white dark:bg-medical-gray-700 shadow dark:shadow-medical-primary/10 text-medical-primary dark:text-medical-secondary'
+                          : 'text-gray-500 dark:text-medical-gray-400 hover:text-gray-700 dark:hover:text-white'
                       }`}
                       onClick={() => setGlassIp('localhost:8001')}
                     >
@@ -776,8 +868,8 @@ const SettingsPage = () => {
                     <button
                       className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
                         glassIp.includes('GLASS_') || glassIp.includes('mock_')
-                          ? 'bg-white shadow text-medical-primary'
-                          : 'text-gray-500 hover:text-gray-700'
+                          ? 'bg-white dark:bg-medical-gray-700 shadow dark:shadow-medical-primary/10 text-medical-primary dark:text-medical-secondary'
+                          : 'text-gray-500 dark:text-medical-gray-400 hover:text-gray-700 dark:hover:text-white'
                       }`}
                       onClick={() => setGlassIp('GLASS_001')}
                     >
@@ -786,7 +878,7 @@ const SettingsPage = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-medical-gray-300 mb-1">
                       {glassIp.includes('GLASS_') || glassIp.includes('mock_')
                         ? 'Device ID'
                         : 'Glass IP Address'}
@@ -796,7 +888,7 @@ const SettingsPage = () => {
                         type="text"
                         value={glassIp}
                         onChange={(e) => setGlassIp(e.target.value)}
-                        className="flex-1 w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-md focus:ring-medical-primary focus:border-medical-primary"
+                        className="flex-1 w-full sm:w-auto px-3 py-2 border border-gray-300 dark:border-medical-gray-600 rounded-md focus:ring-medical-primary focus:border-medical-primary bg-white dark:bg-medical-gray-800 text-medical-dark dark:text-white transition-colors"
                         placeholder={
                           glassIp.includes('GLASS_') || glassIp.includes('mock_')
                             ? 'e.g., GLASS_001'
@@ -806,7 +898,7 @@ const SettingsPage = () => {
                       <button
                         type="button"
                         onClick={() => (isConnected ? disconnectGlass() : checkConnection())}
-                        className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-medical-primary"
+                        className="w-full sm:w-auto px-4 py-2 border border-gray-300 dark:border-medical-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-medical-gray-300 hover:bg-gray-50 dark:hover:bg-medical-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-medical-primary transition-colors"
                       >
                         {isConnected ? 'Disconnect' : 'Connect'}
                       </button>
@@ -815,7 +907,7 @@ const SettingsPage = () => {
                           <button
                             type="button"
                             onClick={() => setGlassIp('mock_glass_001')}
-                            className="w-full sm:w-auto px-4 py-2 border border-blue-200 bg-blue-50 rounded-md text-sm font-medium text-blue-700 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            className="w-full sm:w-auto px-4 py-2 border border-blue-200 dark:border-blue-800/30 bg-blue-50 dark:bg-blue-900/20 rounded-md text-sm font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/30 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
                             title="Use the cloud relay mock device (requires mock_device_client.py)"
                           >
                             Use Cloud Mock
@@ -824,31 +916,33 @@ const SettingsPage = () => {
                           <button
                             type="button"
                             onClick={() => setGlassIp('localhost:8001')}
-                            className="w-full sm:w-auto px-4 py-2 border border-blue-200 bg-blue-50 rounded-md text-sm font-medium text-blue-700 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            className="w-full sm:w-auto px-4 py-2 border border-blue-200 dark:border-blue-800/30 bg-blue-50 dark:bg-blue-900/20 rounded-md text-sm font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/30 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
                             title="Use the local IP mock glass (requires mock_glass.py)"
                           >
                             Use Local Mock
                           </button>
                         ))}
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-500 dark:text-medical-gray-400 mt-1">
                       {glassIp.includes('GLASS_') || glassIp.includes('mock_')
                         ? 'Enter the unique ID printed on your device frame.'
                         : 'Enter the IP address shown on the device serial output. Default is usually 192.168.4.1.'}
                     </p>
                   </div>
 
-                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
-                    <h4 className="font-medium text-blue-900 mb-2">How to Connect</h4>
+                  <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800/30 transition-colors">
+                    <h4 className="font-medium text-blue-900 dark:text-blue-300 mb-2">
+                      How to Connect
+                    </h4>
                     {glassIp.includes('GLASS_') || glassIp.includes('mock_') ? (
-                      <ol className="list-decimal list-inside text-sm text-blue-800 space-y-1">
+                      <ol className="list-decimal list-inside text-sm text-blue-800 dark:text-blue-400/90 space-y-1">
                         <li>Turn on your glass (ensure it has Wi-Fi).</li>
                         <li>Enter your Device ID (e.g. GLASS_001).</li>
                         <li>Click &quot;Connect&quot;.</li>
                         <li>If it&apos;s your first time, you may need to Pair it.</li>
                       </ol>
                     ) : (
-                      <ol className="list-decimal list-inside text-sm text-blue-800 space-y-1">
+                      <ol className="list-decimal list-inside text-sm text-blue-800 dark:text-blue-400/90 space-y-1">
                         <li>Turn on your glass.</li>
                         <li>
                           Connect your phone/laptop to the &quot;MedLens-Glass-Setup&quot; Wi‑Fi
@@ -862,8 +956,8 @@ const SettingsPage = () => {
 
                   {/* Hardware Controls */}
                   {glassIp && (
-                    <div className="bg-white p-4 rounded-lg border border-gray-200 mt-6 shadow-sm">
-                      <h4 className="font-medium text-gray-900 mb-4 flex items-center gap-2">
+                    <div className="bg-white dark:bg-medical-gray-900/50 p-4 rounded-lg border border-gray-200 dark:border-medical-gray-700 mt-6 shadow-sm transition-colors">
+                      <h4 className="font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                         <ScanFace className="w-5 h-5 text-medical-primary" />
                         Hardware Controls
                       </h4>
@@ -874,8 +968,8 @@ const SettingsPage = () => {
                           rel="noopener noreferrer"
                           className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-colors ${
                             isConnected
-                              ? 'border-medical-primary/30 bg-medical-light text-medical-primary hover:bg-medical-primary/10'
-                              : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                              ? 'border-medical-primary/30 dark:border-medical-primary/20 bg-medical-light dark:bg-medical-primary/10 text-medical-primary dark:text-medical-secondary hover:bg-medical-primary/10 dark:hover:bg-medical-primary/20'
+                              : 'border-gray-200 dark:border-medical-gray-800 bg-gray-50 dark:bg-medical-gray-800/50 text-gray-400 dark:text-medical-gray-600 cursor-not-allowed'
                           }`}
                           onClick={(e) => !isConnected && e.preventDefault()}
                         >
@@ -888,8 +982,8 @@ const SettingsPage = () => {
                           onClick={handleTestDisplay}
                           className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-colors ${
                             isConnected
-                              ? 'border-yellow-200 bg-yellow-50 text-yellow-700 hover:bg-yellow-100'
-                              : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                              ? 'border-yellow-200 dark:border-yellow-800/30 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-900/30'
+                              : 'border-gray-200 dark:border-medical-gray-800 bg-gray-50 dark:bg-medical-gray-800/50 text-gray-400 dark:text-medical-gray-600 cursor-not-allowed'
                           }`}
                           disabled={!isConnected}
                         >
@@ -903,8 +997,8 @@ const SettingsPage = () => {
                           rel="noopener noreferrer"
                           className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-colors ${
                             isConnected
-                              ? 'border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
-                              : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                              ? 'border-indigo-200 dark:border-indigo-800/30 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/30'
+                              : 'border-gray-200 dark:border-medical-gray-800 bg-gray-50 dark:bg-medical-gray-800/50 text-gray-400 dark:text-medical-gray-600 cursor-not-allowed'
                           }`}
                           onClick={(e) => !isConnected && e.preventDefault()}
                         >
@@ -914,7 +1008,7 @@ const SettingsPage = () => {
 
                         <button
                           type="button"
-                          className="flex items-center justify-center gap-2 p-3 rounded-lg border transition-colors border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed"
+                          className="flex items-center justify-center gap-2 p-3 rounded-lg border transition-colors border-gray-200 dark:border-medical-gray-800 bg-gray-50 dark:bg-medical-gray-800/50 text-gray-400 dark:text-medical-gray-600 cursor-not-allowed"
                           disabled
                           title="Coming soon"
                         >
@@ -927,8 +1021,8 @@ const SettingsPage = () => {
                           onClick={handleResetWifi}
                           className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-colors ${
                             isConnected
-                              ? 'border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100'
-                              : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                              ? 'border-orange-200 dark:border-orange-800/30 bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/30'
+                              : 'border-gray-200 dark:border-medical-gray-800 bg-gray-50 dark:bg-medical-gray-800/50 text-gray-400 dark:text-medical-gray-600 cursor-not-allowed'
                           }`}
                           disabled={!isConnected}
                         >
@@ -937,7 +1031,7 @@ const SettingsPage = () => {
                         </button>
                       </div>
                       {!isConnected && (
-                        <p className="text-xs text-gray-500 mt-2 text-center">
+                        <p className="text-xs text-gray-500 dark:text-medical-gray-500 mt-2 text-center">
                           Connect to the device to enable these controls.
                         </p>
                       )}
@@ -945,61 +1039,65 @@ const SettingsPage = () => {
                   )}
 
                   {/* Device Preferences Section */}
-                  <div className="border-t border-gray-200 pt-6 mt-6">
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">Device Preferences</h3>
+                  <div className="border-t border-medical-gray-200 dark:border-medical-gray-700 pt-6 mt-6">
+                    <h3 className="text-lg font-medium text-medical-dark dark:text-white mb-4">
+                      Device Preferences
+                    </h3>
                     <div className="space-y-6">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="font-medium text-medical-dark">
+                          <p className="font-medium text-medical-dark dark:text-white">
                             Show basic profile on recognize
                           </p>
-                          <p className="text-sm text-medical-gray-600">
+                          <p className="text-sm text-medical-gray-600 dark:text-medical-gray-400">
                             Display name and age only when someone is recognized.
                           </p>
                         </div>
                         <button
                           type="button"
-                          className="relative inline-flex h-6 w-11 items-center rounded-full bg-medical-gray-300 cursor-not-allowed opacity-60"
+                          className="relative inline-flex h-6 w-11 items-center rounded-full bg-medical-gray-300 dark:bg-medical-gray-700 cursor-not-allowed opacity-60"
                         >
-                          <span className="inline-block h-5 w-5 transform rounded-full bg-white shadow translate-x-1" />
+                          <span className="inline-block h-5 w-5 transform rounded-full bg-white dark:bg-medical-gray-400 shadow translate-x-1" />
                         </button>
                       </div>
 
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="font-medium text-medical-dark">Show medical alerts only</p>
-                          <p className="text-sm text-medical-gray-600">
+                          <p className="font-medium text-medical-dark dark:text-white">
+                            Show medical alerts only
+                          </p>
+                          <p className="text-sm text-medical-gray-600 dark:text-medical-gray-400">
                             Limit glass alerts to critical medical warnings for safety.
                           </p>
                         </div>
                         <button
                           type="button"
-                          className="relative inline-flex h-6 w-11 items-center rounded-full bg-medical-gray-300 cursor-not-allowed opacity-60"
+                          className="relative inline-flex h-6 w-11 items-center rounded-full bg-medical-gray-300 dark:bg-medical-gray-700 cursor-not-allowed opacity-60"
                         >
-                          <span className="inline-block h-5 w-5 transform rounded-full bg-white shadow translate-x-1" />
+                          <span className="inline-block h-5 w-5 transform rounded-full bg-white dark:bg-medical-gray-400 shadow translate-x-1" />
                         </button>
                       </div>
 
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="font-medium text-medical-dark">
+                          <p className="font-medium text-medical-dark dark:text-white">
                             Emergency contact shortcut
                           </p>
-                          <p className="text-sm text-medical-gray-600">
+                          <p className="text-sm text-medical-gray-600 dark:text-medical-gray-400">
                             Enable a one-tap shortcut on the glasses to show emergency contacts for
                             the current patient.
                           </p>
                         </div>
                         <button
                           type="button"
-                          className="relative inline-flex h-6 w-11 items-center rounded-full bg-medical-gray-300 cursor-not-allowed opacity-60"
+                          className="relative inline-flex h-6 w-11 items-center rounded-full bg-medical-gray-300 dark:bg-medical-gray-700 cursor-not-allowed opacity-60"
                         >
-                          <span className="inline-block h-5 w-5 transform rounded-full bg-white shadow translate-x-1" />
+                          <span className="inline-block h-5 w-5 transform rounded-full bg-white dark:bg-medical-gray-400 shadow translate-x-1" />
                         </button>
                       </div>
 
-                      <div className="mt-4 bg-medical-light border border-medical-primary/20 rounded-lg p-4">
-                        <p className="text-medical-gray-700 text-sm">
+                      <div className="mt-4 bg-medical-light dark:bg-medical-primary/10 border border-medical-primary/20 dark:border-medical-primary/30 rounded-lg p-4 transition-colors">
+                        <p className="text-medical-gray-700 dark:text-medical-gray-300 text-sm">
                           These smart glass settings will be wired to the hardware integration
                           later. For now, they are just preparing the UX and do not change any
                           stored profile data.
@@ -1016,15 +1114,15 @@ const SettingsPage = () => {
                 <div className="medical-card">
                   <div className="flex items-start justify-between mb-6">
                     <div>
-                      <h2 className="text-2xl font-semibold mb-1 flex items-center gap-2">
+                      <h2 className="text-2xl font-semibold dark:text-white mb-1 flex items-center gap-2">
                         <ScanFace className="w-6 h-6 text-medical-primary" />
                         Face ID
                       </h2>
-                      <p className="text-sm text-medical-gray-600">
+                      <p className="text-sm text-medical-gray-600 dark:text-medical-gray-400">
                         Re-register your face to keep recognition accurate. For security, we require
                         your password before updating your face template.
                       </p>
-                      <p className="text-xs text-medical-gray-500 mt-2">
+                      <p className="text-xs text-medical-gray-500 dark:text-medical-gray-500 mt-2">
                         {faceLastUpdated ? (
                           <>
                             Last updated: {new Date(faceLastUpdated).toLocaleDateString()} at{' '}
@@ -1043,7 +1141,7 @@ const SettingsPage = () => {
                   <div className="space-y-6">
                     {!faceMode ? (
                       <div className="space-y-4">
-                        <p className="text-medical-gray-600 text-sm">
+                        <p className="text-medical-gray-600 dark:text-medical-gray-400 text-sm">
                           Choose how you want to update your Face ID.
                         </p>
                         <div className="grid sm:grid-cols-2 gap-4">
@@ -1097,8 +1195,8 @@ const SettingsPage = () => {
                       </div>
                     )}
 
-                    <div className="mt-4 bg-medical-light border border-medical-primary/20 rounded-lg p-4">
-                      <p className="text-medical-gray-700 text-sm">
+                    <div className="mt-4 bg-medical-light dark:bg-medical-primary/10 border border-medical-primary/20 dark:border-medical-primary/30 rounded-lg p-4 transition-colors">
+                      <p className="text-medical-gray-700 dark:text-medical-gray-300 text-sm">
                         Face ID settings are separate from your personal information. Updating your
                         face template does not change your name, medical data, or emergency
                         contacts.
@@ -1110,11 +1208,11 @@ const SettingsPage = () => {
                 <div className="medical-card mt-6">
                   <div className="flex items-start justify-between mb-6">
                     <div>
-                      <h2 className="text-2xl font-semibold mb-1 flex items-center gap-2">
+                      <h2 className="text-2xl font-semibold dark:text-white mb-1 flex items-center gap-2">
                         <Key className="w-6 h-6 text-medical-primary" />
                         Password
                       </h2>
-                      <p className="text-sm text-medical-gray-600">
+                      <p className="text-sm text-medical-gray-600 dark:text-medical-gray-400">
                         Update your account password to keep your account secure.
                       </p>
                     </div>
@@ -1131,10 +1229,10 @@ const SettingsPage = () => {
                   </div>
 
                   {isPasswordFormVisible && (
-                    <div className="bg-medical-gray-50/50 rounded-xl p-6 border border-medical-gray-100">
+                    <div className="bg-medical-gray-50/50 dark:bg-medical-gray-900/50 rounded-xl p-6 border border-medical-gray-100 dark:border-medical-gray-700 transition-colors">
                       <form onSubmit={submitPasswordChange} className="space-y-4 max-w-md">
                         <div>
-                          <label className="label-medical block text-sm font-medium text-medical-gray-700 mb-1">
+                          <label className="label-medical block text-sm font-medium text-medical-gray-700 dark:text-medical-gray-300 mb-1">
                             Current Password
                           </label>
                           <div className="relative">
@@ -1143,7 +1241,7 @@ const SettingsPage = () => {
                               name="currentPassword"
                               value={passwordForm.currentPassword}
                               onChange={handlePasswordChange}
-                              className="input-medical w-full pr-10"
+                              className="input-medical w-full pr-10 bg-white dark:bg-medical-gray-800"
                               placeholder="Enter current password"
                               required
                             />
@@ -1162,7 +1260,7 @@ const SettingsPage = () => {
                         </div>
 
                         <div>
-                          <label className="label-medical block text-sm font-medium text-medical-gray-700 mb-1">
+                          <label className="label-medical block text-sm font-medium text-medical-gray-700 dark:text-medical-gray-300 mb-1">
                             New Password
                           </label>
                           <div className="relative">
@@ -1171,7 +1269,7 @@ const SettingsPage = () => {
                               name="newPassword"
                               value={passwordForm.newPassword}
                               onChange={handlePasswordChange}
-                              className="input-medical w-full pr-10"
+                              className="input-medical w-full pr-10 bg-white dark:bg-medical-gray-800"
                               placeholder="Enter new password"
                               required
                             />
@@ -1188,22 +1286,24 @@ const SettingsPage = () => {
                             </button>
                           </div>
                           {/* Password Requirements Checklist */}
-                          <div className="mt-3 space-y-2 bg-white p-3 rounded-lg border border-gray-100 shadow-sm">
-                            <p className="text-xs font-medium text-gray-500 mb-2">
+                          <div className="mt-3 space-y-2 bg-white dark:bg-medical-gray-800 p-3 rounded-lg border border-gray-100 dark:border-medical-gray-700 shadow-sm">
+                            <p className="text-xs font-medium text-gray-500 dark:text-medical-gray-400 mb-2">
                               Password must contain:
                             </p>
                             {passwordRequirements.map((req, index) => (
                               <div
                                 key={index}
                                 className={`flex items-center gap-2 text-xs transition-colors duration-200 ${
-                                  req.met ? 'text-green-600 font-medium' : 'text-gray-500'
+                                  req.met
+                                    ? 'text-green-600 dark:text-green-400 font-medium'
+                                    : 'text-gray-500 dark:text-medical-gray-500'
                                 }`}
                               >
                                 <div
                                   className={`w-4 h-4 rounded-full flex items-center justify-center border transition-colors duration-200 ${
                                     req.met
-                                      ? 'bg-green-100 border-green-500'
-                                      : 'bg-gray-50 border-gray-300'
+                                      ? 'bg-green-100 dark:bg-green-900/20 border-green-500 dark:border-green-600'
+                                      : 'bg-gray-50 dark:bg-medical-gray-900 border-gray-300 dark:border-medical-gray-700'
                                   }`}
                                 >
                                   {req.met && <Check className="w-2.5 h-2.5" />}
@@ -1215,7 +1315,7 @@ const SettingsPage = () => {
                         </div>
 
                         <div>
-                          <label className="label-medical block text-sm font-medium text-medical-gray-700 mb-1">
+                          <label className="label-medical block text-sm font-medium text-medical-gray-700 dark:text-medical-gray-300 mb-1">
                             Confirm New Password
                           </label>
                           <div className="relative">
@@ -1224,7 +1324,7 @@ const SettingsPage = () => {
                               name="confirmPassword"
                               value={passwordForm.confirmPassword}
                               onChange={handlePasswordChange}
-                              className="input-medical w-full pr-10"
+                              className="input-medical w-full pr-10 bg-white dark:bg-medical-gray-800"
                               placeholder="Confirm new password"
                               required
                             />
@@ -1242,13 +1342,13 @@ const SettingsPage = () => {
                           </div>
                         </div>
 
-                        <div className="flex gap-3 pt-2">
+                        <div className="flex flex-col sm:flex-row gap-3 pt-2">
                           <button
                             type="submit"
-                            className="btn-medical-primary flex-1 py-2.5 shadow-sm"
                             disabled={isChangingPassword}
+                            className="btn-medical-primary flex-1 py-2.5"
                           >
-                            {isChangingPassword ? 'Updating...' : 'Update Password'}
+                            {isChangingPassword ? <LoadingSpinner size="sm" /> : 'Update Password'}
                           </button>
                           <button
                             type="button"
@@ -1260,8 +1360,7 @@ const SettingsPage = () => {
                                 confirmPassword: '',
                               });
                             }}
-                            className="btn-medical-secondary flex-1 py-2.5 bg-white hover:bg-gray-50"
-                            disabled={isChangingPassword}
+                            className="btn-medical-secondary flex-1 py-2.5"
                           >
                             Cancel
                           </button>
@@ -1271,14 +1370,14 @@ const SettingsPage = () => {
                   )}
                 </div>
 
-                <div className="medical-card mt-6 border-red-100 bg-red-50/30">
+                <div className="medical-card mt-6 border-red-100 dark:border-red-900/30 bg-red-50/30 dark:bg-red-900/10">
                   <div className="flex items-start justify-between">
                     <div>
-                      <h2 className="text-2xl font-semibold mb-1 text-red-600 flex items-center gap-2">
+                      <h2 className="text-2xl font-semibold mb-1 text-red-600 dark:text-red-400 flex items-center gap-2">
                         <AlertTriangle className="w-6 h-6" />
                         Danger Zone
                       </h2>
-                      <p className="text-sm text-red-600/80">
+                      <p className="text-sm text-red-600/80 dark:text-red-400/80">
                         Permanently delete your account and all associated data.
                       </p>
                     </div>
@@ -1299,11 +1398,13 @@ const SettingsPage = () => {
       </main>
 
       {showPasswordModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="bg-white rounded-lg shadow-medical-lg w-full max-w-md overflow-hidden animate-slide-up">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="bg-white dark:bg-medical-gray-800 rounded-lg shadow-lg shadow-medical-primary/15 w-full max-w-md overflow-hidden animate-slide-up border border-transparent dark:border-medical-gray-700 transition-colors">
             <div className="p-6">
-              <h3 className="text-xl font-bold text-medical-dark mb-2">Confirm Security Update</h3>
-              <p className="text-medical-gray-600 mb-6">
+              <h3 className="text-xl font-bold text-medical-dark dark:text-white mb-2">
+                Confirm Security Update
+              </h3>
+              <p className="text-medical-gray-600 dark:text-medical-gray-400 mb-6">
                 Please enter your account password to confirm the update to your Face ID template.
               </p>
 
@@ -1347,27 +1448,31 @@ const SettingsPage = () => {
       )}
 
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="bg-white rounded-lg shadow-medical-lg w-full max-w-md overflow-hidden animate-slide-up">
-            <div className="p-6 border-b border-gray-100">
-              <h3 className="text-xl font-bold text-red-600 mb-1">Delete Account</h3>
-              <p className="text-sm text-gray-500">This action cannot be undone.</p>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="bg-white dark:bg-medical-gray-800 rounded-lg shadow-lg shadow-medical-primary/15 w-full max-w-md overflow-hidden animate-slide-up border border-transparent dark:border-medical-gray-700 transition-colors">
+            <div className="p-6 border-b border-medical-gray-100 dark:border-medical-gray-700">
+              <h3 className="text-xl font-bold text-red-600 dark:text-red-400 mb-1">
+                Delete Account
+              </h3>
+              <p className="text-sm text-medical-gray-500 dark:text-medical-gray-400">
+                This action cannot be undone.
+              </p>
             </div>
 
             <div className="p-6">
-              <p className="text-gray-600 mb-6">
+              <p className="text-gray-600 dark:text-medical-gray-400 mb-6">
                 Are you sure you want to delete your account? All of your data, including medical
                 info, connections, and face data will be permanently removed.
               </p>
 
               <form onSubmit={handleDeleteAccount} className="space-y-4">
                 <div>
-                  <label className="label-medical text-gray-700">Confirm with Password</label>
+                  <label className="label-medical">Confirm with Password</label>
                   <input
                     type="password"
                     value={deletePassword}
                     onChange={(e) => setDeletePassword(e.target.value)}
-                    className="input-medical w-full border-red-300 focus:border-red-500 focus:ring-red-200"
+                    className="input-medical w-full border-red-300 focus:border-red-500 focus:ring-red-200 dark:border-red-900/50"
                     placeholder="Enter your password"
                     required
                     autoFocus
@@ -1381,7 +1486,7 @@ const SettingsPage = () => {
                       setShowDeleteModal(false);
                       setDeletePassword('');
                     }}
-                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-colors"
+                    className="px-4 py-2 border border-gray-300 dark:border-medical-gray-700 rounded-lg text-gray-700 dark:text-medical-gray-300 hover:bg-gray-50 dark:hover:bg-medical-gray-700 font-medium transition-colors"
                     disabled={isDeleting}
                   >
                     Cancel

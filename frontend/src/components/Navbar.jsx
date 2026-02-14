@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import { Menu, Shield, LogOut, Settings, ScanFace, LayoutDashboard, Home } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import ThemeToggle from './ThemeToggle';
 import MobileMenuDrawer from './MobileMenuDrawer';
 import ProfileAvatar from './ProfileAvatar';
 
@@ -42,7 +43,7 @@ const getNavigationItems = (user) => {
       position: 'user',
       desktopIcon: true,
       mobileStyle:
-        'bg-red-50 text-red-600 border border-red-100 hover:bg-red-100 hover:text-red-700 hover:border-red-200',
+        'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/40 hover:text-red-700 dark:hover:text-red-300 hover:border-red-200 dark:hover:border-red-800',
     },
     {
       path: '/settings',
@@ -62,7 +63,7 @@ const NavLogo = () => (
     <img
       src="/MedLens.png"
       alt="MedLens"
-      className="h-40 md:h-48 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+      className="h-40 md:h-48 w-auto object-contain transition-transform duration-300 group-hover:scale-105 dark:drop-shadow-[0_0_10px_rgba(255,255,255,0.4)]"
     />
   </Link>
 );
@@ -73,8 +74,10 @@ const DesktopNavLinks = ({ items, currentPath }) => (
       <Link
         key={item.path}
         to={item.path}
-        className={`text-sm font-medium transition-colors hover:text-medical-primary ${
-          currentPath === item.path ? 'text-medical-primary' : 'text-gray-600'
+        className={`text-sm font-medium transition-colors hover:text-medical-primary dark:hover:text-medical-secondary ${
+          currentPath === item.path
+            ? 'text-medical-primary dark:text-medical-secondary'
+            : 'text-gray-600 dark:text-medical-gray-300'
         }`}
       >
         {item.label}
@@ -96,25 +99,27 @@ const UserMenu = ({ user, items, onLogout }) => (
         <Link
           key={item.path}
           to={item.path}
-          className="p-2 rounded-full hover:bg-red-50 text-red-600 hover:text-red-700 transition-colors"
+          className="p-2 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors"
           title={item.label}
         >
           <item.icon className="w-5 h-5" />
         </Link>
       ))}
 
-    <div className="flex items-center gap-3 px-3 py-1.5 rounded-full bg-gray-50 border border-gray-100">
+    <div className="flex items-center gap-3 px-3 py-1.5 rounded-full bg-gray-50 dark:bg-medical-gray-800 border border-gray-100 dark:border-medical-gray-700 transition-colors">
       <ProfileAvatar
         imageUrl={user?.profile_picture_url}
         userName={user.name}
         size="sm"
         clickable={false}
       />
-      <span className="text-sm font-medium text-gray-700">{user.name}</span>
+      <span className="text-sm font-medium text-gray-700 dark:text-medical-gray-200">
+        {user.name}
+      </span>
     </div>
     <button
       onClick={onLogout}
-      className="p-2 rounded-full hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+      className="p-2 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 dark:text-medical-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
       title="Logout"
     >
       <LogOut className="w-5 h-5" />
@@ -129,10 +134,11 @@ UserMenu.propTypes = {
 };
 
 const MobileNavButton = ({ onClick }) => (
-  <div className="sm:hidden">
+  <div className="sm:hidden flex items-center gap-3">
+    <ThemeToggle className="scale-75" />
     <button
       onClick={onClick}
-      className="p-2 rounded-lg text-gray-600 hover:text-medical-primary hover:bg-gray-50 transition-colors"
+      className="p-2 rounded-lg text-gray-600 dark:text-medical-gray-300 hover:text-medical-primary dark:hover:text-white hover:bg-gray-50 dark:hover:bg-medical-gray-800 transition-colors"
       aria-label="Open menu"
     >
       <Menu className="h-6 w-6" />
@@ -152,7 +158,7 @@ const MobileMenu = ({ isOpen, onClose, user, items, currentPath, onLogout }) => 
       user && (
         <button
           onClick={onLogout}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-red-100 text-red-600 font-medium hover:bg-red-50 transition-all"
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-red-100 dark:border-red-900/30 text-red-600 dark:text-red-400 font-medium hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
         >
           <LogOut className="w-5 h-5" />
           Logout
@@ -161,7 +167,7 @@ const MobileMenu = ({ isOpen, onClose, user, items, currentPath, onLogout }) => 
     }
   >
     {user && (
-      <div className="flex items-center gap-3 px-4 py-3 mb-4 bg-gray-50 rounded-xl border border-gray-100">
+      <div className="flex items-center gap-3 px-4 py-3 mb-4 bg-gray-50 dark:bg-medical-gray-800 rounded-xl border border-gray-100 dark:border-medical-gray-700 transition-colors">
         <ProfileAvatar
           imageUrl={user?.profile_picture_url}
           userName={user.name}
@@ -169,8 +175,10 @@ const MobileMenu = ({ isOpen, onClose, user, items, currentPath, onLogout }) => 
           clickable={false}
         />
         <div className="flex flex-col">
-          <span className="font-medium text-gray-900">{user.name}</span>
-          <span className="text-xs text-gray-500 capitalize">{user.role}</span>
+          <span className="font-medium text-gray-900 dark:text-white">{user.name}</span>
+          <span className="text-xs text-gray-500 dark:text-medical-gray-400 capitalize">
+            {user.role}
+          </span>
         </div>
       </div>
     )}
@@ -179,8 +187,8 @@ const MobileMenu = ({ isOpen, onClose, user, items, currentPath, onLogout }) => 
       const Icon = item.icon;
       const defaultStyle = `flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${
         currentPath === item.path
-          ? 'bg-medical-primary/5 text-medical-primary'
-          : 'text-gray-600 hover:bg-gray-50 hover:text-medical-primary'
+          ? 'bg-medical-primary/5 dark:bg-medical-primary/10 text-medical-primary'
+          : 'text-gray-600 dark:text-medical-gray-300 hover:bg-gray-50 dark:hover:bg-medical-gray-800 hover:text-medical-primary dark:hover:text-medical-secondary'
       }`;
 
       const className = item.mobileStyle
@@ -242,18 +250,24 @@ const Navbar = () => {
     <>
       <nav
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled ? 'bg-white/80 backdrop-blur-lg shadow-sm' : 'bg-transparent'
+          scrolled
+            ? 'bg-white/80 dark:bg-medical-gray-950/80 backdrop-blur-lg shadow-sm border-b border-transparent dark:border-medical-gray-800'
+            : 'bg-transparent'
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16 md:h-20">
-            <NavLogo />
+            <div className="flex items-center gap-4">
+              <NavLogo />
+              <div className="h-6 w-px bg-gray-200 dark:bg-medical-gray-800 ml-2 max-sm:hidden"></div>
+              <ThemeToggle className="hover:scale-110 max-sm:hidden" />
+            </div>
 
             {/* Desktop Navigation */}
             <div className="flex max-sm:hidden items-center gap-8">
               <DesktopNavLinks items={mainNavItems} currentPath={location.pathname} />
 
-              <div className="flex items-center gap-3 pl-6 border-l border-gray-200">
+              <div className="flex items-center gap-3 pl-6 border-l border-gray-200 dark:border-medical-gray-800">
                 {user && <UserMenu user={user} items={userNavItems} onLogout={handleLogout} />}
               </div>
             </div>

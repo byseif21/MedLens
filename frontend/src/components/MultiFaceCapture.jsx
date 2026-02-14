@@ -69,7 +69,7 @@ const useMultiCapture = (captureImage, stopCamera, onComplete) => {
 };
 
 const ProgressBar = ({ progress }) => (
-  <div className="w-full bg-medical-gray-200 rounded-full h-2 mb-4">
+  <div className="w-full bg-medical-gray-200 dark:bg-medical-gray-700 rounded-full h-2 mb-4 transition-colors">
     <div
       className="bg-medical-primary h-2 rounded-full transition-all duration-300"
       style={{ width: `${progress}%` }}
@@ -80,11 +80,13 @@ const ProgressBar = ({ progress }) => (
 ProgressBar.propTypes = { progress: PropTypes.number.isRequired };
 
 const CurrentAngleInfo = ({ index, total, label, instruction }) => (
-  <div className="bg-medical-light p-4 rounded-lg mb-4">
-    <p className="font-semibold text-medical-dark">
+  <div className="bg-medical-light dark:bg-medical-gray-800/50 p-4 rounded-lg mb-4 transition-colors border border-transparent dark:border-medical-gray-700/50">
+    <p className="font-semibold text-medical-dark dark:text-white transition-colors">
       {index + 1} of {total}: {label}
     </p>
-    <p className="text-medical-gray-600 text-sm mt-1">{instruction}</p>
+    <p className="text-medical-gray-600 dark:text-medical-gray-400 text-sm mt-1 transition-colors">
+      {instruction}
+    </p>
   </div>
 );
 
@@ -121,12 +123,12 @@ const CapturedAnglesList = ({ angles, capturedImages, currentAngle }) => (
     {angles.map((angle, index) => (
       <div
         key={angle.id}
-        className={`px-3 py-1 rounded-full text-sm ${
+        className={`px-3 py-1 rounded-full text-sm transition-colors ${
           capturedImages[angle.id]
-            ? 'bg-green-100 text-green-700'
+            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
             : index === currentAngle
               ? 'bg-medical-primary text-white'
-              : 'bg-medical-gray-200 text-medical-gray-600'
+              : 'bg-medical-gray-200 dark:bg-medical-gray-700 text-medical-gray-600 dark:text-medical-gray-400'
         }`}
       >
         {capturedImages[angle.id] ? '✓' : index + 1} {angle.label}
@@ -207,8 +209,10 @@ const MultiFaceCapture = ({ onComplete, showSwitch = false }) => {
   return (
     <div className="space-y-4">
       <div className="text-center">
-        <h3 className="text-xl font-semibold mb-2">Multi-Angle Face Capture</h3>
-        <p className="text-medical-gray-600 text-sm mb-4">
+        <h3 className="text-xl font-semibold mb-2 dark:text-white transition-colors">
+          Multi-Angle Face Capture
+        </h3>
+        <p className="text-medical-gray-600 dark:text-medical-gray-400 text-sm mb-4 transition-colors">
           Capture your face from multiple angles for better recognition accuracy
         </p>
 
@@ -221,7 +225,7 @@ const MultiFaceCapture = ({ onComplete, showSwitch = false }) => {
         />
       </div>
 
-      <div className="relative bg-medical-gray-100 rounded-lg overflow-hidden aspect-[3/4] sm:aspect-video">
+      <div className="relative bg-medical-gray-100 dark:bg-medical-gray-900 rounded-lg overflow-hidden aspect-[3/4] sm:aspect-video transition-colors">
         <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
 
         {/* Camera Controls */}
@@ -241,8 +245,8 @@ const MultiFaceCapture = ({ onComplete, showSwitch = false }) => {
       </div>
 
       {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-red-600 text-sm text-center">{error}</p>
+        <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 rounded-lg transition-colors">
+          <p className="text-red-600 dark:text-red-400 text-sm text-center">{error}</p>
         </div>
       )}
 

@@ -2,17 +2,19 @@ import PropTypes from 'prop-types';
 import { User, UserX, Check } from 'lucide-react';
 
 const EmptyState = () => (
-  <div className="p-8 text-center">
-    <UserX className="w-12 h-12 mx-auto mb-3 text-medical-gray-300" />
-    <p className="text-medical-gray-600">No users found</p>
-    <p className="text-sm text-medical-gray-500 mt-1">Try a different search term</p>
+  <div className="p-8 text-center transition-colors">
+    <UserX className="w-12 h-12 mx-auto mb-3 text-medical-gray-300 dark:text-medical-gray-700" />
+    <p className="text-medical-gray-600 dark:text-medical-gray-400">No users found</p>
+    <p className="text-sm text-medical-gray-500 dark:text-medical-gray-400 mt-1">
+      Try a different search term
+    </p>
   </div>
 );
 
 const UserStatusBadge = ({ status, isSelected, onSelect, user }) => {
   if (status === 'connected') {
     return (
-      <span className="flex items-center gap-1.5 px-3 py-1.5 bg-green-100 text-green-700 text-xs font-medium rounded-full whitespace-nowrap">
+      <span className="flex items-center gap-1.5 px-3 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-medium rounded-full whitespace-nowrap transition-colors">
         <Check className="w-3.5 h-3.5" />
         Connected
       </span>
@@ -21,7 +23,7 @@ const UserStatusBadge = ({ status, isSelected, onSelect, user }) => {
 
   if (status === 'pending_sent') {
     return (
-      <span className="px-3 py-1 bg-yellow-100 text-yellow-700 text-sm rounded-full whitespace-nowrap">
+      <span className="px-3 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 text-sm rounded-full whitespace-nowrap transition-colors">
         Request sent
       </span>
     );
@@ -29,7 +31,7 @@ const UserStatusBadge = ({ status, isSelected, onSelect, user }) => {
 
   if (status === 'pending_received') {
     return (
-      <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded-full whitespace-nowrap">
+      <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-sm rounded-full whitespace-nowrap transition-colors">
         Request received
       </span>
     );
@@ -37,7 +39,7 @@ const UserStatusBadge = ({ status, isSelected, onSelect, user }) => {
 
   if (isSelected) {
     return (
-      <span className="px-3 py-1 bg-medical-primary text-white text-sm rounded-full whitespace-nowrap">
+      <span className="px-3 py-1 bg-medical-primary text-white text-sm rounded-full whitespace-nowrap transition-colors">
         Selected
       </span>
     );
@@ -67,25 +69,31 @@ const UserItem = ({ user, selectedUser, onSelect }) => {
 
   return (
     <div
-      className={`p-4 border-b border-medical-gray-200 last:border-b-0 transition-colors ${
+      className={`p-4 border-b border-medical-gray-200 dark:border-medical-gray-800 last:border-b-0 transition-colors ${
         isSelected
-          ? 'bg-medical-light'
+          ? 'bg-medical-light dark:bg-medical-primary/10'
           : isUnavailable
-            ? 'bg-medical-gray-50'
-            : 'hover:bg-medical-gray-50'
+            ? 'bg-medical-gray-50 dark:bg-medical-gray-800/30'
+            : 'hover:bg-medical-gray-50 dark:hover:bg-medical-gray-800'
       }`}
     >
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className="w-10 h-10 rounded-full bg-medical-primary/10 flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-full bg-medical-primary/10 dark:bg-medical-primary/20 flex items-center justify-center shrink-0">
             <User className="w-6 h-6 text-medical-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-medical-dark truncate">{user.name}</p>
-            <p className="text-xs text-medical-gray-500 font-mono truncate">
+            <p className="font-semibold text-medical-dark dark:text-white truncate transition-colors">
+              {user.name}
+            </p>
+            <p className="text-xs text-medical-gray-500 dark:text-medical-gray-400 font-mono truncate transition-colors">
               ID: {user.id.substring(0, 8).toUpperCase()}
             </p>
-            {user.email && <p className="text-sm text-medical-gray-400 truncate">{user.email}</p>}
+            {user.email && (
+              <p className="text-sm text-medical-gray-400 dark:text-medical-gray-400 truncate transition-colors">
+                {user.email}
+              </p>
+            )}
           </div>
         </div>
         <div className="shrink-0">
@@ -122,7 +130,7 @@ const UserSearchResults = ({
   }
 
   return (
-    <div className="border border-medical-gray-200 rounded-lg overflow-hidden">
+    <div className="border border-medical-gray-200 dark:border-medical-gray-800 rounded-lg overflow-hidden transition-colors">
       {results.length === 0 ? (
         <EmptyState />
       ) : (

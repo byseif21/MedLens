@@ -3,42 +3,59 @@ import { CheckCircle, AlertCircle, AlertTriangle, Info } from 'lucide-react';
 import { NotificationsContext } from '../hooks/useNotifications';
 
 const baseToastClasses =
-  'w-full max-w-sm rounded-xl border px-4 py-3 shadow-medical-lg animate-slide-down pointer-events-auto';
+  'w-full max-w-sm rounded-xl border px-4 py-3 shadow-lg shadow-medical-primary/15 animate-slide-down pointer-events-auto';
 
 const typeStyles = {
-  success: 'bg-emerald-50 border-emerald-200 text-emerald-900',
-  error: 'bg-red-50 border-red-200 text-red-900',
-  warning: 'bg-amber-50 border-amber-200 text-amber-900',
-  info: 'bg-sky-50 border-sky-200 text-sky-900',
+  success:
+    'bg-white dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60 text-emerald-900 dark:text-emerald-300 shadow-emerald-100/50 dark:shadow-none',
+  error:
+    'bg-white dark:bg-red-950/40 border-red-200 dark:border-red-800/60 text-red-900 dark:text-red-300 shadow-red-100/50 dark:shadow-none',
+  warning:
+    'bg-white dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/60 text-amber-900 dark:text-amber-300 shadow-amber-100/50 dark:shadow-none',
+  info: 'bg-white dark:bg-sky-950/40 border-sky-200 dark:border-sky-800/60 text-sky-900 dark:text-sky-300 shadow-sky-100/50 dark:shadow-none',
 };
 
 const typeIcon = {
-  success: <CheckCircle className="h-5 w-5 text-emerald-600" />,
-  error: <AlertCircle className="h-5 w-5 text-red-600" />,
-  warning: <AlertTriangle className="h-5 w-5 text-amber-600" />,
-  info: <Info className="h-5 w-5 text-sky-600" />,
+  success: <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />,
+  error: <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />,
+  warning: <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />,
+  info: <Info className="h-5 w-5 text-sky-600 dark:text-sky-400" />,
 };
 
 const Toast = ({ toast, onDismiss }) => {
   const variant = typeStyles[toast.type] || typeStyles.info;
 
   return (
-    <div className={`${baseToastClasses} ${variant}`} role="status" aria-live="polite">
+    <div
+      className={`${baseToastClasses} ${variant} transition-all duration-300 backdrop-blur-md`}
+      role="status"
+      aria-live="polite"
+    >
       <div className="flex items-start gap-3">
         <div className="pt-0.5">{typeIcon[toast.type] || typeIcon.info}</div>
         <div className="flex-1 min-w-0">
-          {toast.title ? <div className="font-semibold leading-5">{toast.title}</div> : null}
+          {toast.title ? (
+            <div className="font-bold leading-5 text-medical-dark dark:text-white">
+              {toast.title}
+            </div>
+          ) : null}
           {toast.message ? (
-            <div className={`text-sm ${toast.title ? 'mt-0.5' : ''}`}>{toast.message}</div>
+            <div
+              className={`text-sm font-medium ${toast.title ? 'mt-1 text-medical-gray-600 dark:text-medical-gray-300' : 'text-medical-dark dark:text-white'}`}
+            >
+              {toast.message}
+            </div>
           ) : null}
         </div>
         <button
           type="button"
           onClick={() => onDismiss(toast.id)}
-          className="shrink-0 rounded-md px-2 py-1 text-sm hover:bg-black/5"
+          className="shrink-0 rounded-md p-1.5 text-medical-gray-400 hover:bg-black/5 dark:hover:bg-white/10 hover:text-medical-dark dark:hover:text-white transition-all"
           aria-label="Dismiss notification"
         >
-          <span aria-hidden="true">×</span>
+          <span className="text-xl leading-none" aria-hidden="true">
+            ×
+          </span>
         </button>
       </div>
     </div>

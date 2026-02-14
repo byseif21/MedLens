@@ -141,7 +141,7 @@ const ProfileDashboard = () => {
       onClick: handleLogout,
       condition: !isViewingOther,
       desktopClass: `btn-medical-secondary ${desktopBtnBase}`,
-      mobileClass: `w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-medical-gray-200 text-medical-gray-600 font-medium hover:bg-red-50 hover:text-red-600 hover:border-red-100 transition-all`,
+      mobileClass: `w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-red-500/10 dark:border-red-500/20 text-red-600 dark:text-red-400 font-medium hover:bg-red-50 dark:hover:bg-red-900/20 transition-all active:scale-95`,
       isFooter: true,
     },
   ];
@@ -195,16 +195,16 @@ const ProfileDashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-medical-gradient flex items-center justify-center">
+      <div className="min-h-screen bg-medical-gradient flex items-center justify-center transition-colors duration-300">
         <LoadingSpinner size="lg" text="Loading profile..." />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-medical-gradient">
+    <div className="min-h-screen bg-medical-gradient transition-colors duration-300">
       {/* Header */}
-      <header className="bg-white shadow-medical">
+      <header className="bg-white dark:bg-medical-gray-900 shadow-md shadow-medical-primary/10 dark:shadow-none border-b border-transparent dark:border-medical-gray-800 transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-start sm:items-center justify-between">
             <div className="flex flex-row items-center gap-3">
@@ -221,10 +221,10 @@ const ProfileDashboard = () => {
                 className="max-sm:hidden"
               />
               <div>
-                <h1 className="text-lg sm:text-xl font-bold text-medical-dark">
+                <h1 className="text-lg sm:text-xl font-bold text-medical-dark dark:text-white transition-colors duration-300">
                   {profile?.name || 'User Profile'}
                 </h1>
-                <p className="text-sm text-medical-gray-600">
+                <p className="text-sm text-medical-gray-600 dark:text-medical-gray-400 transition-colors duration-300">
                   {isViewingOther ? 'Recognized Person Profile' : 'Medical Profile Dashboard'}
                 </p>
                 {profile?.id && (
@@ -294,7 +294,7 @@ const ProfileDashboard = () => {
       </MobileMenuDrawer>
 
       {/* Tabs (Desktop) */}
-      <div className="max-sm:hidden bg-white border-b border-medical-gray-200">
+      <div className="max-sm:hidden bg-white dark:bg-medical-gray-900 border-b border-medical-gray-200 dark:border-medical-gray-800 transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex justify-start gap-4 md:gap-8 items-center">
             {tabs.map((tab) => (
@@ -303,8 +303,8 @@ const ProfileDashboard = () => {
                 onClick={() => setActiveTab(tab.id)}
                 className={`py-2 sm:py-4 px-2 border-b-2 font-medium text-sm md:text-base transition-colors flex flex-col sm:flex-row items-center gap-1 sm:gap-2 ${
                   activeTab === tab.id
-                    ? 'border-medical-primary text-medical-primary'
-                    : 'border-transparent text-medical-gray-500 hover:text-medical-gray-700 hover:border-medical-gray-300'
+                    ? 'border-medical-primary text-medical-primary dark:text-medical-secondary dark:border-medical-secondary'
+                    : 'border-transparent text-medical-gray-500 hover:text-medical-gray-700 hover:border-medical-gray-300 dark:text-medical-gray-400 dark:hover:text-white dark:hover:border-medical-gray-600'
                 }`}
               >
                 <tab.icon className="w-4 h-4" />
@@ -349,20 +349,20 @@ const ProfileDashboard = () => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 sm:pb-8">
         <div className="animate-fade-in">
           {isViewingOther && (
-            <div className="medical-card mb-6 border border-yellow-200 bg-yellow-50">
+            <div className="medical-card mb-6 border border-yellow-200 dark:border-yellow-800/50 bg-yellow-50 dark:bg-yellow-900/10">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="font-semibold text-yellow-900">
+                  <p className="font-semibold text-yellow-900 dark:text-yellow-400">
                     {isAdmin ? 'Admin view' : 'Read-only view'}
                   </p>
-                  <p className="text-sm text-yellow-800">
+                  <p className="text-sm text-yellow-800 dark:text-yellow-500/80">
                     {isAdmin
                       ? 'You are viewing another user profile. Changes apply to this user.'
                       : 'You are viewing another user profile. Editing is disabled.'}
                   </p>
                 </div>
                 {userRole && (
-                  <span className="px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-900">
+                  <span className="px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-900 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-800/50 transition-colors">
                     Role: {userRole}
                   </span>
                 )}
@@ -389,9 +389,9 @@ const ProfileDashboard = () => {
           )}
           <div hidden={activeTab !== 'connections'}>
             {isViewingOther ? (
-              <div className="medical-card">
+              <div className="medical-card dark:bg-medical-gray-800 dark:border-medical-gray-700">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-semibold">Emergency Contacts</h2>
+                  <h2 className="text-2xl font-semibold dark:text-white">Emergency Contacts</h2>
                 </div>
                 {profile?.emergency_contacts?.length ? (
                   <div className="space-y-2">
@@ -400,18 +400,24 @@ const ProfileDashboard = () => {
                         key={
                           relative.id || `${relative.name}-${relative.phone}-${relative.relation}`
                         }
-                        className="flex items-center justify-between p-3 bg-white rounded-lg border border-medical-gray-200"
+                        className="flex items-center justify-between p-3 bg-white dark:bg-medical-gray-800/50 rounded-lg border border-medical-gray-200 dark:border-medical-gray-700/50 transition-colors"
                       >
                         <div>
-                          <p className="font-medium text-medical-dark">{relative.name}</p>
-                          <p className="text-sm text-medical-gray-600">{relative.relation}</p>
+                          <p className="font-medium text-medical-dark dark:text-white">
+                            {relative.name}
+                          </p>
+                          <p className="text-sm text-medical-gray-600 dark:text-medical-gray-400">
+                            {relative.relation}
+                          </p>
                         </div>
                         <p className="text-medical-primary font-medium">{relative.phone}</p>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-medical-gray-600">No emergency contacts found.</p>
+                  <p className="text-medical-gray-600 dark:text-medical-gray-400">
+                    No emergency contacts found.
+                  </p>
                 )}
               </div>
             ) : (
@@ -422,7 +428,7 @@ const ProfileDashboard = () => {
       </main>
 
       {/* Mobile Bottom Navigation */}
-      <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-medical-gray-200 z-50 pb-safe-area-bottom">
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-medical-gray-900 border-t border-medical-gray-200 dark:border-medical-gray-800 z-50 pb-safe-area-bottom">
         <nav className="flex justify-around items-center px-2 py-3">
           {tabs.map((tab) => (
             <button
@@ -430,8 +436,8 @@ const ProfileDashboard = () => {
               onClick={() => setActiveTab(tab.id)}
               className={`flex flex-col items-center gap-1 p-2 min-w-[64px] rounded-lg transition-colors ${
                 activeTab === tab.id
-                  ? 'text-medical-primary'
-                  : 'text-medical-gray-500 hover:text-medical-gray-700'
+                  ? 'text-medical-primary dark:text-medical-secondary'
+                  : 'text-medical-gray-500 hover:text-medical-gray-700 dark:text-medical-gray-400 dark:hover:text-white'
               }`}
             >
               <tab.icon

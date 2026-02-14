@@ -18,8 +18,8 @@ const PendingRequestsList = ({ requests, onAccept, onReject, processingRequestId
   if (requests.length === 0) return null;
 
   return (
-    <div className="mb-8 p-4 bg-medical-light/30 border border-medical-primary/20 rounded-xl">
-      <h3 className="text-lg font-semibold text-medical-dark mb-4 flex items-center gap-2">
+    <div className="mb-8 p-4 bg-medical-light/30 dark:bg-medical-gray-800/50 border border-medical-primary/20 dark:border-medical-primary/10 rounded-xl">
+      <h3 className="text-lg font-semibold text-medical-dark dark:text-white mb-4 flex items-center gap-2">
         <Clock className="w-5 h-5 text-medical-primary" />
         Pending Connection Requests ({requests.length})
       </h3>
@@ -29,11 +29,15 @@ const PendingRequestsList = ({ requests, onAccept, onReject, processingRequestId
           return (
             <div
               key={request.id}
-              className="flex items-center justify-between p-3 bg-white border border-medical-gray-200 rounded-lg shadow-sm"
+              className="flex items-center justify-between p-3 bg-white dark:bg-medical-gray-800 border border-medical-gray-200 dark:border-medical-gray-700 rounded-lg shadow-sm"
             >
               <div>
-                <p className="font-medium text-medical-dark">{request.sender_name}</p>
-                <p className="text-xs text-medical-gray-500">{request.sender_email}</p>
+                <p className="font-medium text-medical-dark dark:text-white">
+                  {request.sender_name}
+                </p>
+                <p className="text-xs text-medical-gray-500 dark:text-medical-gray-400">
+                  {request.sender_email}
+                </p>
                 <p className="text-sm text-medical-primary font-medium mt-1">
                   Wants to connect as: {request.relationship}
                 </p>
@@ -53,10 +57,10 @@ const PendingRequestsList = ({ requests, onAccept, onReject, processingRequestId
                 <button
                   onClick={() => onReject(request.id)}
                   disabled={isProcessing}
-                  className={`px-3 py-1.5 text-medical-gray-700 text-sm font-medium rounded-md transition-colors ${
+                  className={`px-3 py-1.5 text-medical-gray-700 dark:text-medical-gray-300 text-sm font-medium rounded-md transition-colors ${
                     isProcessing
-                      ? 'bg-medical-gray-100/50 text-medical-gray-400 cursor-not-allowed'
-                      : 'bg-medical-gray-100 hover:bg-medical-gray-200'
+                      ? 'bg-medical-gray-100/50 dark:bg-medical-gray-800/50 text-medical-gray-400 cursor-not-allowed'
+                      : 'bg-medical-gray-100 dark:bg-medical-gray-700 hover:bg-medical-gray-200 dark:hover:bg-medical-gray-600'
                   }`}
                 >
                   Decline
@@ -82,9 +86,9 @@ const ConnectionsSection = ({ title, icon: Icon, connections, type, onEdit, onRe
 
   return (
     <div className="mb-8">
-      <h3 className="text-lg font-semibold text-medical-dark mb-4 flex items-center gap-2">
+      <h3 className="text-lg font-semibold text-medical-dark dark:text-white mb-4 flex items-center gap-2">
         <Icon
-          className={`w-5 h-5 ${type === 'linked' ? 'text-medical-primary' : 'text-medical-gray-600'}`}
+          className={`w-5 h-5 ${type === 'linked' ? 'text-medical-primary' : 'text-medical-gray-600 dark:text-medical-gray-400'}`}
         />
         {title} ({connections.length})
       </h3>
@@ -114,8 +118,8 @@ ConnectionsSection.propTypes = {
 };
 
 const EmptyState = ({ onAdd }) => (
-  <div className="text-center py-12 text-medical-gray-500">
-    <Users className="w-16 h-16 mx-auto mb-4 text-medical-gray-300" />
+  <div className="text-center py-12 text-medical-gray-500 dark:text-medical-gray-400">
+    <Users className="w-16 h-16 mx-auto mb-4 text-medical-gray-300 dark:text-medical-gray-700" />
     <p className="mb-4">No connections added yet</p>
     <button onClick={onAdd} className="btn-medical-primary px-6 py-2">
       Add Your First Connection
@@ -139,18 +143,20 @@ const RemoveConfirmationModal = ({ isOpen, target, isBusy, onConfirm, onCancel }
         }
       }}
     >
-      <div className="bg-white rounded-lg shadow-medical-lg w-full max-w-md overflow-hidden animate-slide-down">
-        <div className="p-6 border-b border-medical-gray-200">
-          <h3 className="text-xl font-semibold text-medical-dark">Remove Connection</h3>
-          <p className="text-sm text-medical-gray-600 mt-2">
+      <div className="bg-white dark:bg-medical-gray-900 rounded-lg shadow-lg shadow-medical-primary/15 w-full max-w-md overflow-hidden animate-slide-down border border-transparent dark:border-medical-gray-800 transition-colors">
+        <div className="p-6 border-b border-medical-gray-200 dark:border-medical-gray-800">
+          <h3 className="text-xl font-semibold text-medical-dark dark:text-white">
+            Remove Connection
+          </h3>
+          <p className="text-sm text-medical-gray-600 dark:text-medical-gray-400 mt-2">
             Are you sure you want to remove{' '}
-            <span className="font-medium text-medical-dark">
+            <span className="font-medium text-medical-dark dark:text-white">
               {target.name || target.connected_user?.name}
             </span>
             ? This action cannot be undone.
           </p>
         </div>
-        <div className="flex justify-end gap-3 p-4">
+        <div className="flex justify-end gap-3 p-4 border-t border-medical-gray-200 dark:border-medical-gray-800 transition-colors">
           <button
             onClick={onCancel}
             disabled={isBusy}
@@ -242,17 +248,17 @@ const Connections = ({ targetUserId }) => {
 
   if (loading && allConnectionsCount === 0) {
     return (
-      <div className="medical-card">
+      <div className="medical-card dark:bg-medical-gray-800 dark:border-medical-gray-700 transition-colors">
         <LoadingSpinner text="Loading connections..." />
       </div>
     );
   }
 
   return (
-    <div className="medical-card">
+    <div className="medical-card dark:bg-medical-gray-800 dark:border-medical-gray-700 transition-colors">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
-        <h2 className="text-2xl font-semibold">Family Connections</h2>
+        <h2 className="text-2xl font-semibold dark:text-white">Family Connections</h2>
         <button
           onClick={() => setShowAddModal(true)}
           className="btn-medical-primary text-sm px-4 py-2 flex items-center gap-2 w-full sm:w-auto justify-center"
@@ -264,7 +270,7 @@ const Connections = ({ targetUserId }) => {
 
       {/* Success Message */}
       {successMessage && (
-        <div className="mb-4 p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg flex items-center gap-2">
+        <div className="mb-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/30 text-green-800 dark:text-green-300 rounded-lg flex items-center gap-2 transition-colors">
           <CheckCircle className="w-5 h-5" />
           {successMessage}
         </div>
@@ -272,7 +278,7 @@ const Connections = ({ targetUserId }) => {
 
       {/* Error Message */}
       {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-800 rounded-lg flex items-center gap-2">
+        <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 text-red-800 dark:text-red-300 rounded-lg flex items-center gap-2 transition-colors">
           <AlertCircle className="w-5 h-5" />
           {error}
         </div>
