@@ -65,8 +65,11 @@ export const registerAuthErrorCallback = (callback) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401 && !error.config?.skipAuthRedirect) {
-      // Handle unauthorized
+    // check for 401 Unauthorized OR 403 Forbidden
+    const status = error.response?.status;
+    const isAuthError = status === 401 || status === 403;
+
+    if (isAuthError && !error.config?.skipAuthRedirect) {
       if (authErrorCallback) {
         authErrorCallback();
       } else {

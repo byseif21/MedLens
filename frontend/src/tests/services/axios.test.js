@@ -60,6 +60,7 @@ describe('Axios Service', () => {
     clearSession.mockReset();
     window.location.assign.mockReset();
     window.location.replace.mockReset();
+    registerAuthErrorCallback(null);
   });
 
   describe('Request Interceptor', () => {
@@ -105,6 +106,22 @@ describe('Axios Service', () => {
     it('handles 401 errors by redirecting to login', async () => {
       const error = {
         response: { status: 401 },
+        config: {},
+      };
+
+      try {
+        await mocks.responseErrorHandler(error);
+      } catch (e) {
+        expect(e).toBe(error);
+      }
+
+      expect(clearSession).toHaveBeenCalled();
+      expect(window.location.replace).toHaveBeenCalledWith('/login');
+    });
+
+    it('handles 403 errors by redirecting to login', async () => {
+      const error = {
+        response: { status: 403 },
         config: {},
       };
 
