@@ -62,7 +62,7 @@ ConnectionActions.propTypes = {
 const ContactItem = ({ icon: Icon, text }) => {
   if (!text) return null;
   return (
-    <p className="text-medical-gray-600 dark:text-medical-gray-400 text-sm flex items-center gap-2 transition-colors">
+    <p className="text-medical-gray-600 dark:text-medical-gray-400 text-xs sm:text-sm flex items-center gap-2 [overflow-wrap:anywhere] transition-colors">
       <Icon className="w-4 h-4" />
       {text}
     </p>
@@ -102,12 +102,12 @@ const ConnectionHeader = ({ connection, isLinked }) => (
     {isLinked ? (
       <Link
         to={`/profile/${connection.connected_user?.id}`}
-        className="font-semibold text-medical-dark dark:text-white text-lg hover:text-medical-primary dark:hover:text-medical-secondary transition-colors"
+        className="font-semibold text-medical-dark dark:text-white text-sm sm:text-lg break-words hover:text-medical-primary dark:hover:text-medical-secondary transition-colors"
       >
         {connection.connected_user?.name}
       </Link>
     ) : (
-      <h3 className="font-semibold text-medical-dark dark:text-white text-lg transition-colors">
+      <h3 className="font-semibold text-medical-dark dark:text-white text-sm sm:text-lg break-words transition-colors">
         {connection.name}
       </h3>
     )}
@@ -128,7 +128,9 @@ const ConnectionCard = ({ connection, type, onEdit, onRemove, showActions = fals
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 sm:gap-0">
         <div className="flex-1 w-full">
           <ConnectionHeader connection={connection} isLinked={isLinked} />
-          <p className="text-medical-primary text-sm font-medium mb-3">{connection.relationship}</p>
+          <p className="text-medical-primary text-sm font-medium mb-3 [overflow-wrap:anywhere]">
+            {connection.relationship}
+          </p>
           <ConnectionDetails connection={connection} isLinked={isLinked} />
         </div>
 

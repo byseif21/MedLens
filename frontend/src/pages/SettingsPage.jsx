@@ -435,13 +435,13 @@ const SettingsPage = () => {
                 </p>
               </div>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
               <Link
                 to="/dashboard"
-                className="btn-medical-secondary text-sm px-4 py-2 flex items-center gap-2"
+                className="btn-medical-secondary text-sm px-4 py-2 flex items-center gap-2 justify-center w-full sm:w-auto"
               >
                 <ArrowLeft className="w-4 h-4" />
-                Back to Profile
+                <span className="inline max-[740px]:hidden">Back to Profile</span>
               </Link>
             </div>
           </div>
@@ -787,8 +787,7 @@ const SettingsPage = () => {
               <div className="medical-card">
                 <div className="flex items-start justify-between mb-6">
                   <div>
-                    <h2 className="text-2xl font-semibold dark:text-white mb-1 flex items-center gap-2">
-                      <ScanFace className="w-6 h-6 text-medical-primary" />
+                    <h2 className="text-2xl font-semibold dark:text-white mb-1">
                       Smart Glass Configuration
                     </h2>
                     <p className="text-sm text-medical-gray-600 dark:text-medical-gray-400">
@@ -1114,10 +1113,7 @@ const SettingsPage = () => {
                 <div className="medical-card">
                   <div className="flex items-start justify-between mb-6">
                     <div>
-                      <h2 className="text-2xl font-semibold dark:text-white mb-1 flex items-center gap-2">
-                        <ScanFace className="w-6 h-6 text-medical-primary" />
-                        Face ID
-                      </h2>
+                      <h2 className="text-2xl font-semibold dark:text-white mb-1">Face ID</h2>
                       <p className="text-sm text-medical-gray-600 dark:text-medical-gray-400">
                         Re-register your face to keep recognition accurate. For security, we require
                         your password before updating your face template.
@@ -1206,12 +1202,9 @@ const SettingsPage = () => {
                 </div>
 
                 <div className="medical-card mt-6">
-                  <div className="flex items-start justify-between mb-6">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
                     <div>
-                      <h2 className="text-2xl font-semibold dark:text-white mb-1 flex items-center gap-2">
-                        <Key className="w-6 h-6 text-medical-primary" />
-                        Password
-                      </h2>
+                      <h2 className="text-2xl font-semibold dark:text-white mb-1">Password</h2>
                       <p className="text-sm text-medical-gray-600 dark:text-medical-gray-400">
                         Update your account password to keep your account secure.
                       </p>
@@ -1221,8 +1214,9 @@ const SettingsPage = () => {
                       <button
                         type="button"
                         onClick={() => setIsPasswordFormVisible(true)}
-                        className="btn-medical-secondary"
+                        className="btn-medical-secondary px-4 py-2 rounded-lg font-medium shadow-sm flex items-center gap-2 justify-center w-full sm:w-[220px]"
                       >
+                        <Key className="w-4 h-4" />
                         Change Password
                       </button>
                     )}
@@ -1371,7 +1365,7 @@ const SettingsPage = () => {
                 </div>
 
                 <div className="medical-card mt-6 border-red-100 dark:border-red-900/30 bg-red-50/30 dark:bg-red-900/10">
-                  <div className="flex items-start justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                     <div>
                       <h2 className="text-2xl font-semibold mb-1 text-red-600 dark:text-red-400 flex items-center gap-2">
                         <AlertTriangle className="w-6 h-6" />
@@ -1384,7 +1378,7 @@ const SettingsPage = () => {
                     <button
                       type="button"
                       onClick={() => setShowDeleteModal(true)}
-                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors shadow-sm flex items-center gap-2"
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors shadow-sm flex items-center gap-2 justify-center w-full sm:w-[220px]"
                     >
                       <Trash2 className="w-4 h-4" />
                       Delete Account
