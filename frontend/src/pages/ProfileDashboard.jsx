@@ -11,6 +11,8 @@ import {
   Settings,
   LogOut,
   Shield,
+  ShieldCheck,
+  Stethoscope,
   Menu,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
@@ -22,6 +24,23 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import ProfileAvatar from '../components/ProfileAvatar';
 import MobileMenuDrawer from '../components/MobileMenuDrawer';
 import { getProfile } from '../services/api';
+
+const splitNameForBadge = (name) => {
+  const trimmed = (name || '').trim();
+  if (!trimmed) {
+    return { main: '', last: '' };
+  }
+
+  const parts = trimmed.split(/\s+/);
+  if (parts.length === 1) {
+    return { main: '', last: trimmed };
+  }
+
+  return {
+    main: parts.slice(0, -1).join(' '),
+    last: parts[parts.length - 1],
+  };
+};
 
 const ProfileDashboard = () => {
   const [activeTab, setActiveTab] = useState('main');
@@ -41,6 +60,10 @@ const ProfileDashboard = () => {
   const isAdmin = (userRole || '').toLowerCase() === 'admin';
   const canViewMedical = !isViewingOther || isAdmin || userRole === 'doctor';
   const canEdit = !isViewingOther || isAdmin;
+
+  const displayName = profile?.name || 'User Profile';
+  const { main: nameMain, last: nameLast } = splitNameForBadge(displayName);
+  const profileRole = (profile?.role || '').toLowerCase();
 
   const loadProfile = async (options = {}) => {
     const silent = !!options?.silent;
@@ -103,9 +126,10 @@ const ProfileDashboard = () => {
       icon: Shield,
       to: '/admin',
       condition: isAdmin,
-      desktopClass: `btn-medical-secondary bg-red-50 text-red-600 border-red-200 hover:bg-red-100 ${desktopBtnBase}`,
-      mobileClass: `${mobileBtnBase} text-red-600 bg-red-50 hover:bg-red-100 hover:text-red-700`,
-      separateDesktop: true,
+      desktopClass: `btn-medical-secondary bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100 ${desktopBtnBase}`,
+      mobileClass: `${mobileBtnBase} text-amber-600 bg-amber-50 hover:bg-amber-100 hover:text-amber-700`,
+      iconOnly: true,
+      tooltip: 'Admin Dashboard',
     },
     {
       key: 'profile',
@@ -156,18 +180,23 @@ const ProfileDashboard = () => {
         }
       : item.onClick;
 
+    const title =
+      item.iconOnly && item.tooltip ? item.tooltip : item.iconOnly ? item.label : item.tooltip;
+
     const content = (
       <>
         <Icon className={isMobile ? 'w-5 h-5' : 'w-4 h-4 sm:w-4 sm:h-4'} />
-        <span className={isMobile ? '' : 'text-sm md:text-base leading-none sm:leading-normal'}>
-          {item.label}
-        </span>
+        {(!item.iconOnly || isMobile) && (
+          <span className={isMobile ? '' : 'text-sm md:text-base leading-none sm:leading-normal'}>
+            {item.label}
+          </span>
+        )}
       </>
     );
 
     if (item.href) {
       return (
-        <a key={item.key} href={item.href} className={className} onClick={onClick}>
+        <a key={item.key} href={item.href} className={className} onClick={onClick} title={title}>
           {content}
         </a>
       );
@@ -175,14 +204,14 @@ const ProfileDashboard = () => {
 
     if (item.to) {
       return (
-        <Link key={item.key} to={item.to} className={className} onClick={onClick}>
+        <Link key={item.key} to={item.to} className={className} onClick={onClick} title={title}>
           {content}
         </Link>
       );
     }
 
     return (
-      <button key={item.key} onClick={onClick} className={className}>
+      <button key={item.key} onClick={onClick} className={className} title={title}>
         {content}
       </button>
     );
@@ -222,7 +251,26 @@ const ProfileDashboard = () => {
               />
               <div>
                 <h1 className="text-lg sm:text-xl font-bold text-medical-dark dark:text-white transition-colors duration-300">
-                  {profile?.name || 'User Profile'}
+                  {nameMain && <span>{nameMain} </span>}
+                  {profileRole === 'admin' && (
+                    <span
+                      className="inline-flex items-center gap-2 whitespace-nowrap align-middle"
+                      title="Admin"
+                    >
+                      <span>{nameLast}</span>
+                      <ShieldCheck className="w-5 h-5 text-amber-500 fill-amber-500/10" />
+                    </span>
+                  )}
+                  {profileRole === 'doctor' && (
+                    <span
+                      className="inline-flex items-center gap-2 whitespace-nowrap align-middle"
+                      title="Doctor"
+                    >
+                      <span>{nameLast}</span>
+                      <Stethoscope className="w-5 h-5 text-emerald-500" />
+                    </span>
+                  )}
+                  {profileRole !== 'admin' && profileRole !== 'doctor' && <span>{nameLast}</span>}
                 </h1>
                 <p className="text-sm text-medical-gray-600 dark:text-medical-gray-400 transition-colors duration-300">
                   {isViewingOther ? 'Recognized Person Profile' : 'Medical Profile Dashboard'}
