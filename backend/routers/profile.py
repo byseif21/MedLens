@@ -3,7 +3,7 @@ from fastapi.concurrency import run_in_threadpool
 from typing import Dict, Any
 from services.storage_service import get_supabase_service
 from services.profile_picture_service import save_profile_picture
-from services.face_service import collect_face_images
+from services.face_service import collect_face_images, get_face_service, FaceRecognitionError
 from services.user_service import (
     get_complete_user_profile,
     update_user_privacy,
@@ -191,6 +191,7 @@ async def update_profile_picture(
     Does not update biometric face encoding (purely cosmetic).
     """
     supabase = get_supabase_service()
+    face_service = get_face_service()
 
     try:
         # Verify access rights
@@ -201,6 +202,24 @@ async def update_profile_picture(
         
         if not image_bytes:
             raise HTTPException(status_code=400, detail="Empty image file")
+
+        # Extra safety: verify that the face in the new picture matches this account
+        try:
+            match_result = face_service.identify_user(image_bytes)
+        except FaceRecognitionError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+
+        if not match_result.matched or not match_result.user_id:
+            raise HTTPException(
+                status_code=400,
+                detail="Face not recognized. Please try again with a clear, single-face photo."
+            )
+
+        if str(match_result.user_id) != str(user_id):
+            raise HTTPException(
+                status_code=403,
+                detail="Face does not match the current account's Face ID."
+            )
 
         # Save profile / threadpool to prevent blocking event loop
         public_url = await run_in_threadpool(save_profile_picture, user_id, image_bytes, supabase)

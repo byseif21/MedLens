@@ -119,9 +119,9 @@ describe('Axios Service', () => {
       expect(window.location.replace).toHaveBeenCalledWith('/login');
     });
 
-    it('handles 403 errors by redirecting to login', async () => {
+    it('logs out when backend returns 403 Not authenticated', async () => {
       const error = {
-        response: { status: 403 },
+        response: { status: 403, data: { detail: 'Not authenticated' } },
         config: {},
       };
 

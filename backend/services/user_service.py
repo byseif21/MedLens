@@ -348,7 +348,30 @@ async def update_user_face_enrollment(
     # Verify password
     if not stored_hash or not verify_password(password, stored_hash):
         raise HTTPException(status_code=403, detail="Invalid password")
-    
+
+    # Extra safety: verify that the new face still matches this user's existing enrollment
+    try:
+        sample_image = next(iter(face_images.values()))
+    except StopIteration:
+        raise HTTPException(status_code=400, detail="At least one face image is required")
+
+    try:
+        match_result = face_service.identify_user(sample_image)
+    except FaceRecognitionError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    if not match_result.matched or not match_result.user_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Face not recognized against existing enrollment. Please try again."
+        )
+
+    if str(match_result.user_id) != str(user_id):
+        raise HTTPException(
+            status_code=403,
+            detail="Face does not match the existing Face ID for this account."
+        )
+
     # Delegate enrollment to service
     try:
         await face_service.enroll_user(user_id, face_images, supabase)

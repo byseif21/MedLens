@@ -81,16 +81,10 @@ export const deleteAccount = async (password) => {
 
 export const confirmFaceLogin = async ({ userId, password }) => {
   try {
-    const response = await apiClient.post(
-      '/api/login/face/confirm',
-      {
-        user_id: userId,
-        password,
-      },
-      {
-        skipAuthRedirect: true,
-      }
-    );
+    const response = await apiClient.post('/api/login/face/confirm', {
+      user_id: userId,
+      password,
+    });
     return {
       success: true,
       data: response.data,
