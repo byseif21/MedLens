@@ -256,9 +256,20 @@ const RecognitionPage = () => {
                             <AlertTriangle className="w-4 h-4" />
                             Allergies
                           </p>
-                          <p className="text-sm text-red-600 dark:text-red-300/80 mt-1">
-                            {recognizedPerson.medical_info.allergies}
-                          </p>
+                          <div className="flex flex-wrap gap-2 mt-1">
+                            {recognizedPerson.medical_info.allergies
+                              .split(/[\n,]/)
+                              .map((item) => item.trim())
+                              .filter(Boolean)
+                              .map((tag) => (
+                                <span
+                                  key={tag}
+                                  className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-100 border border-red-200/80 dark:border-red-500/60"
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                          </div>
                         </div>
                       )}
                       {recognizedPerson.medical_info.chronic_conditions && (
@@ -267,9 +278,20 @@ const RecognitionPage = () => {
                             <Activity className="w-4 h-4" />
                             Chronic Conditions
                           </p>
-                          <p className="text-sm text-yellow-700 dark:text-yellow-300/80 mt-1">
-                            {recognizedPerson.medical_info.chronic_conditions}
-                          </p>
+                          <div className="flex flex-wrap gap-2 mt-1">
+                            {recognizedPerson.medical_info.chronic_conditions
+                              .split(/[\n,]/)
+                              .map((item) => item.trim())
+                              .filter(Boolean)
+                              .map((tag) => (
+                                <span
+                                  key={tag}
+                                  className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-100 border border-yellow-200/80 dark:border-yellow-500/60"
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                          </div>
                         </div>
                       )}
                       {recognizedPerson.medical_info.current_medications && (
@@ -278,9 +300,20 @@ const RecognitionPage = () => {
                             <Pill className="w-4 h-4" />
                             Current Medications
                           </p>
-                          <p className="text-sm text-blue-700 dark:text-blue-300/80 mt-1">
-                            {recognizedPerson.medical_info.current_medications}
-                          </p>
+                          <div className="flex flex-wrap gap-2 mt-1">
+                            {recognizedPerson.medical_info.current_medications
+                              .split(/[\n,]/)
+                              .map((item) => item.trim())
+                              .filter(Boolean)
+                              .map((tag) => (
+                                <span
+                                  key={tag}
+                                  className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-100 border border-blue-200/80 dark:border-blue-500/60"
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                          </div>
                         </div>
                       )}
                       {recognizedPerson.medical_info.emergency_notes && (
