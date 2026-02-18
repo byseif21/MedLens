@@ -16,6 +16,7 @@ class UserAdminView(BaseModel):
     email: str
     role: str
     is_active: bool = True
+    is_critical: bool = False
     created_at: Optional[str] = None
     last_login: Optional[str] = None
 
@@ -29,3 +30,4 @@ class UserUpdateRequest(BaseModel):
     name: Optional[str] = None
     role: Optional[str] = None
     is_active: Optional[bool] = None
+    is_critical: Optional[bool] = None

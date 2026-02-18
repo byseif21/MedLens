@@ -173,6 +173,7 @@ class SupabaseService:
             email=user_record['email'],
             role=user_record.get('role', 'user'),
             is_active=user_record.get('is_active', True),
+            is_critical=user_record.get('is_critical', False),
             phone=user_record.get('phone'),
             image_url=user_record.get('image_url'),
             registered_at=datetime.fromisoformat(user_record['created_at'].replace('Z', '+00:00'))

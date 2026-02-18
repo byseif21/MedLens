@@ -18,6 +18,7 @@ CREATE TABLE users (
     face_updated_at TIMESTAMP WITH TIME ZONE, -- Timestamp when face ID was last updated
     role VARCHAR(20) NOT NULL DEFAULT 'user', -- User role: 'user', 'doctor', 'admin'
     is_active BOOLEAN DEFAULT TRUE, -- Account status
+    is_critical BOOLEAN DEFAULT FALSE, -- Critical patient flag (controlled by doctors/admins)
 
     -- Privacy Settings
     is_name_public BOOLEAN DEFAULT TRUE,

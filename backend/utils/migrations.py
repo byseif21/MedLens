@@ -45,6 +45,7 @@ class MigrationManager:
             "relatives_is_external_column": False,
             "users_last_login_column": False,
             "users_is_active_column": False,
+            "users_is_critical_column": False,
             "migrations_needed": False
         }
         
@@ -62,13 +63,15 @@ class MigrationManager:
         # Check if users.is_active column exists
         if self._check_table_exists("users"):
             status["users_is_active_column"] = self._check_column_exists("users", "is_active")
+            status["users_is_critical_column"] = self._check_column_exists("users", "is_critical")
         
         # Determine if migrations are needed
         status["migrations_needed"] = not (
-            status["user_connections_table"] and 
-            status["relatives_is_external_column"] and
-            status["users_last_login_column"] and
-            status["users_is_active_column"]
+            status["user_connections_table"]
+            and status["relatives_is_external_column"]
+            and status["users_last_login_column"]
+            and status["users_is_active_column"]
+            and status["users_is_critical_column"]
         )
         
         return status
@@ -115,6 +118,9 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login TIMESTAMP WITH TIME ZONE;
 
 -- Add 'is_active' column if missing:
 ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
+
+-- Add 'is_critical' column if missing (critical patient flag, controlled by doctors/admins only):
+ALTER TABLE users ADD COLUMN IF NOT EXISTS is_critical BOOLEAN DEFAULT FALSE;
 
 -- Add this SQL to ensure data integrity:
 ALTER TABLE face_images 

@@ -39,6 +39,7 @@ class MedicalInfoUpdate(BaseModel):
     current_medications: Optional[str] = None
     previous_surgeries: Optional[str] = None
     emergency_notes: Optional[str] = None
+    is_critical: Optional[bool] = None
     
     @field_validator('*')
     @classmethod

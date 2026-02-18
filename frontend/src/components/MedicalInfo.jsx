@@ -121,11 +121,27 @@ MedicalTagField.propTypes = {
   placeholder: PropTypes.string,
 };
 
-const MedicalInfo = ({ profile, onUpdate, readOnly = false, targetUserId = null }) => {
-  const { isEditing, setIsEditing, loading, formData, handleChange, handleSave, handleCancel } =
-    useMedicalInfo(profile, onUpdate, targetUserId);
+const MedicalInfo = ({
+  profile,
+  onUpdate,
+  readOnly = false,
+  targetUserId = null,
+  canEditCritical = false,
+}) => {
+  const {
+    isEditing,
+    setIsEditing,
+    loading,
+    formData,
+    handleChange,
+    handleSave,
+    handleCancel,
+    critical,
+    toggleCritical,
+  } = useMedicalInfo(profile, onUpdate, targetUserId, canEditCritical);
 
   const canEdit = !readOnly;
+  const isCritical = Boolean(critical);
 
   if (loading) {
     return (
@@ -136,7 +152,13 @@ const MedicalInfo = ({ profile, onUpdate, readOnly = false, targetUserId = null 
   }
 
   return (
-    <div className="medical-card">
+    <div
+      className={`medical-card ${
+        isCritical
+          ? 'border-red-300 dark:border-red-700 bg-red-50/40 dark:bg-red-950/10 shadow-[0_0_0_1px_rgba(248,113,113,0.35)]'
+          : ''
+      }`}
+    >
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-semibold dark:text-white">Medical Information</h2>
         {canEdit &&
@@ -158,6 +180,24 @@ const MedicalInfo = ({ profile, onUpdate, readOnly = false, targetUserId = null 
             </div>
           ))}
       </div>
+      {canEditCritical && isEditing && (
+        <div className="mb-4">
+          <label className="label-medical transition-colors">Critical patient</label>
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              name="is_critical"
+              checked={critical}
+              onChange={toggleCritical}
+              disabled={!isEditing}
+              className="h-4 w-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+            />
+            <span className="text-sm text-medical-gray-700 dark:text-medical-gray-200">
+              Mark this person as a critical patient (affects Smart Glass alerts)
+            </span>
+          </div>
+        </div>
+      )}
 
       <div className="space-y-6">
         <MedicalInfoField
@@ -224,6 +264,7 @@ MedicalInfo.propTypes = {
   onUpdate: PropTypes.func.isRequired,
   readOnly: PropTypes.bool,
   targetUserId: PropTypes.string,
+  canEditCritical: PropTypes.bool,
 };
 
 export default MedicalInfo;

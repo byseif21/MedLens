@@ -73,7 +73,6 @@ async def update_main_info(user_id: str, data: MainInfoUpdate, current_user: dic
 
         # Prepare update data (only include non-None values)
         update_data = {k: v for k, v in data.dict().items() if v is not None}
-        
         result = await update_user_main_info(user_id, update_data)
         
         return {
@@ -96,9 +95,20 @@ async def update_medical_info(user_id: str, data: MedicalInfoUpdate, current_use
 
         # Prepare update data
         update_data = data.dict(exclude_unset=True)
-        update_data['user_id'] = user_id
-        
-        result = await update_user_medical_info(user_id, update_data)
+
+        # Extract critical flag (handled on users table, not medical_info)
+        critical_value = update_data.pop("is_critical", None)
+
+        # for now only admins can change critical flag via medical-info endpoint
+        if critical_value is not None:
+            role = (current_user.get("role") or "").lower()
+            if role == "admin":
+                await update_user_main_info(user_id, {"is_critical": critical_value})
+
+        result = {}
+        if update_data:
+            update_data['user_id'] = user_id
+            result = await update_user_medical_info(user_id, update_data)
         
         return {
             "message": "Medical info updated successfully",

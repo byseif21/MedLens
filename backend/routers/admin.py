@@ -41,6 +41,7 @@ async def list_users_admin(
             email=u['email'],
             role=u.get('role', 'user'),
             is_active=u.get('is_active', True),
+            is_critical=u.get('is_critical', False),
             created_at=u.get('created_at'),
             last_login=u.get('last_login')
         ) for u in result['users']

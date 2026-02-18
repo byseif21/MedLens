@@ -272,6 +272,11 @@ const ProfileDashboard = () => {
                   )}
                   {profileRole !== 'admin' && profileRole !== 'doctor' && <span>{nameLast}</span>}
                 </h1>
+                {profile?.is_critical && (isAdmin || userRole === 'doctor') && (
+                  <div className="mb-1 inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800">
+                    Critical patient
+                  </div>
+                )}
                 <p className="text-sm text-medical-gray-600 dark:text-medical-gray-400 transition-colors duration-300">
                   {isViewingOther ? 'Recognized Person Profile' : 'Medical Profile Dashboard'}
                 </p>
@@ -432,6 +437,7 @@ const ProfileDashboard = () => {
                 onUpdate={loadProfile}
                 readOnly={!canEdit}
                 targetUserId={urlUserId}
+                canEditCritical={isAdmin}
               />
             </div>
           )}

@@ -49,11 +49,12 @@ const useMedicalFormData = (profile) => {
   return { formData, updateField, resetForm };
 };
 
-export const useMedicalInfo = (profile, onUpdate, targetUserId = null) => {
+export const useMedicalInfo = (profile, onUpdate, targetUserId = null, canEditCritical = false) => {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const { formData, updateField, resetForm } = useMedicalFormData(profile);
   const { user } = useAuth();
+  const [critical, setCritical] = useState(Boolean(profile?.is_critical));
 
   const handleChange = (e) => {
     updateField(e.target.name, e.target.value);
@@ -80,7 +81,12 @@ export const useMedicalInfo = (profile, onUpdate, targetUserId = null) => {
 
     setLoading(true);
     const userId = targetUserId || user?.id;
-    const result = await updateMedicalInfo(userId, formData);
+    const payload = { ...formData };
+    if (canEditCritical) {
+      payload.is_critical = critical;
+    }
+
+    const result = await updateMedicalInfo(userId, payload);
 
     if (result.success) {
       setIsEditing(false);
@@ -94,7 +100,13 @@ export const useMedicalInfo = (profile, onUpdate, targetUserId = null) => {
 
   const handleCancel = () => {
     resetForm();
+    setCritical(Boolean(profile?.is_critical));
     setIsEditing(false);
+  };
+
+  const toggleCritical = () => {
+    if (!canEditCritical || !isEditing) return;
+    setCritical((prev) => !prev);
   };
 
   return {
@@ -105,5 +117,7 @@ export const useMedicalInfo = (profile, onUpdate, targetUserId = null) => {
     handleChange,
     handleSave,
     handleCancel,
+    critical,
+    toggleCritical,
   };
 };

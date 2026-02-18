@@ -44,6 +44,7 @@ class UserResponse(UserBase):
     id: str = Field(..., description="Unique user identifier")
     role: str = Field("user", description="User role (admin/user)")
     is_active: bool = Field(True, description="User active status")
+    is_critical: bool = Field(False, description="Critical patient flag (doctor/admin controlled)")
     image_url: Optional[str] = Field(None, description="URL to user's face image")
     registered_at: datetime = Field(..., description="Registration timestamp")
     

@@ -210,7 +210,13 @@ const RecognitionPage = () => {
         {recognizedPerson ? (
           <div className="animate-fade-in">
             {/* Recognition Result */}
-            <div className="medical-card mb-6">
+            <div
+              className={`medical-card mb-6 ${
+                recognizedPerson.is_critical && (isAdmin || userRole === 'doctor')
+                  ? 'border-red-300 dark:border-red-700 bg-red-50/40 dark:bg-red-950/10 shadow-[0_0_0_1px_rgba(248,113,113,0.35)]'
+                  : ''
+              }`}
+            >
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4 sm:gap-0">
                 <h2 className="text-xl sm:text-2xl font-semibold text-green-600 dark:text-green-500 flex items-center gap-2 transition-colors">
                   <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -249,9 +255,16 @@ const RecognitionPage = () => {
                     <h3 className="text-2xl font-bold text-medical-dark dark:text-white transition-colors duration-300">
                       {recognizedPerson.name}
                     </h3>
-                    <p className="text-medical-gray-600 dark:text-medical-gray-400 transition-colors duration-300">
-                      Confidence: {(recognizedPerson.confidence * 100).toFixed(1)}%
-                    </p>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-1">
+                      <p className="text-medical-gray-600 dark:text-medical-gray-400 transition-colors duration-300">
+                        Confidence: {(recognizedPerson.confidence * 100).toFixed(1)}%
+                      </p>
+                      {recognizedPerson.is_critical && (isAdmin || userRole === 'doctor') && (
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800">
+                          Critical patient
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
