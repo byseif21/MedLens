@@ -295,6 +295,14 @@ export const SmartGlassProvider = ({ children }) => {
     return getGlassUrl('capture');
   };
 
+  const stopScanInterval = () => {
+    if (scanIntervalRef.current) {
+      clearInterval(scanIntervalRef.current);
+      scanIntervalRef.current = null;
+    }
+    setIsScanning(false);
+  };
+
   // Perform Recognition
   const performScan = async () => {
     // Avoid overlapping scans
@@ -335,24 +343,24 @@ export const SmartGlassProvider = ({ children }) => {
         const person = result.data;
         console.log(`[SmartGlass] 🎯 MATCH FOUND: ${person.name}`);
 
-        // Prevent spamming the same detection
-        if (lastDetection?.id !== person.id) {
-          setLastDetection(person);
+        const detectedId = person.id || person.user_id;
+        setLastDetection(person);
 
-          // Notify Glass
-          const info = buildGlassSummary(person);
-          await updateDisplay('MATCH FOUND', person.name, person.is_critical, info);
+        // Notify Glass on every match
+        const info = buildGlassSummary(person);
+        await updateDisplay('MATCH FOUND', person.name, person.is_critical, info);
 
-          // Notify App
-          notify({
-            type: 'success',
-            title: 'Glass Detection',
-            message: `Identified: ${person.name}`,
-          });
+        // Notify App
+        notify({
+          type: 'success',
+          title: 'Glass Detection',
+          message: `Identified: ${person.name}`,
+        });
 
-          // Navigate (if app is active)
+        // Navigate (if app is active and we have an ID)
+        if (detectedId) {
           const currentPath = location.pathname.replace(/\/$/, '');
-          const targetPath = `/profile/${person.id}`;
+          const targetPath = `/profile/${detectedId}`;
 
           if (currentPath !== targetPath) {
             console.log(`[SmartGlass] ➡️ Navigating to ${targetPath}`);
@@ -361,6 +369,8 @@ export const SmartGlassProvider = ({ children }) => {
             console.log('[SmartGlass] ℹ️ Already on patient profile');
           }
         }
+
+        stopScanInterval();
       } else {
         console.log('[SmartGlass] ❌ No match found');
       }
@@ -378,9 +388,7 @@ export const SmartGlassProvider = ({ children }) => {
   // Toggle Scanning
   const toggleScanning = () => {
     if (isScanning) {
-      setIsScanning(false);
-      clearInterval(scanIntervalRef.current);
-      scanIntervalRef.current = null;
+      stopScanInterval();
     } else {
       setIsScanning(true);
       // Scan every 3 seconds

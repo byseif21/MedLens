@@ -78,7 +78,7 @@ class FaceRecognitionService:
         try:
             # Add some padding for context if possible, but keep it tight to the face
             face_crop = image[top:bottom, left:right]
-            is_blurry, variance = ImageProcessor.check_blur(face_crop, threshold=100.0)
+            is_blurry, variance = ImageProcessor.check_blur(face_crop, threshold=85.0)
             
             if is_blurry:
                 return False, f"Face image too blurry (Score: {variance:.1f}). Please hold steady."

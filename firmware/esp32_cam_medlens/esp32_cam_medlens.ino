@@ -91,6 +91,9 @@ char currentInfo[64] = "";
 bool hasDisplayFrame = false;
 bool headerVisible = true;
 unsigned long lastBlinkMillis = 0;
+bool waitingForAppConnection = false;
+unsigned long lastStatusMillis = 0;
+const unsigned long APP_DISCONNECT_TIMEOUT = 15000; // 15 seconds
 
 void initOled() {
     Wire.begin(OLED_SDA_PIN, OLED_SCL_PIN);
@@ -101,8 +104,23 @@ void initOled() {
     oled.clearDisplay();
     oled.setTextSize(1);
     oled.setTextColor(SSD1306_WHITE);
+    oled.display();
+}
+
+void showIpScreen() {
+    IPAddress ip = WiFi.localIP();
+    char ipBuf[24];
+    snprintf(ipBuf, sizeof(ipBuf), "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
+
+    oled.clearDisplay();
+    oled.setTextSize(1);
+    oled.setTextColor(SSD1306_WHITE);
     oled.setCursor(0, 0);
-    oled.println("MedLens Ready");
+    oled.println("Glass IP:");
+    oled.setCursor(0, 16);
+    oled.println(ipBuf);
+    oled.setCursor(0, 32);
+    oled.println("Use in MedLens app");
     oled.display();
 }
 
@@ -182,6 +200,15 @@ void drawDisplayFrame(bool showHeader) {
         const char* tag = showHeader ? " CRITICAL" : "         ";
         snprintf(headerBuf, sizeof(headerBuf), "%s%s", base, tag);
         oled.println(headerBuf);
+
+        // "CRITICAL" thicker than the base header text
+        if (showHeader) {
+            int16_t criticalX = (strlen(base) + 1) * 6; // 6px per char at textSize=1
+            oled.setCursor(criticalX, 0);
+            oled.println("CRITICAL");
+            oled.setCursor(criticalX + 1, 0);
+            oled.println("CRITICAL");
+        }
     } else {
         if (showHeader) {
             strncpy(headerBuf, currentLine1, sizeof(headerBuf) - 1);
@@ -379,7 +406,14 @@ static esp_err_t status_handler(httpd_req_t *req) {
     
     char json_response[100];
     snprintf(json_response, sizeof(json_response), "{\"status\":\"ok\",\"battery\":%d,\"display\":\"%s\"}", battery, lastDisplayMessage.c_str());
-    
+
+    lastStatusMillis = millis();
+
+    if (waitingForAppConnection) {
+        waitingForAppConnection = false;
+        showDisplayMessage("MedLens Ready", "", "", false);
+    }
+
     return httpd_resp_send(req, json_response, strlen(json_response));
 }
 
@@ -418,6 +452,9 @@ static esp_err_t display_handler(httpd_req_t *req) {
     isAlert = alert;
 
     showDisplayMessage(line1, line2, info, alert);
+
+    lastStatusMillis = millis();
+    waitingForAppConnection = false;
 
     if (alert) {
         digitalWrite(LED_GPIO_NUM, HIGH);
@@ -588,14 +625,17 @@ void setup() {
     Serial.print("Camera Ready! Use 'http://");
     Serial.print(WiFi.localIP());
     Serial.println("' to connect");
+
+    initOled();
+    showIpScreen();
+    waitingForAppConnection = true;
+    lastStatusMillis = millis();
     
     // Flash LED to indicate ready
     pinMode(LED_GPIO_NUM, OUTPUT);
     digitalWrite(LED_GPIO_NUM, HIGH);
     delay(100);
     digitalWrite(LED_GPIO_NUM, LOW);
-
-    initOled();
 }
 
 void loop() {
@@ -606,6 +646,15 @@ void loop() {
             lastBlinkMillis = now;
             headerVisible = !headerVisible;
             drawDisplayFrame(headerVisible);
+        }
+    }
+
+    if (!waitingForAppConnection) {
+        unsigned long now = millis();
+        if (now - lastStatusMillis > APP_DISCONNECT_TIMEOUT) {
+            waitingForAppConnection = true;
+            hasDisplayFrame = false;
+            showIpScreen();
         }
     }
 
