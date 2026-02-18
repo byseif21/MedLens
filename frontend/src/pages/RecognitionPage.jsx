@@ -23,6 +23,7 @@ import { useNotifications } from '../hooks/useNotifications';
 import { setViewingUser } from '../services/auth';
 import { recognizeFace } from '../services/api';
 import { computeAge } from '../utils/dateUtils';
+import { useSmartGlass } from '../context/SmartGlassContext';
 
 const RecognitionPage = () => {
   const [mode, setMode] = useState(null);
@@ -33,6 +34,11 @@ const RecognitionPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { notify } = useNotifications();
+  const {
+    isConnected: isGlassConnected,
+    updateDisplay,
+    mirrorRecognitionToGlass,
+  } = useSmartGlass();
   const userRole = user?.role;
   const isAdmin = (userRole || '').toLowerCase() === 'admin';
   const canViewFullProfile = userRole === 'doctor' || isAdmin;
@@ -52,13 +58,55 @@ const RecognitionPage = () => {
 
       if (result.success) {
         if (result.data.match) {
-          setRecognizedPerson(result.data);
+          const person = result.data;
+          setRecognizedPerson(person);
           setShowViewProfile(canViewFullProfile);
           notify({
             type: 'success',
             title: 'Match Found',
-            message: `Successfully recognized ${result.data.name}`,
+            message: `Successfully recognized ${person.name}`,
           });
+
+          if (isGlassConnected && mirrorRecognitionToGlass) {
+            const alert = Boolean(person.is_critical);
+            let info = '';
+            const medicalInfo = person.medical_info;
+            if (medicalInfo) {
+              const takeFirst = (value) => {
+                if (!value || typeof value !== 'string') return '';
+                const pieces = value
+                  .split(/[\n,]/)
+                  .map((p) => p.trim())
+                  .filter(Boolean);
+                return pieces[0] || '';
+              };
+
+              const parts = [];
+              const chronic = takeFirst(medicalInfo.chronic_conditions);
+              if (chronic) parts.push(chronic);
+
+              const allergy = takeFirst(medicalInfo.allergies);
+              if (allergy) parts.push(`Allergy: ${allergy}`);
+
+              if (!parts.length) {
+                const note = takeFirst(
+                  medicalInfo.emergency_notes || medicalInfo.current_medications
+                );
+                if (note) parts.push(note);
+              }
+
+              if (!parts.length && person.is_critical) {
+                parts.push('CRITICAL PATIENT');
+              }
+
+              const summary = parts.join(' | ');
+              info = summary;
+            } else if (person.is_critical) {
+              info = 'CRITICAL PATIENT';
+            }
+
+            updateDisplay('MATCH FOUND', person.name || 'Unknown', alert, info);
+          }
         } else {
           // no match
           setError('Face not recognized. Person may not be registered in the system.');

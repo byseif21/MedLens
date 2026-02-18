@@ -88,6 +88,8 @@ const SettingsPage = () => {
     getGlassSnapshotUrl,
     updateDisplay,
     batteryLevel,
+    mirrorRecognitionToGlass,
+    setMirrorRecognitionToGlass,
   } = useSmartGlass();
 
   const { theme, setTheme } = useTheme();
@@ -108,8 +110,7 @@ const SettingsPage = () => {
       message: 'Sending test alert to Smart Glass...',
     });
 
-    // Sends "TEST ALERT" text and triggers the LED flash (alert=true)
-    await updateDisplay('TEST', 'ALERT', true);
+    await updateDisplay('TEST', 'ALERT', true, 'This is only a test');
   };
 
   const handleResetWifi = async () => {
@@ -1043,6 +1044,26 @@ const SettingsPage = () => {
                       Device Preferences
                     </h3>
                     <div className="space-y-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-medical-dark dark:text-white">
+                            Mirror Recognition results to Glass display
+                          </p>
+                          <p className="text-sm text-medical-gray-600 dark:text-medical-gray-400">
+                            When enabled, the Recognition page sends match info to the glass.
+                          </p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="sr-only peer"
+                            checked={mirrorRecognitionToGlass}
+                            onChange={(e) => setMirrorRecognitionToGlass(e.target.checked)}
+                          />
+                          <div className="w-11 h-6 bg-gray-200 dark:bg-medical-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-cyan-300 dark:peer-focus:ring-cyan-900 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 dark:after:border-medical-gray-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-medical-primary"></div>
+                        </label>
+                      </div>
+
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="font-medium text-medical-dark dark:text-white">

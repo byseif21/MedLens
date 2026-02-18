@@ -8,6 +8,9 @@
 #include "soc/soc.h" //disable brownout problems
 #include "soc/rtc_cntl_reg.h"  //disable brownout problems
 #include "esp_http_server.h"
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
 
 // ===================
 // Select Camera Model
@@ -61,6 +64,14 @@
 // LED Pin (2 is standard onboard LED for Wrover, 4 is usually used for Camera Data 2 on Wrover!)
 #define LED_GPIO_NUM      2
 
+#define OLED_SDA_PIN 33
+#define OLED_SCL_PIN 32
+#define OLED_WIDTH 128
+#define OLED_HEIGHT 64
+#define OLED_RESET_PIN -1
+
+Adafruit_SSD1306 oled(OLED_WIDTH, OLED_HEIGHT, &Wire, OLED_RESET_PIN);
+
 // ===================
 // Server Configuration
 // ===================
@@ -72,6 +83,199 @@ httpd_handle_t stream_httpd = NULL;
 // ===================
 String lastDisplayMessage = "Ready";
 bool isAlert = false;
+
+// Cached display state for blinking header
+char currentLine1[32] = "MedLens";
+char currentLine2[32] = "";
+char currentInfo[64] = "";
+bool hasDisplayFrame = false;
+bool headerVisible = true;
+unsigned long lastBlinkMillis = 0;
+
+void initOled() {
+    Wire.begin(OLED_SDA_PIN, OLED_SCL_PIN);
+    if (!oled.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+        Serial.println("OLED init failed");
+        return;
+    }
+    oled.clearDisplay();
+    oled.setTextSize(1);
+    oled.setTextColor(SSD1306_WHITE);
+    oled.setCursor(0, 0);
+    oled.println("MedLens Ready");
+    oled.display();
+}
+
+void drawDisplayFrame(bool showHeader) {
+    oled.clearDisplay();
+    oled.setTextColor(SSD1306_WHITE);
+
+    // Shorten name to first two words
+    char shortName[32];
+    shortName[0] = 0;
+    if (currentLine2[0] != 0) {
+        int spaces = 0;
+        size_t i = 0;
+        const char* p = currentLine2;
+        while (*p && i < sizeof(shortName) - 1) {
+            if (*p == ' ') {
+                spaces++;
+                if (spaces >= 2) {
+                    break;
+                }
+            }
+            shortName[i++] = *p++;
+        }
+        shortName[i] = 0;
+    }
+    const char* nameToUse = (shortName[0] != 0) ? shortName : currentLine2;
+
+    // Decorated name with marker
+    char decoratedName[40];
+    if (nameToUse) {
+        snprintf(decoratedName, sizeof(decoratedName), "> %s", nameToUse);
+    } else {
+        decoratedName[0] = 0;
+    }
+
+    // Split medical info (currentInfo) into up to two lines using '|'
+    char infoLine1[22];
+    char infoLine2[22];
+    infoLine1[0] = 0;
+    infoLine2[0] = 0;
+
+    if (currentInfo[0] != 0) {
+        const char* sep = strchr(currentInfo, '|');
+        if (sep) {
+            size_t len1 = sep - currentInfo;
+            if (len1 >= sizeof(infoLine1)) len1 = sizeof(infoLine1) - 1;
+            memcpy(infoLine1, currentInfo, len1);
+            infoLine1[len1] = 0;
+
+            const char* right = sep + 1;
+            while (*right == ' ') right++;
+            size_t len2 = strlen(right);
+            if (len2 >= sizeof(infoLine2)) len2 = sizeof(infoLine2) - 1;
+            memcpy(infoLine2, right, len2);
+            infoLine2[len2] = 0;
+        } else {
+            size_t len = strlen(currentInfo);
+            if (len >= sizeof(infoLine1)) len = sizeof(infoLine1) - 1;
+            memcpy(infoLine1, currentInfo, len);
+            infoLine1[len] = 0;
+        }
+    }
+
+    const char* info1 = (infoLine1[0] != 0) ? infoLine1 : nullptr;
+    const char* info2 = (infoLine2[0] != 0) ? infoLine2 : nullptr;
+
+    if (!info1 && isAlert) {
+        info2 = "ALERT";
+    }
+
+    // Header line: "MATCH FOUND" and optional " CRITICAL"
+    oled.setTextSize(1);
+    oled.setCursor(0, 0);
+    char headerBuf[32];
+    if (isAlert) {
+        const char* base = currentLine1;
+        const char* tag = showHeader ? " CRITICAL" : "         ";
+        snprintf(headerBuf, sizeof(headerBuf), "%s%s", base, tag);
+        oled.println(headerBuf);
+    } else {
+        if (showHeader) {
+            strncpy(headerBuf, currentLine1, sizeof(headerBuf) - 1);
+            headerBuf[sizeof(headerBuf) - 1] = 0;
+        } else {
+            strncpy(headerBuf, "            ", sizeof(headerBuf) - 1);
+            headerBuf[sizeof(headerBuf) - 1] = 0;
+        }
+        oled.println(headerBuf);
+    }
+
+    // Name line - draw twice with small offset to appear thicker
+    oled.setTextSize(1);
+    const char* nameText = decoratedName[0] ? decoratedName : nameToUse;
+    oled.setCursor(0, 16);
+    oled.println(nameText);
+    oled.setCursor(1, 16);
+    oled.println(nameText);
+
+    // Medical info line 1
+    if (info1) {
+        oled.setTextSize(1);
+        oled.setCursor(0, 34);
+        oled.println(info1);
+    }
+
+    // Medical info line 2 or ALERT
+    if (info2) {
+        oled.setTextSize(1);
+        oled.setCursor(0, 46);
+        oled.println(info2);
+    }
+
+    oled.display();
+}
+
+void showDisplayMessage(const char* line1, const char* line2, const char* line3, bool alert) {
+    // Cache values for continuous blinking from loop()
+    strncpy(currentLine1, line1, sizeof(currentLine1) - 1);
+    currentLine1[sizeof(currentLine1) - 1] = 0;
+
+    if (line2) {
+        strncpy(currentLine2, line2, sizeof(currentLine2) - 1);
+        currentLine2[sizeof(currentLine2) - 1] = 0;
+    } else {
+        currentLine2[0] = 0;
+    }
+
+    if (line3) {
+        strncpy(currentInfo, line3, sizeof(currentInfo) - 1);
+        currentInfo[sizeof(currentInfo) - 1] = 0;
+    } else {
+        currentInfo[0] = 0;
+    }
+
+    isAlert = alert;
+    hasDisplayFrame = true;
+    headerVisible = true;
+    lastBlinkMillis = millis();
+
+    // Draw initial frame with header visible
+    drawDisplayFrame(true);
+}
+
+void extractStringField(const char* json, const char* key, char* out, size_t outSize) {
+    const char* p = strstr(json, key);
+    if (!p) {
+        out[0] = 0;
+        return;
+    }
+    p = strchr(p, ':');
+    if (!p) {
+        out[0] = 0;
+        return;
+    }
+    p++;
+    while (*p == ' ' || *p == '\"') p++;
+    size_t i = 0;
+    while (*p && *p != '\"' && *p != ',' && *p != '}' && i < outSize - 1) {
+        out[i++] = *p++;
+    }
+    out[i] = 0;
+}
+
+bool extractBoolField(const char* json, const char* key) {
+    const char* p = strstr(json, key);
+    if (!p) return false;
+    p = strchr(p, ':');
+    if (!p) return false;
+    p++;
+    while (*p == ' ') p++;
+    if (strncmp(p, "true", 4) == 0) return true;
+    return false;
+}
 
 // ===================
 // Camera Handler (Capture)
@@ -183,8 +387,8 @@ static esp_err_t status_handler(httpd_req_t *req) {
 // Display Handler (Receive Data)
 // ===================
 static esp_err_t display_handler(httpd_req_t *req) {
-    char content[100];
-    size_t recv_size = (req->content_len < sizeof(content)) ? req->content_len : sizeof(content);
+    char content[128];
+    size_t recv_size = req->content_len < sizeof(content) - 1 ? req->content_len : sizeof(content) - 1;
     int ret = httpd_req_recv(req, content, recv_size);
     
     if (ret <= 0) {
@@ -193,15 +397,30 @@ static esp_err_t display_handler(httpd_req_t *req) {
         }
         return ESP_FAIL;
     }
-    content[recv_size] = 0; // Null terminate
+    content[recv_size] = 0;
 
-    // TODO: Parse JSON here. For now, just print the raw body
     Serial.printf("Received Display Data: %s\n", content);
-    lastDisplayMessage = String(content);
-    
-    // Blink LED if "alert" is in content
-    if (strstr(content, "alert")) {
-        digitalWrite(LED_GPIO_NUM, HIGH); // Flash Flashlight/LED
+
+    char line1[32];
+    char line2[32];
+    char info[48];
+    extractStringField(content, "line1", line1, sizeof(line1));
+    extractStringField(content, "line2", line2, sizeof(line2));
+    extractStringField(content, "info", info, sizeof(info));
+    bool alert = extractBoolField(content, "alert");
+
+    if (line1[0] == 0) {
+        strncpy(line1, "MedLens", sizeof(line1) - 1);
+        line1[sizeof(line1) - 1] = 0;
+    }
+
+    lastDisplayMessage = String(line1) + " " + String(line2) + " " + String(info);
+    isAlert = alert;
+
+    showDisplayMessage(line1, line2, info, alert);
+
+    if (alert) {
+        digitalWrite(LED_GPIO_NUM, HIGH);
         delay(200);
         digitalWrite(LED_GPIO_NUM, LOW);
     }
@@ -375,8 +594,20 @@ void setup() {
     digitalWrite(LED_GPIO_NUM, HIGH);
     delay(100);
     digitalWrite(LED_GPIO_NUM, LOW);
+
+    initOled();
 }
 
 void loop() {
-    delay(10000);
+    if (hasDisplayFrame) {
+        unsigned long now = millis();
+        unsigned long interval = isAlert ? 400 : 800; // faster blink when critical
+        if (now - lastBlinkMillis >= interval) {
+            lastBlinkMillis = now;
+            headerVisible = !headerVisible;
+            drawDisplayFrame(headerVisible);
+        }
+    }
+
+    delay(10);
 }

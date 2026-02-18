@@ -28,6 +28,12 @@ export const SmartGlassProvider = ({ children }) => {
   const [isScanning, setIsScanning] = useState(false);
   const [lastDetection, setLastDetection] = useState(null);
   const [batteryLevel, setBatteryLevel] = useState(null);
+  const [mirrorRecognitionToGlass, setMirrorRecognitionToGlass] = useState(() => {
+    const stored = localStorage.getItem('medlens_glass_mirror_recognition');
+    if (stored === 'true') return true;
+    if (stored === 'false') return false;
+    return true;
+  });
 
   const scanIntervalRef = useRef(null);
   const statusPollRef = useRef(null);
@@ -48,6 +54,52 @@ export const SmartGlassProvider = ({ children }) => {
   useEffect(() => {
     localStorage.setItem('medlens_glass_ip', glassIp);
   }, [glassIp]);
+
+  useEffect(() => {
+    localStorage.setItem(
+      'medlens_glass_mirror_recognition',
+      mirrorRecognitionToGlass ? 'true' : 'false'
+    );
+  }, [mirrorRecognitionToGlass]);
+
+  const buildGlassSummary = (person) => {
+    if (!person || !person.medical_info) return '';
+    const info = person.medical_info;
+    const parts = [];
+
+    const takeFirst = (value) => {
+      if (!value || typeof value !== 'string') return '';
+      const pieces = value
+        .split(/[\n,]/)
+        .map((p) => p.trim())
+        .filter(Boolean);
+      return pieces[0] || '';
+    };
+
+    const chronic = takeFirst(info.chronic_conditions);
+    if (chronic) {
+      parts.push(chronic);
+    }
+
+    const allergy = takeFirst(info.allergies);
+    if (allergy) {
+      parts.push(`Allergy: ${allergy}`);
+    }
+
+    if (!parts.length) {
+      const note = takeFirst(info.emergency_notes || info.current_medications);
+      if (note) {
+        parts.push(note);
+      }
+    }
+
+    if (!parts.length && person.is_critical) {
+      parts.push('CRITICAL PATIENT');
+    }
+
+    const summary = parts.join(' | ');
+    return summary;
+  };
 
   const isCloud = useMemo(
     () => !glassIp.includes('.') && !glassIp.includes('localhost') && glassIp.length > 0,
@@ -165,7 +217,7 @@ export const SmartGlassProvider = ({ children }) => {
   }, [glassIp, isConnected, getGlassUrl, notify, isCloud, forceDisconnect]);
 
   // Update Glass Display
-  const updateDisplay = async (line1, line2, alert = false) => {
+  const updateDisplay = async (line1, line2, alert = false, info = '') => {
     if (!isConnected) return;
     try {
       if (isCloud) {
@@ -174,12 +226,14 @@ export const SmartGlassProvider = ({ children }) => {
           line1,
           line2,
           alert,
+          info,
         });
       } else {
         await glassClient.current.post(getGlassUrl('display'), {
           line1,
           line2,
           alert,
+          info,
         });
       }
     } catch (err) {
@@ -286,7 +340,8 @@ export const SmartGlassProvider = ({ children }) => {
           setLastDetection(person);
 
           // Notify Glass
-          await updateDisplay('MATCH FOUND', person.name, person.is_critical);
+          const info = buildGlassSummary(person);
+          await updateDisplay('MATCH FOUND', person.name, person.is_critical, info);
 
           // Notify App
           notify({
@@ -351,6 +406,8 @@ export const SmartGlassProvider = ({ children }) => {
         toggleScanning,
         batteryLevel,
         lastDetection,
+        mirrorRecognitionToGlass,
+        setMirrorRecognitionToGlass,
         checkConnection,
         resetGlassWifi,
         disconnectGlass,
