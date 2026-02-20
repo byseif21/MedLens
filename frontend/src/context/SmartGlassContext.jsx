@@ -117,6 +117,11 @@ export const SmartGlassProvider = ({ children }) => {
     [glassIp]
   );
 
+  const getCloudFrameUrl = useCallback(
+    () => `${import.meta.env.VITE_API_URL}/api/glass/frame/${glassIp}`,
+    [glassIp]
+  );
+
   const forceDisconnect = useCallback(() => {
     if (scanIntervalRef.current) {
       clearInterval(scanIntervalRef.current);
@@ -306,16 +311,9 @@ export const SmartGlassProvider = ({ children }) => {
     setHasManuallyDisconnected(true);
   };
 
-  // Get Stream URL
-  const getGlassStreamUrl = () => getGlassUrl('stream');
+  const getGlassStreamUrl = () => (isCloud ? getCloudFrameUrl() : getGlassUrl('stream'));
 
-  // Get Snapshot URL
-  const getGlassSnapshotUrl = () => {
-    if (isCloud) {
-      return `${import.meta.env.VITE_API_URL}/api/glass/frame/${glassIp}`;
-    }
-    return getGlassUrl('capture');
-  };
+  const getGlassSnapshotUrl = () => (isCloud ? getCloudFrameUrl() : getGlassUrl('capture'));
 
   const stopScanInterval = () => {
     if (scanIntervalRef.current) {
@@ -340,7 +338,7 @@ export const SmartGlassProvider = ({ children }) => {
       // 1. Get Image from Glass
       console.log('[SmartGlass] Requesting capture from Glass...');
       const response = isCloud
-        ? await apiClient.get(`/api/glass/frame/${glassIp}`, {
+        ? await apiClient.get(getCloudFrameUrl(), {
             responseType: 'blob',
             timeout: 8000,
           })

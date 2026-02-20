@@ -92,6 +92,9 @@ const SettingsPage = () => {
     setMirrorRecognitionToGlass,
   } = useSmartGlass();
 
+  const isDev = import.meta.env.DEV;
+  const isCloudMode = isDev ? glassIp.includes('GLASS_') || glassIp.includes('mock_') : true;
+
   const { theme, setTheme } = useTheme();
   const userId = user?.id;
 
@@ -855,19 +858,21 @@ const SettingsPage = () => {
                 <div className="space-y-6">
                   {/* Connection Mode Selector */}
                   <div className="flex p-1 bg-gray-100 dark:bg-medical-gray-900 rounded-lg mb-4">
+                    {isDev && (
+                      <button
+                        className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
+                          !isCloudMode
+                            ? 'bg-white dark:bg-medical-gray-700 shadow dark:shadow-medical-primary/10 text-medical-primary dark:text-medical-secondary'
+                            : 'text-gray-500 dark:text-medical-gray-400 hover:text-gray-700 dark:hover:text-white'
+                        }`}
+                        onClick={() => setGlassIp('localhost:8001')}
+                      >
+                        Local Mode (Direct IP)
+                      </button>
+                    )}
                     <button
                       className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
-                        !glassIp.includes('GLASS_') && !glassIp.includes('mock_')
-                          ? 'bg-white dark:bg-medical-gray-700 shadow dark:shadow-medical-primary/10 text-medical-primary dark:text-medical-secondary'
-                          : 'text-gray-500 dark:text-medical-gray-400 hover:text-gray-700 dark:hover:text-white'
-                      }`}
-                      onClick={() => setGlassIp('localhost:8001')}
-                    >
-                      Local Mode (Direct IP)
-                    </button>
-                    <button
-                      className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
-                        glassIp.includes('GLASS_') || glassIp.includes('mock_')
+                        isCloudMode
                           ? 'bg-white dark:bg-medical-gray-700 shadow dark:shadow-medical-primary/10 text-medical-primary dark:text-medical-secondary'
                           : 'text-gray-500 dark:text-medical-gray-400 hover:text-gray-700 dark:hover:text-white'
                       }`}
@@ -879,9 +884,7 @@ const SettingsPage = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-medical-gray-300 mb-1">
-                      {glassIp.includes('GLASS_') || glassIp.includes('mock_')
-                        ? 'Device ID'
-                        : 'Glass IP Address'}
+                      {isCloudMode ? 'Device ID' : 'Glass IP Address'}
                     </label>
                     <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
                       <input
@@ -889,11 +892,7 @@ const SettingsPage = () => {
                         value={glassIp}
                         onChange={(e) => setGlassIp(e.target.value)}
                         className="flex-1 w-full sm:w-auto px-3 py-2 border border-gray-300 dark:border-medical-gray-600 rounded-md focus:ring-medical-primary focus:border-medical-primary bg-white dark:bg-medical-gray-800 text-medical-dark dark:text-white transition-colors"
-                        placeholder={
-                          glassIp.includes('GLASS_') || glassIp.includes('mock_')
-                            ? 'e.g., GLASS_001'
-                            : 'e.g., 192.168.4.1'
-                        }
+                        placeholder={isCloudMode ? 'e.g., GLASS_001' : 'e.g., 192.168.4.1'}
                       />
                       <button
                         type="button"
@@ -903,7 +902,7 @@ const SettingsPage = () => {
                         {isConnected ? 'Disconnect' : 'Connect'}
                       </button>
                       {import.meta.env.DEV &&
-                        (glassIp.includes('GLASS_') || glassIp.includes('mock_') ? (
+                        (isCloudMode ? (
                           <button
                             type="button"
                             onClick={() => setGlassIp('mock_glass_001')}
@@ -924,7 +923,7 @@ const SettingsPage = () => {
                         ))}
                     </div>
                     <p className="text-xs text-gray-500 dark:text-medical-gray-400 mt-1">
-                      {glassIp.includes('GLASS_') || glassIp.includes('mock_')
+                      {isCloudMode
                         ? 'Enter the unique ID printed on your device frame.'
                         : 'Enter the IP address shown on the device serial output. Default is usually 192.168.4.1.'}
                     </p>
@@ -934,7 +933,7 @@ const SettingsPage = () => {
                     <h4 className="font-medium text-blue-900 dark:text-blue-300 mb-2">
                       How to Connect
                     </h4>
-                    {glassIp.includes('GLASS_') || glassIp.includes('mock_') ? (
+                    {isCloudMode ? (
                       <ol className="list-decimal list-inside text-sm text-blue-800 dark:text-blue-400/90 space-y-1">
                         <li>Turn on your glass (ensure it has Wi-Fi).</li>
                         <li>Enter your Device ID (e.g. GLASS_001).</li>
