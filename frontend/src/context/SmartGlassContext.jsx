@@ -25,6 +25,7 @@ export const SmartGlassProvider = ({ children }) => {
     return last && Date.now() - last < 45000;
   })();
   const [isConnected, setIsConnected] = useState(initialConnected);
+  const [hasManuallyDisconnected, setHasManuallyDisconnected] = useState(false);
   const [_connectionFailures, setConnectionFailures] = useState(0);
   const [isScanning, setIsScanning] = useState(false);
   const [lastDetection, setLastDetection] = useState(null);
@@ -232,9 +233,9 @@ export const SmartGlassProvider = ({ children }) => {
   }, [glassIp, isConnected, getGlassUrl, notify, isCloud, forceDisconnect]);
 
   useEffect(() => {
-    if (!glassIp) return;
+    if (!glassIp || hasManuallyDisconnected) return;
     checkConnection();
-  }, [glassIp, checkConnection]);
+  }, [glassIp, hasManuallyDisconnected, checkConnection]);
 
   // Update Glass Display
   const updateDisplay = async (line1, line2, alert = false, info = '') => {
@@ -302,6 +303,7 @@ export const SmartGlassProvider = ({ children }) => {
     }
     setIsScanning(false);
     setIsConnected(false);
+    setHasManuallyDisconnected(true);
   };
 
   // Get Stream URL
