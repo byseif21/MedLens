@@ -12,6 +12,7 @@ import apiClient from '../services/axios';
 import { recognizeFace } from '../services/api';
 import { useNotifications } from '../hooks/useNotifications';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { getCurrentUser } from '../services/auth';
 
 const SmartGlassContext = createContext(null);
 
@@ -133,6 +134,20 @@ export const SmartGlassProvider = ({ children }) => {
       if (isCloud) {
         const response = await apiClient.get(`/api/glass/status/${glassIp}`);
         if (response.data.connected) {
+          const ownerId = response.data.user_id;
+          const currentUser = getCurrentUser();
+          const currentUserId = currentUser?.id;
+
+          if (ownerId && currentUserId && ownerId !== currentUserId) {
+            notify({
+              type: 'error',
+              title: 'Device in use',
+              message: 'This glass is already paired to another account.',
+            });
+            forceDisconnect();
+            return false;
+          }
+
           if (!isConnected) console.log('[SmartGlass] ✅ Cloud Relay Connected');
           setIsConnected(true);
           setConnectionFailures(0);
@@ -215,6 +230,11 @@ export const SmartGlassProvider = ({ children }) => {
     }
     return false;
   }, [glassIp, isConnected, getGlassUrl, notify, isCloud, forceDisconnect]);
+
+  useEffect(() => {
+    if (!glassIp) return;
+    checkConnection();
+  }, [glassIp, checkConnection]);
 
   // Update Glass Display
   const updateDisplay = async (line1, line2, alert = false, info = '') => {
