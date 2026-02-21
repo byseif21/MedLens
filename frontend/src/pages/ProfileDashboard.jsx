@@ -344,6 +344,27 @@ const ProfileDashboard = () => {
         {navigationItems
           .filter((item) => item.condition && !item.isFooter)
           .map((item) => renderNavItem(item, true))}
+        {(isConnected || isScanning) && (
+          <div className="mt-6 pt-2 border-t border-medical-gray-100 dark:border-medical-gray-800">
+            <button
+              onClick={toggleScanning}
+              className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-full text-sm font-medium transition-all shadow-sm border ${
+                !isConnected
+                  ? 'bg-yellow-50 text-yellow-600 border-yellow-200'
+                  : isScanning
+                    ? 'bg-gradient-to-r from-red-50 to-white text-red-600 border-red-200 animate-pulse'
+                    : 'bg-white text-medical-primary border-medical-primary/40 hover:bg-medical-primary/5'
+              }`}
+            >
+              <ScanFace
+                className={`w-5 h-5 ${
+                  !isConnected ? 'opacity-50' : isScanning ? 'animate-spin-slow' : ''
+                }`}
+              />
+              {!isConnected ? 'Reconnecting...' : isScanning ? 'Scanning...' : 'Glass Ready'}
+            </button>
+          </div>
+        )}
       </MobileMenuDrawer>
 
       {/* Tabs (Desktop) */}

@@ -924,8 +924,8 @@ const SettingsPage = () => {
                     </div>
                     <p className="text-xs text-gray-500 dark:text-medical-gray-400 mt-1">
                       {isCloudMode
-                        ? 'Enter the unique ID printed on your device frame.'
-                        : 'Enter the IP address shown on the device serial output. Default is usually 192.168.4.1.'}
+                        ? 'Enter the Device ID assigned to this glass (e.g. GLASS_001).'
+                        : 'Enter the IP address of the glass on your Wi‑Fi (e.g. 192.168.1.42).'}
                     </p>
                   </div>
 
@@ -935,19 +935,23 @@ const SettingsPage = () => {
                     </h4>
                     {isCloudMode ? (
                       <ol className="list-decimal list-inside text-sm text-blue-800 dark:text-blue-400/90 space-y-1">
-                        <li>Turn on your glass (ensure it has Wi-Fi).</li>
-                        <li>Enter your Device ID (e.g. GLASS_001).</li>
-                        <li>Click &quot;Connect&quot;.</li>
-                        <li>If it&apos;s your first time, you may need to Pair it.</li>
+                        <li>Turn on your glass.</li>
+                        <li>
+                          If it&apos;s new or reset, connect to the &quot;MedLens‑Glass‑Setup&quot;
+                          Wi‑Fi hotspot and complete Wi‑Fi setup, choosing Cloud mode.
+                        </li>
+                        <li>Enter the Device ID (e.g. GLASS_001) shown in the setup / label.</li>
+                        <li>Click &quot;Connect&quot; to link this account to that device.</li>
                       </ol>
                     ) : (
                       <ol className="list-decimal list-inside text-sm text-blue-800 dark:text-blue-400/90 space-y-1">
                         <li>Turn on your glass.</li>
                         <li>
-                          Connect your phone/laptop to the &quot;MedLens-Glass-Setup&quot; Wi‑Fi
-                          hotspot (if in AP mode).
+                          If it&apos;s new or reset, connect to the &quot;MedLens‑Glass‑Setup&quot;
+                          Wi‑Fi hotspot and complete the Wi‑Fi setup, choosing Local mode.
                         </li>
-                        <li>Enter the IP address above.</li>
+                        <li>Ensure your glass and this device are on the same Wi‑Fi network.</li>
+                        <li>Enter the glass IP address above (e.g. 192.168.1.42).</li>
                         <li>Click &quot;Connect&quot;.</li>
                       </ol>
                     )}
