@@ -242,6 +242,29 @@ export const SmartGlassProvider = ({ children }) => {
     checkConnection();
   }, [glassIp, hasManuallyDisconnected, checkConnection]);
 
+  const connectWithFeedback = useCallback(async () => {
+    if (!glassIp) {
+      notify({
+        type: 'error',
+        title: 'No device specified',
+        message: 'Enter a Device ID or IP address before connecting.',
+      });
+      return false;
+    }
+
+    const ok = await checkConnection();
+    if (!ok) {
+      notify({
+        type: 'error',
+        title: 'Unable to connect to glass',
+        message: isCloud
+          ? 'Check that the glass is powered on, set to Cloud mode, and that the Device ID is correct.'
+          : 'Check that the glass is powered on, on the same Wi‑Fi, and that the IP address is correct.',
+      });
+    }
+    return ok;
+  }, [glassIp, isCloud, checkConnection, notify]);
+
   // Update Glass Display
   const updateDisplay = async (line1, line2, alert = false, info = '') => {
     if (!isConnected) return;
@@ -442,6 +465,7 @@ export const SmartGlassProvider = ({ children }) => {
         getGlassStreamUrl,
         getGlassSnapshotUrl,
         updateDisplay,
+        connectWithFeedback,
       }}
     >
       {children}

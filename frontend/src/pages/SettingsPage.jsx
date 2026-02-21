@@ -81,7 +81,6 @@ const SettingsPage = () => {
     glassIp,
     setGlassIp,
     isConnected,
-    checkConnection,
     resetGlassWifi,
     disconnectGlass,
     getGlassStreamUrl,
@@ -90,6 +89,7 @@ const SettingsPage = () => {
     batteryLevel,
     mirrorRecognitionToGlass,
     setMirrorRecognitionToGlass,
+    connectWithFeedback,
   } = useSmartGlass();
 
   const isDev = import.meta.env.DEV;
@@ -896,7 +896,7 @@ const SettingsPage = () => {
                       />
                       <button
                         type="button"
-                        onClick={() => (isConnected ? disconnectGlass() : checkConnection())}
+                        onClick={() => (isConnected ? disconnectGlass() : connectWithFeedback())}
                         className="w-full sm:w-auto px-4 py-2 border border-gray-300 dark:border-medical-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-medical-gray-300 hover:bg-gray-50 dark:hover:bg-medical-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-medical-primary transition-colors"
                       >
                         {isConnected ? 'Disconnect' : 'Connect'}
