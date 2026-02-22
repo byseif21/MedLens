@@ -66,19 +66,6 @@ export const SmartGlassProvider = ({ children }) => {
     );
   }, [mirrorRecognitionToGlass]);
 
-  const clearReadyTimeout = useCallback(() => {
-    if (stopMessageTimeoutRef.current) {
-      clearTimeout(stopMessageTimeoutRef.current);
-    }
-  }, []);
-
-  const scheduleReadyMessage = useCallback(() => {
-    clearReadyTimeout();
-    stopMessageTimeoutRef.current = setTimeout(() => {
-      updateDisplay('MedLens Ready', '', false, '');
-    }, 2000);
-  }, [clearReadyTimeout, updateDisplay]);
-
   const buildGlassSummary = useCallback((person) => {
     if (!person || !person.medical_info) return '';
     const info = person.medical_info;
@@ -136,6 +123,130 @@ export const SmartGlassProvider = ({ children }) => {
     () => `${import.meta.env.VITE_API_URL}/api/glass/frame/${glassIp}`,
     [glassIp]
   );
+
+  // Update Glass Display
+  const updateDisplay = useCallback(
+    async (line1, line2, alert = false, info = '') => {
+      if (!isConnected) return;
+      try {
+        if (isCloud) {
+          await apiClient.post(`/api/glass/command/${glassIp}`, {
+            type: 'DISPLAY_TEXT',
+            line1,
+            line2,
+            alert,
+            info,
+          });
+        } else {
+          await glassClient.current.post(getGlassUrl('display'), {
+            line1,
+            line2,
+            alert,
+            info,
+          });
+        }
+      } catch (err) {
+        console.error('Failed to update glass display:', err);
+      }
+    },
+    [isConnected, isCloud, glassIp, getGlassUrl]
+  );
+
+  const clearReadyTimeout = useCallback(() => {
+    if (stopMessageTimeoutRef.current) {
+      clearTimeout(stopMessageTimeoutRef.current);
+    }
+  }, []);
+
+  const scheduleReadyMessage = useCallback(() => {
+    clearReadyTimeout();
+    stopMessageTimeoutRef.current = setTimeout(() => {
+      updateDisplay('MedLens Ready', '', false, '');
+    }, 2000);
+  }, [clearReadyTimeout, updateDisplay]);
+
+  const performScan = useCallback(async () => {
+    if (isScanningRef.current) {
+      console.log('[SmartGlass] Previous scan still in progress, skipping...');
+      return;
+    }
+
+    isScanningRef.current = true;
+    console.log('[SmartGlass] Starting scan cycle...');
+
+    try {
+      console.log('[SmartGlass] Requesting capture from Glass...');
+      const response = isCloud
+        ? await apiClient.get(getCloudFrameUrl(), {
+            responseType: 'blob',
+            timeout: 8000,
+          })
+        : await glassClient.current.get(getGlassUrl('capture'), {
+            responseType: 'blob',
+            timeout: 8000,
+          });
+      console.log('[SmartGlass] ✅ Capture received, size:', response.data.size);
+      setConnectionFailures(0);
+      setIsConnected(true);
+
+      console.log('[SmartGlass] Sending image to recognition API...');
+      const formData = new FormData();
+      formData.append('image', response.data, 'glass_capture.jpg');
+
+      const result = await recognizeFace(formData);
+      console.log('[SmartGlass] Recognition result:', result);
+
+      if (result.success && result.data.match) {
+        const person = result.data;
+        console.log(`[SmartGlass] 🎯 MATCH FOUND: ${person.name}`);
+
+        const detectedId = person.id || person.user_id;
+        setLastDetection(person);
+
+        const info = buildGlassSummary(person);
+        await updateDisplay('MATCH FOUND', person.name, person.is_critical, info);
+
+        notify({
+          type: 'success',
+          title: 'Glass Detection',
+          message: `Identified: ${person.name}`,
+        });
+
+        if (detectedId) {
+          const currentPath = location.pathname.replace(/\/$/, '');
+          const targetPath = `/profile/${detectedId}`;
+
+          if (currentPath !== targetPath) {
+            console.log(`[SmartGlass] ➡️ Navigating to ${targetPath}`);
+            navigate(targetPath);
+          } else {
+            console.log('[SmartGlass] ℹ️ Already on patient profile');
+          }
+        }
+
+        stopScanInterval();
+      } else {
+        console.log('[SmartGlass] ❌ No match found');
+      }
+    } catch (err) {
+      console.error('[SmartGlass] 💥 Scan failed:', err.message);
+      if (err.code === 'ECONNABORTED' || err.message.includes('timeout')) {
+        console.warn('[SmartGlass] ⚠️ Network timeout - check Glass connection');
+      }
+    } finally {
+      isScanningRef.current = false;
+      console.log('[SmartGlass] Scan cycle complete');
+    }
+  }, [
+    isCloud,
+    getCloudFrameUrl,
+    getGlassUrl,
+    buildGlassSummary,
+    notify,
+    updateDisplay,
+    location.pathname,
+    navigate,
+  ]);
 
   const forceDisconnect = useCallback(() => {
     if (scanIntervalRef.current) {
@@ -336,34 +447,6 @@ export const SmartGlassProvider = ({ children }) => {
     return ok;
   }, [glassIp, isCloud, checkConnection, notify]);
 
-  // Update Glass Display
-  const updateDisplay = useCallback(
-    async (line1, line2, alert = false, info = '') => {
-      if (!isConnected) return;
-      try {
-        if (isCloud) {
-          await apiClient.post(`/api/glass/command/${glassIp}`, {
-            type: 'DISPLAY_TEXT',
-            line1,
-            line2,
-            alert,
-            info,
-          });
-        } else {
-          await glassClient.current.post(getGlassUrl('display'), {
-            line1,
-            line2,
-            alert,
-            info,
-          });
-        }
-      } catch (err) {
-        console.error('Failed to update glass display:', err);
-      }
-    },
-    [isConnected, isCloud, glassIp, getGlassUrl]
-  );
-
   // Reset Glass WiFi
   const resetGlassWifi = async () => {
     if (!glassIp) return false;
@@ -423,90 +506,6 @@ export const SmartGlassProvider = ({ children }) => {
     }
     setIsScanning(false);
   };
-
-  // Perform Recognition
-  const performScan = useCallback(async () => {
-    if (isScanningRef.current) {
-      console.log('[SmartGlass] Previous scan still in progress, skipping...');
-      return;
-    }
-
-    isScanningRef.current = true;
-    console.log('[SmartGlass] Starting scan cycle...');
-
-    try {
-      console.log('[SmartGlass] Requesting capture from Glass...');
-      const response = isCloud
-        ? await apiClient.get(getCloudFrameUrl(), {
-            responseType: 'blob',
-            timeout: 8000,
-          })
-        : await glassClient.current.get(getGlassUrl('capture'), {
-            responseType: 'blob',
-            timeout: 8000,
-          });
-      console.log('[SmartGlass] ✅ Capture received, size:', response.data.size);
-      setConnectionFailures(0);
-      setIsConnected(true);
-
-      console.log('[SmartGlass] Sending image to recognition API...');
-      const formData = new FormData();
-      formData.append('image', response.data, 'glass_capture.jpg');
-
-      const result = await recognizeFace(formData);
-      console.log('[SmartGlass] Recognition result:', result);
-
-      if (result.success && result.data.match) {
-        const person = result.data;
-        console.log(`[SmartGlass] 🎯 MATCH FOUND: ${person.name}`);
-
-        const detectedId = person.id || person.user_id;
-        setLastDetection(person);
-
-        const info = buildGlassSummary(person);
-        await updateDisplay('MATCH FOUND', person.name, person.is_critical, info);
-
-        notify({
-          type: 'success',
-          title: 'Glass Detection',
-          message: `Identified: ${person.name}`,
-        });
-
-        if (detectedId) {
-          const currentPath = location.pathname.replace(/\/$/, '');
-          const targetPath = `/profile/${detectedId}`;
-
-          if (currentPath !== targetPath) {
-            console.log(`[SmartGlass] ➡️ Navigating to ${targetPath}`);
-            navigate(targetPath);
-          } else {
-            console.log('[SmartGlass] ℹ️ Already on patient profile');
-          }
-        }
-
-        stopScanInterval();
-      } else {
-        console.log('[SmartGlass] ❌ No match found');
-      }
-    } catch (err) {
-      console.error('[SmartGlass] 💥 Scan failed:', err.message);
-      if (err.code === 'ECONNABORTED' || err.message.includes('timeout')) {
-        console.warn('[SmartGlass] ⚠️ Network timeout - check Glass connection');
-      }
-    } finally {
-      isScanningRef.current = false;
-      console.log('[SmartGlass] Scan cycle complete');
-    }
-  }, [
-    isCloud,
-    getCloudFrameUrl,
-    getGlassUrl,
-    buildGlassSummary,
-    notify,
-    updateDisplay,
-    location.pathname,
-    navigate,
-  ]);
 
   const toggleScanning = async () => {
     if (isCloud) {
