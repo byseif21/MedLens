@@ -876,7 +876,7 @@ const SettingsPage = () => {
                           ? 'bg-white dark:bg-medical-gray-700 shadow dark:shadow-medical-primary/10 text-medical-primary dark:text-medical-secondary'
                           : 'text-gray-500 dark:text-medical-gray-400 hover:text-gray-700 dark:hover:text-white'
                       }`}
-                      onClick={() => setGlassIp('GLASS_001')}
+                      onClick={() => setGlassIp('GLASS_000')}
                     >
                       Cloud Mode (Device ID)
                     </button>
