@@ -1,6 +1,6 @@
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Body
 from typing import Optional, Dict, List
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from services.storage_service import get_supabase_service
 
 router = APIRouter(prefix="/api/glass", tags=["Smart Glass Relay"])
@@ -13,9 +13,17 @@ frame_buffer: Dict[str, bytes] = {}
 # Map: device_id -> List[dict]
 command_queue: Dict[str, List[dict]] = {}
 
-# Fallback in-memory device registry (if DB table is missing)
-# Map: device_id -> dict
 in_memory_devices: Dict[str, dict] = {}
+
+scanning_state: Dict[str, dict] = {}
+
+
+def get_scanning_state(device_id: str) -> dict:
+    state = scanning_state.get(device_id)
+    if not state:
+        state = {"active": False, "last_stop": None}
+        scanning_state[device_id] = state
+    return state
 
 @router.post("/sync")
 async def sync_device(
@@ -75,6 +83,44 @@ async def sync_device(
         "commands": commands, 
         "timestamp": datetime.utcnow().isoformat()
     }
+
+
+@router.get("/scanning/{device_id}")
+async def get_scanning(device_id: str):
+    state = get_scanning_state(device_id)
+    return {
+        "active": bool(state.get("active", False)),
+        "last_stop": state.get("last_stop"),
+    }
+
+
+@router.post("/scanning/{device_id}")
+async def set_scanning(
+    device_id: str,
+    payload: dict = Body(...),
+):
+    active = bool(payload.get("active", False))
+    cooldown_ms = int(payload.get("cooldown_ms", 0))
+    source = payload.get("source") or "unknown"
+    state = get_scanning_state(device_id)
+    now = datetime.utcnow()
+    if not active:
+        state["active"] = False
+        state["last_stop"] = now.isoformat()
+        scanning_state[device_id] = state
+        return {"active": False, "source": source}
+    last_stop_raw = state.get("last_stop")
+    if last_stop_raw and cooldown_ms > 0:
+        try:
+            last_stop_dt = datetime.fromisoformat(str(last_stop_raw).replace("Z", "+00:00"))
+        except Exception:
+            last_stop_dt = None
+        if last_stop_dt:
+            if now - last_stop_dt < timedelta(milliseconds=cooldown_ms):
+                return {"active": bool(state.get("active", False)), "source": source}
+    state["active"] = True
+    scanning_state[device_id] = state
+    return {"active": True, "source": source}
 
 @router.get("/status/{device_id}")
 async def get_device_status(device_id: str):

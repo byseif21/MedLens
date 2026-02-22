@@ -40,6 +40,8 @@ export const SmartGlassProvider = ({ children }) => {
   const scanIntervalRef = useRef(null);
   const statusPollRef = useRef(null);
   const isScanningRef = useRef(false);
+  const scanningSyncRef = useRef(null);
+  const stopMessageTimeoutRef = useRef(null);
   const { notify } = useNotifications();
   const navigate = useNavigate();
   const location = useLocation();
@@ -64,7 +66,20 @@ export const SmartGlassProvider = ({ children }) => {
     );
   }, [mirrorRecognitionToGlass]);
 
-  const buildGlassSummary = (person) => {
+  const clearReadyTimeout = useCallback(() => {
+    if (stopMessageTimeoutRef.current) {
+      clearTimeout(stopMessageTimeoutRef.current);
+    }
+  }, []);
+
+  const scheduleReadyMessage = useCallback(() => {
+    clearReadyTimeout();
+    stopMessageTimeoutRef.current = setTimeout(() => {
+      updateDisplay('MedLens Ready', '', false, '');
+    }, 2000);
+  }, [clearReadyTimeout, updateDisplay]);
+
+  const buildGlassSummary = useCallback((person) => {
     if (!person || !person.medical_info) return '';
     const info = person.medical_info;
     const parts = [];
@@ -101,7 +116,7 @@ export const SmartGlassProvider = ({ children }) => {
 
     const summary = parts.join(' | ');
     return summary;
-  };
+  }, []);
 
   const isCloud = useMemo(
     () => !glassIp.includes('.') && !glassIp.includes('localhost') && glassIp.length > 0,
@@ -126,6 +141,10 @@ export const SmartGlassProvider = ({ children }) => {
     if (scanIntervalRef.current) {
       clearInterval(scanIntervalRef.current);
       scanIntervalRef.current = null;
+    }
+    if (scanningSyncRef.current) {
+      clearInterval(scanningSyncRef.current);
+      scanningSyncRef.current = null;
     }
     setIsScanning(false);
     setIsConnected(false);
@@ -161,6 +180,39 @@ export const SmartGlassProvider = ({ children }) => {
           if (!statusPollRef.current) {
             statusPollRef.current = setInterval(checkConnection, 10000);
           }
+          if (!scanningSyncRef.current) {
+            scanningSyncRef.current = setInterval(async () => {
+              try {
+                const scanResp = await apiClient.get(`/api/glass/scanning/${glassIp}`);
+                const remoteActive = Boolean(scanResp.data.active);
+                setIsScanning((prev) => {
+                  if (remoteActive && !prev) {
+                    clearReadyTimeout();
+                    if (!scanIntervalRef.current) {
+                      scanIntervalRef.current = setInterval(performScan, 3000);
+                      setTimeout(() => {
+                        performScan();
+                      }, 0);
+                    }
+                    updateDisplay('Scanning...', '', false, '');
+                    return true;
+                  }
+                  if (!remoteActive && prev) {
+                    if (scanIntervalRef.current) {
+                      clearInterval(scanIntervalRef.current);
+                      scanIntervalRef.current = null;
+                    }
+                    updateDisplay('Scanning stopped', '', false, '');
+                    scheduleReadyMessage();
+                    return false;
+                  }
+                  return prev;
+                });
+              } catch (err) {
+                console.warn('[SmartGlass] Failed to sync scanning state:', err?.message || err);
+              }
+            }, 3000);
+          }
           try {
             await apiClient.post(`/api/devices/pair`, {
               device_id: glassIp,
@@ -191,6 +243,14 @@ export const SmartGlassProvider = ({ children }) => {
         localStorage.setItem('medlens_glass_last_ok', String(Date.now()));
         if (!statusPollRef.current) {
           statusPollRef.current = setInterval(checkConnection, 10000);
+        }
+        const autoScan = response.data.auto_scan;
+        if (autoScan && !scanIntervalRef.current) {
+          clearReadyTimeout();
+          setIsScanning(true);
+          scanIntervalRef.current = setInterval(performScan, 3000);
+          performScan();
+          updateDisplay('Scanning...', '', false, '');
         }
         return true;
       }
@@ -235,7 +295,18 @@ export const SmartGlassProvider = ({ children }) => {
       return false;
     }
     return false;
-  }, [glassIp, isConnected, getGlassUrl, notify, isCloud, forceDisconnect]);
+  }, [
+    glassIp,
+    isConnected,
+    getGlassUrl,
+    notify,
+    isCloud,
+    forceDisconnect,
+    performScan,
+    clearReadyTimeout,
+    scheduleReadyMessage,
+    updateDisplay,
+  ]);
 
   useEffect(() => {
     if (!glassIp || hasManuallyDisconnected) return;
@@ -266,29 +337,32 @@ export const SmartGlassProvider = ({ children }) => {
   }, [glassIp, isCloud, checkConnection, notify]);
 
   // Update Glass Display
-  const updateDisplay = async (line1, line2, alert = false, info = '') => {
-    if (!isConnected) return;
-    try {
-      if (isCloud) {
-        await apiClient.post(`/api/glass/command/${glassIp}`, {
-          type: 'DISPLAY_TEXT',
-          line1,
-          line2,
-          alert,
-          info,
-        });
-      } else {
-        await glassClient.current.post(getGlassUrl('display'), {
-          line1,
-          line2,
-          alert,
-          info,
-        });
+  const updateDisplay = useCallback(
+    async (line1, line2, alert = false, info = '') => {
+      if (!isConnected) return;
+      try {
+        if (isCloud) {
+          await apiClient.post(`/api/glass/command/${glassIp}`, {
+            type: 'DISPLAY_TEXT',
+            line1,
+            line2,
+            alert,
+            info,
+          });
+        } else {
+          await glassClient.current.post(getGlassUrl('display'), {
+            line1,
+            line2,
+            alert,
+            info,
+          });
+        }
+      } catch (err) {
+        console.error('Failed to update glass display:', err);
       }
-    } catch (err) {
-      console.error('Failed to update glass display:', err);
-    }
-  };
+    },
+    [isConnected, isCloud, glassIp, getGlassUrl]
+  );
 
   // Reset Glass WiFi
   const resetGlassWifi = async () => {
@@ -315,6 +389,10 @@ export const SmartGlassProvider = ({ children }) => {
     if (scanIntervalRef.current) {
       clearInterval(scanIntervalRef.current);
       scanIntervalRef.current = null;
+    }
+    if (scanningSyncRef.current) {
+      clearInterval(scanningSyncRef.current);
+      scanningSyncRef.current = null;
     }
     if (statusPollRef.current) {
       clearInterval(statusPollRef.current);
@@ -347,8 +425,7 @@ export const SmartGlassProvider = ({ children }) => {
   };
 
   // Perform Recognition
-  const performScan = async () => {
-    // Avoid overlapping scans
+  const performScan = useCallback(async () => {
     if (isScanningRef.current) {
       console.log('[SmartGlass] Previous scan still in progress, skipping...');
       return;
@@ -358,7 +435,6 @@ export const SmartGlassProvider = ({ children }) => {
     console.log('[SmartGlass] Starting scan cycle...');
 
     try {
-      // 1. Get Image from Glass
       console.log('[SmartGlass] Requesting capture from Glass...');
       const response = isCloud
         ? await apiClient.get(getCloudFrameUrl(), {
@@ -373,7 +449,6 @@ export const SmartGlassProvider = ({ children }) => {
       setConnectionFailures(0);
       setIsConnected(true);
 
-      // 2. Send to Backend
       console.log('[SmartGlass] Sending image to recognition API...');
       const formData = new FormData();
       formData.append('image', response.data, 'glass_capture.jpg');
@@ -381,7 +456,6 @@ export const SmartGlassProvider = ({ children }) => {
       const result = await recognizeFace(formData);
       console.log('[SmartGlass] Recognition result:', result);
 
-      // 3. Handle Result
       if (result.success && result.data.match) {
         const person = result.data;
         console.log(`[SmartGlass] 🎯 MATCH FOUND: ${person.name}`);
@@ -389,18 +463,15 @@ export const SmartGlassProvider = ({ children }) => {
         const detectedId = person.id || person.user_id;
         setLastDetection(person);
 
-        // Notify Glass on every match
         const info = buildGlassSummary(person);
         await updateDisplay('MATCH FOUND', person.name, person.is_critical, info);
 
-        // Notify App
         notify({
           type: 'success',
           title: 'Glass Detection',
           message: `Identified: ${person.name}`,
         });
 
-        // Navigate (if app is active and we have an ID)
         if (detectedId) {
           const currentPath = location.pathname.replace(/\/$/, '');
           const targetPath = `/profile/${detectedId}`;
@@ -426,17 +497,55 @@ export const SmartGlassProvider = ({ children }) => {
       isScanningRef.current = false;
       console.log('[SmartGlass] Scan cycle complete');
     }
-  };
+  }, [
+    isCloud,
+    getCloudFrameUrl,
+    getGlassUrl,
+    buildGlassSummary,
+    notify,
+    updateDisplay,
+    location.pathname,
+    navigate,
+  ]);
 
-  // Toggle Scanning
-  const toggleScanning = () => {
+  const toggleScanning = async () => {
+    if (isCloud) {
+      try {
+        const nextActive = !isScanning;
+        const payload = {
+          active: nextActive,
+          source: 'web',
+          cooldown_ms: 0,
+        };
+        await apiClient.post(`/api/glass/scanning/${glassIp}`, payload);
+        if (nextActive) {
+          if (!scanIntervalRef.current) {
+            clearReadyTimeout();
+            setIsScanning(true);
+            scanIntervalRef.current = setInterval(performScan, 3000);
+            performScan();
+            updateDisplay('Scanning...', '', false, '');
+          }
+        } else {
+          stopScanInterval();
+          updateDisplay('Scanning stopped', '', false, '');
+          scheduleReadyMessage();
+        }
+      } catch (err) {
+        console.error('[SmartGlass] Failed to toggle scanning via backend:', err?.message || err);
+      }
+      return;
+    }
     if (isScanning) {
       stopScanInterval();
+      updateDisplay('Scanning stopped', '', false, '');
+      scheduleReadyMessage();
     } else {
+      clearReadyTimeout();
       setIsScanning(true);
-      // Scan every 3 seconds
       scanIntervalRef.current = setInterval(performScan, 3000);
-      performScan(); // Immediate scan
+      performScan();
+      updateDisplay('Scanning...', '', false, '');
     }
   };
 

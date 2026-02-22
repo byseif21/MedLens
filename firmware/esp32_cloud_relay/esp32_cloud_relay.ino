@@ -36,6 +36,7 @@ const int SYNC_INTERVAL_MS = 200; // Time between frames (200ms = ~5fps)
 #define HREF_GPIO_NUM    23
 #define PCLK_GPIO_NUM    22
 #define LED_GPIO_NUM      2 // Onboard LED
+#define SENSOR_GPIO_NUM   14
 
 #define OLED_SDA_PIN 33
 #define OLED_SCL_PIN 32
@@ -56,6 +57,7 @@ unsigned long lastStatusMillis = 0;
 bool waitingForAppConnection = true;
 
 unsigned long lastSyncTime = 0;
+unsigned long lastSensorEdgeTime = 0;
 
 void initOled() {
   Wire.begin(OLED_SDA_PIN, OLED_SCL_PIN);
@@ -258,6 +260,7 @@ void setup() {
 
   pinMode(LED_GPIO_NUM, OUTPUT);
   digitalWrite(LED_GPIO_NUM, LOW);
+  pinMode(SENSOR_GPIO_NUM, INPUT_PULLUP);
 
   // 1. Initialize Camera
   camera_config_t config;
@@ -318,9 +321,20 @@ void setup() {
 }
 
 void loop() {
-  if (millis() - lastSyncTime > SYNC_INTERVAL_MS) {
+  unsigned long now = millis();
+
+  bool sensorActive = digitalRead(SENSOR_GPIO_NUM) == LOW;
+  if (sensorActive) {
+    unsigned long cooldownMs = 5000;
+    if (lastSensorEdgeTime == 0 || now - lastSensorEdgeTime >= cooldownMs) {
+      lastSensorEdgeTime = now;
+      triggerScanningIfAllowed();
+    }
+  }
+
+  if (now - lastSyncTime > SYNC_INTERVAL_MS) {
     sendHeartbeat();
-    lastSyncTime = millis();
+    lastSyncTime = now;
   }
 
   if (hasDisplayFrame) {
@@ -332,6 +346,37 @@ void loop() {
       drawDisplayFrame(headerVisible);
     }
   }
+}
+
+void triggerScanningIfAllowed() {
+  if (WiFi.status() != WL_CONNECTED) return;
+  HTTPClient http;
+  bool useTls = String(BACKEND_URL).startsWith("https");
+  WiFiClientSecure secureClient;
+  String url = String(BACKEND_URL);
+  int idx = url.indexOf("/api/glass/sync");
+  if (idx != -1) {
+    url = url.substring(0, idx) + "/api/glass/scanning/" + DEVICE_ID;
+  } else {
+    if (url.endsWith("/")) {
+      url += "api/glass/scanning/" + String(DEVICE_ID);
+    } else {
+      url += "/api/glass/scanning/" + String(DEVICE_ID);
+    }
+  }
+  if (useTls) {
+    secureClient.setInsecure();
+    http.begin(secureClient, url);
+  } else {
+    http.begin(url);
+  }
+  http.addHeader("Content-Type", "application/json");
+  String body = "{\"active\":true,\"source\":\"sensor\",\"cooldown_ms\":5000}";
+  int code = http.POST(body);
+  if (code <= 0) {
+    Serial.println("Failed to trigger scanning from sensor");
+  }
+  http.end();
 }
 
 void sendHeartbeat() {

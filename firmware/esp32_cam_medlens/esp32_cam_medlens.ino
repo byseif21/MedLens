@@ -63,6 +63,7 @@
 
 // LED Pin (2 is standard onboard LED for Wrover, 4 is usually used for Camera Data 2 on Wrover!)
 #define LED_GPIO_NUM      2
+#define SENSOR_GPIO_NUM   14
 
 #define OLED_SDA_PIN 33
 #define OLED_SCL_PIN 32
@@ -94,6 +95,8 @@ unsigned long lastBlinkMillis = 0;
 bool waitingForAppConnection = false;
 unsigned long lastStatusMillis = 0;
 const unsigned long APP_DISCONNECT_TIMEOUT = 15000; // 15 seconds
+unsigned long lastSensorEdgeTime = 0;
+bool autoScanRequested = false;
 
 void initOled() {
     Wire.begin(OLED_SDA_PIN, OLED_SCL_PIN);
@@ -404,8 +407,10 @@ static esp_err_t status_handler(httpd_req_t *req) {
     
     int battery = 100; 
     
-    char json_response[100];
-    snprintf(json_response, sizeof(json_response), "{\"status\":\"ok\",\"battery\":%d,\"display\":\"%s\"}", battery, lastDisplayMessage.c_str());
+    int autoScan = autoScanRequested ? 1 : 0;
+    char json_response[160];
+    snprintf(json_response, sizeof(json_response), "{\"status\":\"ok\",\"battery\":%d,\"display\":\"%s\",\"auto_scan\":%d}", battery, lastDisplayMessage.c_str(), autoScan);
+    autoScanRequested = false;
 
     lastStatusMillis = millis();
 
@@ -636,11 +641,22 @@ void setup() {
     digitalWrite(LED_GPIO_NUM, HIGH);
     delay(100);
     digitalWrite(LED_GPIO_NUM, LOW);
+    pinMode(SENSOR_GPIO_NUM, INPUT_PULLUP);
 }
 
 void loop() {
+    unsigned long now = millis();
+
+    bool sensorActive = digitalRead(SENSOR_GPIO_NUM) == LOW;
+    if (sensorActive) {
+        unsigned long cooldownMs = 5000;
+        if (lastSensorEdgeTime == 0 || now - lastSensorEdgeTime >= cooldownMs) {
+            lastSensorEdgeTime = now;
+            autoScanRequested = true;
+        }
+    }
+
     if (hasDisplayFrame) {
-        unsigned long now = millis();
         unsigned long interval = isAlert ? 400 : 800; // faster blink when critical
         if (now - lastBlinkMillis >= interval) {
             lastBlinkMillis = now;
@@ -650,7 +666,6 @@ void loop() {
     }
 
     if (!waitingForAppConnection) {
-        unsigned long now = millis();
         if (now - lastStatusMillis > APP_DISCONNECT_TIMEOUT) {
             waitingForAppConnection = true;
             hasDisplayFrame = false;

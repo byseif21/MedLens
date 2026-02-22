@@ -30,8 +30,9 @@
  #define Y2_GPIO_NUM 4
  #define VSYNC_GPIO_NUM 25
  #define HREF_GPIO_NUM 23
- #define PCLK_GPIO_NUM 22
- #define LED_GPIO_NUM 2
+#define PCLK_GPIO_NUM 22
+#define LED_GPIO_NUM 2
+#define SENSOR_GPIO_NUM 14
  
  #define OLED_SDA_PIN 33
  #define OLED_SCL_PIN 32
@@ -71,6 +72,8 @@
  unsigned long lastBlinkMillis = 0;
  unsigned long lastStatusMillis = 0;
  unsigned long lastSyncTime = 0;
+unsigned long lastSensorEdgeTime = 0;
+bool autoScanRequested = false;
  
  char modeParamValue[8];
  char deviceIdParamValue[32];
@@ -266,6 +269,41 @@
    lastBlinkMillis = millis();
    drawDisplayFrame(true);
  }
+
+void triggerScanningIfAllowed() {
+  if (WiFi.status() != WL_CONNECTED) return;
+  HTTPClient http;
+  bool useTls = appConfig.backendUrl.startsWith("https");
+  WiFiClientSecure secureClient;
+  String url = String(appConfig.backendUrl);
+  IPAddress ip = WiFi.localIP();
+  char ipBuf[24];
+  snprintf(ipBuf, sizeof(ipBuf), "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
+  String scanningId = appConfig.mode == MODE_CLOUD ? appConfig.deviceId : String(ipBuf);
+  int idx = url.indexOf("/api/glass/sync");
+  if (idx != -1) {
+    url = url.substring(0, idx) + "/api/glass/scanning/" + scanningId;
+  } else {
+    if (url.endsWith("/")) {
+      url += "api/glass/scanning/" + scanningId;
+    } else {
+      url += "/api/glass/scanning/" + scanningId;
+    }
+  }
+  if (useTls) {
+    secureClient.setInsecure();
+    http.begin(secureClient, url);
+  } else {
+    http.begin(url);
+  }
+  http.addHeader("Content-Type", "application/json");
+  String body = "{\"active\":true,\"source\":\"sensor\",\"cooldown_ms\":5000}";
+  int code = http.POST(body);
+  if (code <= 0) {
+    Serial.println("Failed to trigger scanning from sensor");
+  }
+  http.end();
+}
  
  void extractStringField(const char* json, const char* key, char* out, size_t outSize) {
    const char* p = strstr(json, key);
@@ -380,8 +418,16 @@
    httpd_resp_set_type(req, "application/json");
    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
    int battery = 100;
-   char json_response[120];
-   snprintf(json_response, sizeof(json_response), "{\"status\":\"ok\",\"battery\":%d,\"display\":\"%s\"}", battery, lastDisplayMessage.c_str());
+  int autoScan = autoScanRequested ? 1 : 0;
+  char json_response[160];
+  snprintf(
+      json_response,
+      sizeof(json_response),
+      "{\"status\":\"ok\",\"battery\":%d,\"display\":\"%s\",\"auto_scan\":%d}",
+      battery,
+      lastDisplayMessage.c_str(),
+      autoScan);
+  autoScanRequested = false;
    lastStatusMillis = millis();
    if (waitingForAppConnection) {
      waitingForAppConnection = false;
@@ -659,6 +705,7 @@
    Serial.println("Starting MedLens Unified Firmware...");
    pinMode(LED_GPIO_NUM, OUTPUT);
    digitalWrite(LED_GPIO_NUM, LOW);
+  pinMode(SENSOR_GPIO_NUM, INPUT_PULLUP);
    loadAppConfig();
    if (!initCamera()) {
      return;
@@ -682,7 +729,19 @@
  }
  
  void loop() {
-   unsigned long now = millis();
+  unsigned long now = millis();
+  bool sensorActive = digitalRead(SENSOR_GPIO_NUM) == LOW;
+  if (sensorActive) {
+    unsigned long cooldownMs = 5000;
+    if (lastSensorEdgeTime == 0 || now - lastSensorEdgeTime >= cooldownMs) {
+      lastSensorEdgeTime = now;
+      if (appConfig.mode == MODE_CLOUD) {
+        triggerScanningIfAllowed();
+      } else {
+        autoScanRequested = true;
+      }
+    }
+  }
    if (appConfig.mode == MODE_CLOUD) {
      if (now - lastSyncTime > SYNC_INTERVAL_MS) {
        sendHeartbeat();
